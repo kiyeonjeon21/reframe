@@ -10,7 +10,7 @@
 
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import {
   compileScene,
   composeScene,
@@ -157,6 +157,7 @@ export async function runBatch(
         try {
           const captured = await captureIr(ir, {
             framesDir,
+            ...(opts.scenePath !== undefined && { sceneDir: dirname(opts.scenePath) }),
             ...(opts.fps !== undefined && { fps: opts.fps }),
           });
           if (plan) {

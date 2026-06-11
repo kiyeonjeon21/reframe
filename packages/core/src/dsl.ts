@@ -9,6 +9,7 @@ import type {
   Ease,
   EllipseProps,
   GroupProps,
+  ImageProps,
   LineProps,
   NodeIR,
   PropValue,
@@ -64,6 +65,11 @@ export function line(props: { id: string } & LineProps): NodeIR {
 export function text(props: { id: string } & TextProps): NodeIR {
   const { id, ...rest } = props;
   return { type: "text", id, props: rest };
+}
+
+export function image(props: { id: string } & ImageProps): NodeIR {
+  const { id, ...rest } = props;
+  return { type: "image", id, props: rest };
 }
 
 export function group(props: { id: string } & GroupProps, children: NodeIR[]): NodeIR {

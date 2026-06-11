@@ -95,11 +95,24 @@ export interface TextProps extends BaseProps {
 
 export interface GroupProps extends BaseProps {}
 
+export interface ImageProps extends BaseProps {
+  /**
+   * Image file path: absolute, or relative to the scene file. Drawn
+   * stretched to width×height. As a string prop it switches discretely at
+   * segment start (no crossfade) — for hard-cut sequences stack image
+   * nodes and step their opacity instead.
+   */
+  src: string;
+  width: number;
+  height: number;
+}
+
 export type NodeIR =
   | { type: "rect"; id: string; props: RectProps }
   | { type: "ellipse"; id: string; props: EllipseProps }
   | { type: "line"; id: string; props: LineProps }
   | { type: "text"; id: string; props: TextProps }
+  | { type: "image"; id: string; props: ImageProps }
   | { type: "group"; id: string; props: GroupProps; children: NodeIR[] };
 
 export type PropValue = number | string;

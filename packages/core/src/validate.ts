@@ -12,6 +12,7 @@ export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
   line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress"],
   text: [...COMMON_PROPS, "content", "contentDecimals", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
+  image: [...COMMON_PROPS, "src", "width", "height"],
   group: COMMON_PROPS,
 };
 

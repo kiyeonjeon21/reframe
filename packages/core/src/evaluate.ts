@@ -65,6 +65,15 @@ export type DisplayOp =
       letterSpacing: number;
       align: TextAlign;
       baseline: TextBaseline;
+    })
+  | (OpBase & {
+      type: "image";
+      /** Raw src string as authored in the IR — consumers resolve it. */
+      src: string;
+      width: number;
+      height: number;
+      offsetX: number;
+      offsetY: number;
     });
 
 export type DisplayList = DisplayOp[];
@@ -219,6 +228,23 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth }),
           ...(node.type === "rect" && { radius: num(id, "radius", node.props.radius ?? 0) }),
+        });
+        return;
+      }
+      case "image": {
+        const width = num(id, "width", node.props.width);
+        const height = num(id, "height", node.props.height);
+        const [ax, ay] = ANCHOR_FACTORS[node.props.anchor ?? "top-left"];
+        ops.push({
+          type: "image",
+          id,
+          transform: matrix,
+          opacity,
+          src: str(id, "src", node.props.src),
+          width,
+          height,
+          offsetX: -width * ax,
+          offsetY: -height * ay,
         });
         return;
       }

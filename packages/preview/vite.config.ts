@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 
 const REPO_ROOT = resolve(__dirname, "..", "..");
@@ -37,7 +37,7 @@ const userScenesPlugin: Plugin = {
     if (id !== "\0reframe-user-scenes") return undefined;
     const entries = userScenes().map(
       (s) =>
-        `  { name: ${JSON.stringify(s.name)}, load: () => import(${JSON.stringify(`/@fs${s.path}`)}) },`,
+        `  { name: ${JSON.stringify(s.name)}, dir: ${JSON.stringify(dirname(s.path))}, load: () => import(${JSON.stringify(`/@fs${s.path}`)}) },`,
     );
     return `export const userScenes = [\n${entries.join("\n")}\n];\n`;
   },
@@ -45,6 +45,8 @@ const userScenesPlugin: Plugin = {
 
 export default defineConfig({
   plugins: [userScenesPlugin],
+  // relative image srcs in example scenes resolve against this directory
+  define: { __REFRAME_EXAMPLES_DIR__: JSON.stringify(EXAMPLES_DIR) },
   resolve: {
     // scene files outside the workspace still import "@reframe/core"
     alias: { "@reframe/core": resolve(REPO_ROOT, "packages", "core", "src", "index.ts") },

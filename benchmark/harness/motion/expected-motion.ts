@@ -35,6 +35,7 @@ function opPoints(op: DisplayOp): OpPoints {
   switch (op.type) {
     case "rect":
     case "ellipse":
+    case "image":
       local = [op.offsetX, op.offsetY, op.width, op.height];
       break;
     case "line": {

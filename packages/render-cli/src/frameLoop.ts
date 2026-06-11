@@ -5,6 +5,7 @@ import { build } from "esbuild";
 import { chromium, type Page } from "playwright";
 import type { SceneIR } from "@reframe/core";
 import { fontFaceCss } from "./fonts.js";
+import { buildImageAssets } from "./images.js";
 import { VCLOCK_SOURCE } from "./vclock.js";
 import "./reframeGlobal.js";
 
@@ -66,9 +67,12 @@ async function browserBundle(): Promise<string> {
 /** Render a reframe IR scene: evaluate(t) per frame inside the page, pull PNGs out. */
 export async function captureIr(
   ir: SceneIR,
-  opts: { fps?: number; duration?: number; framesDir: string },
+  opts: { fps?: number; duration?: number; framesDir: string; sceneDir?: string },
 ): Promise<CaptureResult> {
   await mkdir(opts.framesDir, { recursive: true });
+  // resolve + read image assets BEFORE the browser launches — a missing
+  // file fails here with the tried paths, not as an opaque page error
+  const assets = await buildImageAssets(ir, opts.sceneDir ?? process.cwd());
   const bundle = await browserBundle();
 
   return withPage(ir.size, async (page) => {
@@ -78,8 +82,8 @@ export async function captureIr(
     await injectFonts(page);
     await page.addScriptTag({ content: bundle });
     const info = await page.evaluate(
-      (sceneIr) => window.__reframe.init(sceneIr as never),
-      ir as unknown,
+      ([sceneIr, imageAssets]) => window.__reframe.init(sceneIr as never, imageAssets as never),
+      [ir, assets] as unknown[],
     );
 
     const fps = opts.fps ?? info.fps;

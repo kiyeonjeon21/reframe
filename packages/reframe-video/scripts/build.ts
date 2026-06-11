@@ -132,7 +132,7 @@ for (const f of ["main.ts", "panel.ts", "store.ts", "virtual.d.ts"]) {
 await writeFile(
   join(PKG, "preview", "vite.config.ts"),
   `import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 
 const PKG_ROOT = resolve(__dirname, "..");
@@ -164,7 +164,7 @@ const userScenesPlugin: Plugin = {
     if (id !== "\\0reframe-user-scenes") return undefined;
     const entries = userScenes().map(
       (s) =>
-        \`  { name: \${JSON.stringify(s.name)}, load: () => import(\${JSON.stringify(\`/@fs\${s.path}\`)}) },\`,
+        \`  { name: \${JSON.stringify(s.name)}, dir: \${JSON.stringify(dirname(s.path))}, load: () => import(\${JSON.stringify(\`/@fs\${s.path}\`)}) },\`,
     );
     return \`export const userScenes = [\\n\${entries.join("\\n")}\\n];\\n\`;
   },
@@ -172,6 +172,7 @@ const userScenesPlugin: Plugin = {
 
 export default defineConfig({
   plugins: [userScenesPlugin],
+  define: { __REFRAME_EXAMPLES_DIR__: '""' }, // packaged preview ships no examples
   resolve: {
     alias: {
       "@reframe/core": resolve(PKG_ROOT, "dist", "index.js"),

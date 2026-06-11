@@ -8,7 +8,21 @@
 import type { CompiledScene, DisplayList, SceneIR } from "@reframe/core";
 import { evaluate } from "@reframe/core";
 
-export function renderFrame(ctx: CanvasRenderingContext2D, compiled: CompiledScene, t: number): void {
+/**
+ * Decoded images keyed by the RAW src string from the IR (never a resolved
+ * path/URL — the DisplayList stays machine-independent). Consumers populate
+ * it before the first frame; a plain Map satisfies the interface.
+ */
+export interface ImageRegistry {
+  get(src: string): CanvasImageSource | undefined;
+}
+
+export function renderFrame(
+  ctx: CanvasRenderingContext2D,
+  compiled: CompiledScene,
+  t: number,
+  images?: ImageRegistry,
+): void {
   const { size, background } = compiled.ir;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, size.width, size.height);
@@ -16,10 +30,14 @@ export function renderFrame(ctx: CanvasRenderingContext2D, compiled: CompiledSce
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, size.width, size.height);
   }
-  drawDisplayList(ctx, evaluate(compiled, t));
+  drawDisplayList(ctx, evaluate(compiled, t), images);
 }
 
-export function drawDisplayList(ctx: CanvasRenderingContext2D, ops: DisplayList): void {
+export function drawDisplayList(
+  ctx: CanvasRenderingContext2D,
+  ops: DisplayList,
+  images?: ImageRegistry,
+): void {
   for (const op of ops) {
     ctx.save();
     ctx.setTransform(...op.transform);
@@ -74,6 +92,27 @@ export function drawDisplayList(ctx: CanvasRenderingContext2D, ops: DisplayList)
         ctx.lineWidth = op.strokeWidth;
         ctx.lineCap = "round";
         ctx.stroke();
+        break;
+      }
+      case "image": {
+        const img = images?.get(op.src);
+        if (img) {
+          ctx.drawImage(img, op.offsetX, op.offsetY, op.width, op.height);
+        } else {
+          // never throw: the preview reaches this while a src loads or when
+          // it 404s — render an unmistakable placeholder instead
+          ctx.fillStyle = "#2A2A30";
+          ctx.fillRect(op.offsetX, op.offsetY, op.width, op.height);
+          ctx.strokeStyle = "#FF00FF";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(op.offsetX, op.offsetY, op.width, op.height);
+          ctx.beginPath();
+          ctx.moveTo(op.offsetX, op.offsetY);
+          ctx.lineTo(op.offsetX + op.width, op.offsetY + op.height);
+          ctx.moveTo(op.offsetX + op.width, op.offsetY);
+          ctx.lineTo(op.offsetX, op.offsetY + op.height);
+          ctx.stroke();
+        }
         break;
       }
       case "text": {

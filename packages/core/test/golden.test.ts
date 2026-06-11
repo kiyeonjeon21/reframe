@@ -12,8 +12,9 @@ import chartBuildup from "../../../examples/scenes/chart-buildup.js";
 import kineticTypo from "../../../examples/scenes/kinetic-typo.js";
 import logoReveal from "../../../examples/scenes/logo-reveal.js";
 import transition from "../../../examples/scenes/transition.js";
+import glyphReveal from "../../../examples/scenes/glyph-reveal.js";
 
-const scenes: SceneIR[] = [lowerThird, chartBuildup, kineticTypo, logoReveal, transition];
+const scenes: SceneIR[] = [lowerThird, chartBuildup, kineticTypo, logoReveal, transition, glyphReveal];
 
 describe("example scenes golden snapshots", () => {
   for (const s of scenes) {

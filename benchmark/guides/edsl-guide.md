@@ -34,6 +34,11 @@ Factories return plain data. Every node needs a unique `id`.
   `content` may be a number; numeric content interpolates (count-up) and renders
   via `toFixed(contentDecimals ?? 0)`. For a "8.2"-style label, set
   `contentDecimals: 1`.
+- `image({ id, src, x, y, width, height, opacity?, rotation?, scale?, anchor? })` —
+  `src` is a file path, absolute or relative to the scene file; drawn stretched
+  to `width`×`height` (png/jpg/webp). `src` switches discretely (no crossfade) —
+  for hard-cut frame sequences stack image nodes and step their `opacity`; for
+  a dissolve, crossfade two nodes' opacity.
 - `group({ id, x, y, opacity?, rotation?, scale?, anchor? }, children)` — children's
   coordinates are relative to the group; group opacity/transform multiply down.
 

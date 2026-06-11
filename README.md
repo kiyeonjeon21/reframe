@@ -54,6 +54,8 @@ tweak in the preview.**
 | [`bloom.ts`](examples/scenes/bloom.ts) — 300 dots on a golden-angle spiral: radial bloom, traveling breath wave, chromatic ripple, vortex collapse | [`wavefield.ts`](examples/scenes/wavefield.ts) — physical interference: 1,152 phase-shifted oscillators on a 32×18 grid, second ripple source joins mid-scene |
 | ![Orbit](docs/assets/orbit.gif) | ![Typewave](docs/assets/typewave.gif) |
 | [`orbit.ts`](examples/scenes/orbit.ts) — nested transform composition: moons orbit planets orbit a sun, the whole system tilts — three nested groups, three linear tweens | [`typewave.ts`](examples/scenes/typewave.ts) — character-level kinetic type: cascade, standing wave, shatter with spin, and a second phrase assembling from the debris |
+| ![Glyph reveal](docs/assets/glyph-reveal.gif) | |
+| [`glyph-reveal.ts`](examples/scenes/glyph-reveal.ts) — the archival stop-motion format: AI-generated plates as `image` nodes, ~7fps hard cuts, push-in, camera shake, a tick per cut. Swap any plate from an overlay or batch row: `nodes.frame-3.src` | |
 
 ## Why not just Hyperframes / Remotion?
 

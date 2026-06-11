@@ -6,7 +6,7 @@
 
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import type { OverlayDoc } from "@reframe/core";
 import {
   compileScene,
@@ -90,6 +90,7 @@ async function main() {
     }
     result = await captureIr(ir, {
       framesDir,
+      sceneDir: dirname(args.input),
       ...(args.fps !== undefined && { fps: args.fps }),
       ...(args.duration !== undefined && { duration: args.duration }),
     });

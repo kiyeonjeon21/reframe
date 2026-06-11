@@ -5,7 +5,7 @@
  * path never uses wall-clock time.
  */
 
-import { evaluate, type DisplayOp, type SceneIR } from "@reframe/core";
+import { collectImageSrcs, evaluate, type DisplayOp, type SceneIR } from "@reframe/core";
 import { renderFrame } from "@reframe/renderer-canvas";
 import { userScenes } from "virtual:reframe-user-scenes";
 import { buildPanel } from "./panel.js";
@@ -13,17 +13,23 @@ import { EditorStore } from "./store.js";
 
 interface SceneEntry {
   label: string;
+  /** Absolute directory of the scene file — relative image srcs resolve here. */
+  dir: string;
   load: () => Promise<{ default: SceneIR }>;
 }
 
 const exampleModules = import.meta.glob<{ default: SceneIR }>("../../../examples/scenes/*.ts");
 const modules: Record<string, SceneEntry> = {};
 for (const path of Object.keys(exampleModules).sort()) {
-  modules[path] = { label: path.split("/").pop()!.replace(".ts", ""), load: exampleModules[path]! };
+  modules[path] = {
+    label: path.split("/").pop()!.replace(".ts", ""),
+    dir: __REFRAME_EXAMPLES_DIR__,
+    load: exampleModules[path]!,
+  };
 }
 // scenes from the directory `reframe preview` was invoked in
-for (const { name, load } of userScenes) {
-  modules[`user:${name}`] ??= { label: `${name} (cwd)`, load };
+for (const { name, dir, load } of userScenes) {
+  modules[`user:${name}`] ??= { label: `${name} (cwd)`, dir, load };
 }
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
@@ -47,9 +53,43 @@ for (const [key, entry] of Object.entries(modules)) {
   select.appendChild(option);
 }
 
+// decoded images keyed by raw src; missing entries render as a placeholder
+const images = new Map<string, CanvasImageSource>();
+const imageLoads = new Map<string, Promise<void>>();
+let sceneDir = "";
+
+/** Load any not-yet-loaded srcs of the current scene via /@fs. */
+function ensureImages(): Promise<void> {
+  if (!store) return Promise.resolve();
+  const pending: Promise<void>[] = [];
+  for (const src of collectImageSrcs(store.compiled.ir)) {
+    if (images.has(src) || imageLoads.has(src)) continue;
+    const url = `/@fs${src.startsWith("/") ? src : `${sceneDir}/${src}`}`;
+    const load = new Promise<void>((done) => {
+      const img = new Image();
+      img.onload = () => {
+        images.set(src, img);
+        done();
+        draw();
+      };
+      img.onerror = () => {
+        console.warn(`image "${src}" failed to load (${url}) — rendering placeholder`);
+        done();
+      };
+      img.src = url;
+    });
+    imageLoads.set(src, load);
+    pending.push(load);
+  }
+  return Promise.all(pending).then(() => undefined);
+}
+
 async function loadScene(path: string) {
   const mod = await modules[path]!.load();
   store = new EditorStore(mod.default);
+  sceneDir = modules[path]!.dir;
+  images.clear();
+  imageLoads.clear();
   (window as unknown as { __store: EditorStore }).__store = store; // debug/testing hook
   panel = buildPanel(store, panelRoot);
   canvas.width = store.compiled.ir.size.width;
@@ -58,9 +98,11 @@ async function loadScene(path: string) {
     t = Math.min(t, store!.compiled.duration);
     if (kind === "structure") panel!.rebuild();
     else panel!.refreshReport();
+    void ensureImages(); // an edited src loads lazily, then redraws
     draw();
   });
   await document.fonts.ready;
+  await ensureImages();
   t = 0;
   panel.rebuild();
   draw();
@@ -73,7 +115,8 @@ function applyMat(m: number[], x: number, y: number): [number, number] {
 function opCorners(op: DisplayOp): [number, number][] {
   switch (op.type) {
     case "rect":
-    case "ellipse": {
+    case "ellipse":
+    case "image": {
       const { offsetX: x, offsetY: y, width: w, height: h } = op;
       return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]].map(([px, py]) =>
         applyMat(op.transform, px!, py!),
@@ -96,7 +139,7 @@ function opCorners(op: DisplayOp): [number, number][] {
 
 function draw() {
   if (!store) return;
-  renderFrame(ctx, store.compiled, t);
+  renderFrame(ctx, store.compiled, t, images);
 
   if (store.selectedId) {
     const ops = evaluate(store.compiled, t).filter((op) => op.id === store!.selectedId);

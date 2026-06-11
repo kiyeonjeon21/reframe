@@ -24,3 +24,4 @@ export {
 } from "./evaluate.js";
 export { resolveEase, lerpValue, isColor, EASE_NAMES } from "./interpolate.js";
 export { sampleBehavior } from "./behaviors.js";
+export { collectImageSrcs } from "./assets.js";

@@ -55,6 +55,13 @@ to handle explicitly:
 - **Motion check**: `npx -y reframe-video motion out/<name>.mp4` prints a
   calibrated motion profile (speeds, static fraction, discontinuities) —
   useful to verify a vague request like "make it more dynamic" objectively.
+- **Image sequences** (the "glyph reveal" / stop-motion format): generated
+  stills become `image` nodes stacked in painter's order; hard cuts are
+  0.01s opacity steps every ~0.15s, a slow camera-group scale tween adds the
+  push-in, `wiggle` adds shake, and a label per cut anchors a tick sfx.
+  Keep frame ids stable (`frame-0..N`) so the user can swap any plate via
+  overlay or batch row (`nodes.frame-3.src`). Image `src` paths resolve
+  relative to the scene file.
 
 ## Verification habits
 
