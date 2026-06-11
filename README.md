@@ -40,6 +40,19 @@ render: deterministic mp4 (same input → byte-identical frames)   ◀── ove
 Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks,
 no randomness without a seed, scrubbing and distributed rendering for free.
 
+## Generative choreography at scale
+
+![Bloom: 300 dots on a golden-angle spiral — bloom, traveling wave, chromatic ripple, vortex collapse](docs/assets/bloom.gif)
+
+[`examples/scenes/bloom.ts`](examples/scenes/bloom.ts): **300 dots** on a
+golden-angle spiral bloom out 6ms apart, breathe as a phase-shifted traveling
+wave, get washed by a radial color ripple, and collapse into a vortex —
+~120 lines, because host TypeScript *generates* the nodes, the 300-entry
+states, and the per-dot phase-shifted behaviors. Hand-rolling this timeline
+in GSAP or per-element `interpolate()` math in React is the hard way; and
+unlike either, the output here is still data — **every one of the 300 dots
+keeps a stable id you can tweak in the preview.**
+
 ## Why not just Hyperframes / Remotion?
 
 Because their output is arbitrary HTML/React — great to generate once,
