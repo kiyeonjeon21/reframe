@@ -154,20 +154,16 @@ export default scene({
       { at: "accent-in", sfx: "tick", gain: 0.4 },
       { at: "shatter", sfx: "whoosh", gain: 0.95 },
       { at: "shatter", offset: 0.18, sfx: "thud", gain: 0.55 },
-      // The assembly is not typing — glyphs glide in and LOCK. One rise
-      // carries the glide; each glyph gets a soft snap at its landing
-      // (~0.35s into its easeOutExpo flight), not at launch.
-      { at: "assemble", sfx: "rise", gain: 0.5 },
-      ...P2.flatMap((g, i): AudioCueIR[] =>
-        g.ch === " "
-          ? []
-          : [{
-              at: "assemble" as const,
-              offset: i * 0.05 + 0.35,
-              file: `click_00${[2, 4, 2, 4, 2][i % 5]}.ogg`,
-              gain: 0.3 + 0.15 * rand(i, 32),
-            }],
-      ),
+      // The assembly is ONE gesture, not seventeen hits — any regular click
+      // train at this rate reads as typing regardless of timbre. So: a rise
+      // carries the glide, three sparse low ticks mark early letters locking,
+      // and a single decisive lock lands when the LAST glyph settles.
+      { at: "assemble", sfx: "rise", gain: 0.55 },
+      { at: "assemble", offset: 0.5, sfx: "tick", gain: 0.25 },
+      { at: "assemble", offset: 0.85, sfx: "tick", gain: 0.3 },
+      { at: "assemble", offset: 1.1, sfx: "tick", gain: 0.35 },
+      { at: "assemble", offset: 1.35, file: "confirmation_001.ogg", gain: 0.65 }, // the lock-in
+      { at: "assemble", offset: 1.35, sfx: "thud", gain: 0.35 },
       { at: "hold", sfx: "shimmer", gain: 0.55 },
     ],
   },
