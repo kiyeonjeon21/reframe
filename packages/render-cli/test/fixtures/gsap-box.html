@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage { position: relative; width: 480px; height: 270px; background: #101014; overflow: hidden; }
+  #box { position: absolute; left: 20px; top: 100px; width: 60px; height: 60px; background: #ff4d00; border-radius: 8px; }
+  #counter { position: absolute; left: 20px; top: 20px; color: #fff; font: 700 24px monospace; }
+  #dot { position: absolute; top: 200px; width: 16px; height: 16px; border-radius: 50%; background: #3b82f6; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="box"></div>
+  <div id="counter">0</div>
+  <div id="dot"></div>
+</div>
+<script src="../../../../benchmark/vendor/gsap.min.js"></script>
+<script>
+  // GSAP timeline (driven by rAF + performance.now under the hood)
+  gsap.timeline()
+    .to("#box", { x: 380, rotation: 180, duration: 0.6, ease: "power2.out" })
+    .to("#box", { y: -60, duration: 0.3, ease: "power1.inOut" });
+
+  // setInterval-driven counter
+  let n = 0;
+  const counter = document.getElementById("counter");
+  setInterval(() => { counter.textContent = String(++n); }, 100);
+
+  // hand-rolled rAF animation using performance.now
+  const dot = document.getElementById("dot");
+  const t0 = performance.now();
+  function step(now) {
+    const t = (now - t0) / 1000;
+    dot.style.left = `${20 + 420 * (0.5 - 0.5 * Math.cos(t * Math.PI))}px`;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+</script>
+</body>
+</html>

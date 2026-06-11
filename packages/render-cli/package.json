@@ -1,0 +1,23 @@
+{
+  "name": "@reframe/render-cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "reframe-render": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@reframe/core": "workspace:*",
+    "@reframe/renderer-canvas": "workspace:*",
+    "esbuild": "^0.27.0",
+    "playwright": "^1.60.0",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}

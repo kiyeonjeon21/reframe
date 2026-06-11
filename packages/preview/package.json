@@ -1,0 +1,17 @@
+{
+  "name": "@reframe/preview",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@reframe/core": "workspace:*",
+    "@reframe/renderer-canvas": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
