@@ -7,6 +7,7 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 ## Commands
 
 - `pnpm reframe render <scene.ts|.html> [--overlay f] [-o out]` — mp4 into `out/`
+- `pnpm reframe batch <scene.ts> <data.json|csv>` — one mp4 per row (row keys are overlay addresses like `nodes.<id>.<prop>`)
 - `pnpm reframe preview` / `new <name>` / `motion <mp4>` / `guide [--regen]` / `demo`
 - `pnpm test` (vitest), `pnpm typecheck`
 

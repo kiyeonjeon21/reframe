@@ -21,6 +21,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { SceneIR } from "@reframe/core";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const USER_CWD = process.env.INIT_CWD ?? process.cwd();
@@ -31,6 +32,7 @@ const USAGE = `reframe — declarative motion graphics
 
 usage:
   pnpm reframe render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S]
+  pnpm reframe batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
   pnpm reframe preview                 open the scrub/edit UI (scenes from examples/scenes/)
   pnpm reframe new <scene-name>        scaffold examples/scenes/<scene-name>.ts
   pnpm reframe motion <mp4|framesDir>  motion-profile a rendered clip
@@ -159,6 +161,59 @@ async function main() {
         outArgs[i - 1] === "--overlay" || outArgs[i - 1] === "-o" ? userPath(a) : a,
       );
       process.exit(await run("npx", ["tsx", RENDER_CLI, mode, inputPath, ...outArgs]));
+    }
+
+    case "batch": {
+      const [sceneArg, dataArg, ...flags] = rest;
+      if (!sceneArg || !dataArg) fail("usage: pnpm reframe batch <scene.ts> <data.json|csv> [...]");
+      const scenePath = userPath(sceneArg);
+      const dataPath = userPath(dataArg);
+      for (const p of [scenePath, dataPath]) if (!existsSync(p)) fail(`no such file: ${p}`);
+      preflightFfmpeg();
+
+      let outDir = join(ROOT, "out", "batch");
+      let concurrency = 3;
+      let fps: number | undefined;
+      const baseOverlayPaths: string[] = [];
+      for (let i = 0; i < flags.length; i++) {
+        if (flags[i] === "-o") outDir = userPath(flags[++i]!);
+        else if (flags[i] === "--overlay") baseOverlayPaths.push(userPath(flags[++i]!));
+        else if (flags[i] === "--concurrency") concurrency = Number(flags[++i]);
+        else if (flags[i] === "--fps") fps = Number(flags[++i]);
+        else fail(`unknown flag ${flags[i]}`);
+      }
+
+      const { loadRows, runBatch } = await import("./batch.js");
+      const { pathToFileURL } = await import("node:url");
+      const { readFile } = await import("node:fs/promises");
+      const scene = ((await import(pathToFileURL(scenePath).href)) as { default: SceneIR }).default;
+      if (!scene) fail(`${scenePath} must default-export a scene`);
+      const baseOverlays = await Promise.all(
+        baseOverlayPaths.map(async (p) => JSON.parse(await readFile(p, "utf8"))),
+      );
+      const rows = await loadRows(dataPath);
+      if (rows.length === 0) fail(`${dataPath}: no data rows`);
+      console.log(`batch: ${rows.length} rows × ${concurrency} workers → ${outDir}`);
+
+      const results = await runBatch(scene, rows, {
+        outDir,
+        baseOverlays,
+        concurrency,
+        ...(fps !== undefined && { fps }),
+        onRow: (r) => {
+          if (r.error) console.error(`  ✗ ${r.name}: ${r.error.split("\n")[0]}`);
+          else if (r.orphans.length > 0) {
+            console.warn(`  ! ${r.name}: rendered with ${r.orphans.length} orphaned edit(s)`);
+            for (const o of r.orphans) console.warn(`      ${o.address}: ${o.reason}`);
+          } else console.log(`  ✓ ${r.name} (${r.applied} edits)`);
+        },
+      });
+      const failed = results.filter((r) => r.error).length;
+      const orphaned = results.filter((r) => !r.error && r.orphans.length > 0).length;
+      console.log(
+        `\n${results.length - failed} rendered (${orphaned} with orphans), ${failed} failed — report: ${join(outDir, "batch-report.json")}`,
+      );
+      process.exit(failed > 0 ? 1 : 0);
     }
 
     case "preview":

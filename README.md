@@ -65,6 +65,29 @@ the project's core claim, reproducible in one command. (Measured with real
 agents: 100% id/state/label retention across 8 regenerations —
 `benchmark/regen/REGEN-ANALYSIS.md`.)
 
+## Batch rendering: data in, videos out
+
+A scene is a template; every data row becomes an overlay. Row keys are
+overlay addresses — no new schema:
+
+```jsonc
+// examples/data/team.json
+[{ "_name": "alice",
+   "nodes.name.content": "Alice Park",
+   "nodes.role.content": "Chief Technology Officer",
+   "nodes.bar.fill": "#00C2A8" }, ...]
+```
+
+```bash
+pnpm reframe batch examples/scenes/lower-third.ts examples/data/team.json
+# → out/batch/alice.mp4, ben.mp4, ... + batch-report.json
+```
+
+Rows render in parallel; a row with a bad address renders with a loud orphan
+warning instead of killing the batch. CSV works too (headers = addresses).
+This is N-personalized deterministic videos from one template — the workflow
+real-time runtimes like Rive structurally don't cover.
+
 ## Writing a scene
 
 ```ts
@@ -106,6 +129,7 @@ the workspace import of `@reframe/core` both resolve.
 | command | what it does |
 |---|---|
 | `pnpm reframe render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; output defaults to `out/`) |
+| `pnpm reframe batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (rows = overlays), parallel, with a per-row report |
 | `pnpm reframe preview` | scrub/play/edit UI; edits export as overlay JSON |
 | `pnpm reframe new <name>` | scaffold a documented starter scene |
 | `pnpm reframe motion <mp4\|framesDir>` | calibrated motion profile (speeds, easing, discontinuities) |

@@ -1,0 +1,33 @@
+[
+  {
+    "_name": "alice",
+    "nodes.name.content": "Alice Park",
+    "nodes.role.content": "Chief Technology Officer",
+    "nodes.bar.fill": "#00C2A8"
+  },
+  {
+    "_name": "ben",
+    "nodes.name.content": "Ben Okafor",
+    "nodes.role.content": "Head of Design",
+    "nodes.bar.fill": "#7C5CFF"
+  },
+  {
+    "_name": "chloe",
+    "nodes.name.content": "Chloe Tanaka",
+    "nodes.role.content": "Engineering Lead",
+    "nodes.bar.fill": "#F59E0B"
+  },
+  {
+    "_name": "dmitri",
+    "nodes.name.content": "Dmitri Volkov",
+    "nodes.role.content": "Product Manager",
+    "nodes.bar.fill": "#3B82F6"
+  },
+  {
+    "_name": "broken-row",
+    "nodes.nonexistent.fill": "#FF0000",
+    "nodes.name.content": "Eve Martinez",
+    "nodes.role.content": "Data Scientist",
+    "nodes.bar.fill": "#E11D48"
+  }
+]
