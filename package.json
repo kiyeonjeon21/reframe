@@ -1,0 +1,15 @@
+{
+  "name": "reframe-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "pnpm -r --no-bail exec tsc --noEmit",
+    "test": "vitest run",
+    "render": "pnpm --filter @reframe/render-cli start",
+    "preview": "pnpm --filter @reframe/preview dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

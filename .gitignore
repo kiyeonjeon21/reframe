@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tsbuildinfo
+out/
+frames/
+benchmark/runs/**/*.mp4
+benchmark/runs/**/frames/
+.DS_Store

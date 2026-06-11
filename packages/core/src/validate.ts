@@ -1,0 +1,116 @@
+/**
+ * Scene validation with actionable error messages — these errors are the
+ * feedback loop for LLM-generated scenes, so they name the exact location
+ * and suggest what valid input looks like.
+ */
+
+import type { NodeIR, SceneIR, TimelineIR } from "./ir.js";
+
+const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "anchor"];
+const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
+  rect: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth", "radius"],
+  ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
+  line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress"],
+  text: [...COMMON_PROPS, "content", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
+  group: COMMON_PROPS,
+};
+
+export class SceneValidationError extends Error {
+  constructor(public problems: string[]) {
+    super(`Scene validation failed:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
+    this.name = "SceneValidationError";
+  }
+}
+
+export function validateScene(ir: SceneIR): void {
+  const problems: string[] = [];
+  const nodeById = new Map<string, NodeIR>();
+
+  const collect = (nodes: NodeIR[]) => {
+    for (const node of nodes) {
+      if (nodeById.has(node.id)) {
+        problems.push(`duplicate node id "${node.id}" — every node id must be unique`);
+      }
+      nodeById.set(node.id, node);
+      if (node.type === "group") collect(node.children);
+    }
+  };
+  collect(ir.nodes);
+
+  const checkProps = (where: string, nodeId: string, props: Record<string, unknown>) => {
+    const node = nodeById.get(nodeId);
+    if (!node) {
+      problems.push(
+        `${where} targets unknown node "${nodeId}" — known ids: ${[...nodeById.keys()].join(", ")}`,
+      );
+      return;
+    }
+    const allowed = PROPS_BY_TYPE[node.type];
+    for (const key of Object.keys(props)) {
+      if (!allowed.includes(key)) {
+        problems.push(
+          `${where}: "${key}" is not a prop of ${node.type} "${nodeId}" — valid props: ${allowed.join(", ")}`,
+        );
+      }
+    }
+  };
+
+  const states = ir.states ?? {};
+  for (const [stateName, overrides] of Object.entries(states)) {
+    for (const [nodeId, props] of Object.entries(overrides)) {
+      checkProps(`state "${stateName}"`, nodeId, props);
+    }
+  }
+
+  if (ir.initial !== undefined && !(ir.initial in states)) {
+    problems.push(
+      `initial state "${ir.initial}" is not defined — defined states: ${Object.keys(states).join(", ") || "(none)"}`,
+    );
+  }
+
+  const checkTimeline = (tl: TimelineIR, path: string) => {
+    switch (tl.kind) {
+      case "seq":
+      case "par":
+        tl.children.forEach((c, i) => checkTimeline(c, `${path}.${tl.kind}[${i}]`));
+        break;
+      case "stagger":
+        if (tl.interval < 0) problems.push(`${path}: stagger interval must be >= 0`);
+        tl.children.forEach((c, i) => checkTimeline(c, `${path}.stagger[${i}]`));
+        break;
+      case "to":
+        if (!(tl.state in states)) {
+          problems.push(
+            `${path}: to("${tl.state}") references an undefined state — defined states: ${Object.keys(states).join(", ") || "(none)"}`,
+          );
+        }
+        if (tl.duration !== undefined && tl.duration <= 0) {
+          problems.push(`${path}: to("${tl.state}") duration must be > 0`);
+        }
+        for (const id of tl.filter ?? []) {
+          if (!nodeById.has(id)) problems.push(`${path}: filter contains unknown node "${id}"`);
+        }
+        break;
+      case "tween":
+        checkProps(path, tl.target, tl.props);
+        if (tl.duration !== undefined && tl.duration <= 0) {
+          problems.push(`${path}: tween duration must be > 0`);
+        }
+        break;
+      case "wait":
+        if (tl.duration < 0) problems.push(`${path}: wait duration must be >= 0`);
+        break;
+    }
+  };
+  if (ir.timeline) checkTimeline(ir.timeline, "timeline");
+
+  for (const [i, b] of (ir.behaviors ?? []).entries()) {
+    checkProps(`behaviors[${i}]`, b.target, { [b.prop]: 0 });
+  }
+
+  if (ir.duration !== undefined && ir.duration <= 0) {
+    problems.push("scene duration must be > 0");
+  }
+
+  if (problems.length > 0) throw new SceneValidationError(problems);
+}
