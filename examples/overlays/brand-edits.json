@@ -10,6 +10,9 @@
     "hidden": { "tagline": { "y": 260 } },
     "revealed": { "tagline": { "y": 230 } }
   },
+  "timeline": {
+    "reveal": { "duration": 1.4, "ease": "easeOutCubic" }
+  },
   "behaviors": {
     "set": [
       {

@@ -84,8 +84,8 @@ export default scene({
 
   timeline: seq(
     wait(0.2),
-    to("revealed", { duration: 0.9, ease: "easeOutExpo", stagger: 0.1 }),
-    wait(2.0),
+    to("revealed", { duration: 0.9, ease: "easeOutExpo", stagger: 0.1, label: "reveal" }),
+    wait(2.0, "hold"),
     par(
       tween("lockup", { opacity: 0 }, { duration: 0.6, ease: "easeInQuad" }),
       tween("lockup", { x: 1040 }, { duration: 0.6, ease: "easeInCubic" }),

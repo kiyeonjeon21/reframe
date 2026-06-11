@@ -83,7 +83,7 @@ export function stagger(interval: number, ...children: TimelineIR[]): TimelineIR
 
 export function to(
   state: string,
-  opts: { duration?: number; ease?: Ease; stagger?: number; filter?: string[] } = {},
+  opts: { duration?: number; ease?: Ease; stagger?: number; filter?: string[]; label?: string } = {},
 ): TimelineIR {
   return { kind: "to", state, ...opts };
 }
@@ -91,13 +91,13 @@ export function to(
 export function tween(
   target: string,
   props: Record<string, PropValue>,
-  opts: { duration?: number; ease?: Ease } = {},
+  opts: { duration?: number; ease?: Ease; label?: string } = {},
 ): TimelineIR {
   return { kind: "tween", target, props, ...opts };
 }
 
-export function wait(duration: number): TimelineIR {
-  return { kind: "wait", duration };
+export function wait(duration: number, label?: string): TimelineIR {
+  return { kind: "wait", duration, ...(label !== undefined && { label }) };
 }
 
 export interface BehaviorWindow {

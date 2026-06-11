@@ -9,7 +9,8 @@
  * behavior this module must never have.
  */
 
-import type { BehaviorIR, NodeIR, PropValue, SceneIR } from "./ir.js";
+import { compileScene } from "./compile.js";
+import type { BehaviorIR, Ease, NodeIR, PropValue, SceneIR, TimelineIR } from "./ir.js";
 import { PROPS_BY_TYPE, validateScene } from "./validate.js";
 
 export interface OverlayDoc {
@@ -30,6 +31,11 @@ export interface OverlayDoc {
   };
   /** Complete nodes appended at the scene root, owned by this overlay. */
   addNodes?: NodeIR[];
+  /**
+   * Parameter patches on labeled timeline steps. Patchable per kind:
+   * to -> duration/ease/stagger, tween -> duration/ease, wait -> duration.
+   */
+  timeline?: Record<string, { duration?: number; ease?: Ease; stagger?: number }>;
 }
 
 export interface ComposeReport {
@@ -184,6 +190,54 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
       if (index >= 0) ir.behaviors[index] = structuredClone(behavior);
       else ir.behaviors.push(structuredClone(behavior));
       applied(`behaviors.${behavior.target}.${behavior.prop}`, "behavior-set");
+    }
+  }
+
+  // --- timeline patches addressed by stable step labels ---
+  if (overlay.timeline) {
+    const byLabel = new Map<string, TimelineIR>();
+    const walkTimeline = (tl: TimelineIR) => {
+      if ("label" in tl && tl.label !== undefined) byLabel.set(tl.label, tl);
+      if ("children" in tl) tl.children.forEach(walkTimeline);
+    };
+    if (ir.timeline) walkTimeline(ir.timeline);
+
+    const PATCHABLE: Record<string, string[]> = {
+      to: ["duration", "ease", "stagger"],
+      tween: ["duration", "ease"],
+      wait: ["duration"],
+    };
+
+    let timingPatched = false;
+    for (const [label, patch] of Object.entries(overlay.timeline)) {
+      const step = byLabel.get(label);
+      if (!step) {
+        orphan(
+          `timeline.${label}`,
+          `unknown timeline label "${label}" — known labels: ${[...byLabel.keys()].join(", ") || "(none)"}; did the base regeneration drop it?`,
+        );
+        continue;
+      }
+      const allowed = PATCHABLE[step.kind] ?? [];
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === undefined) continue;
+        if (!allowed.includes(key)) {
+          orphan(
+            `timeline.${label}.${key}`,
+            `"${key}" is not patchable on a ${step.kind} step — patchable: ${allowed.join(", ")}`,
+          );
+          continue;
+        }
+        (step as unknown as Record<string, unknown>)[key] = value;
+        applied(`timeline.${label}.${key}`, "set");
+        if (key === "duration" || key === "stagger") timingPatched = true;
+      }
+    }
+    // scene() bakes the inferred duration into ir.duration, so a patched step
+    // duration leaves it stale. Re-infer unless this overlay pins it explicitly.
+    if (timingPatched && overlay.scene?.duration === undefined) {
+      delete ir.duration;
+      ir.duration = compileScene(ir).duration;
     }
   }
 

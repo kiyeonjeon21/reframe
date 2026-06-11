@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { composeScene, type OverlayDoc } from "../src/compose.js";
 import { compileScene } from "../src/compile.js";
-import { scene, group, rect, text, seq, to, tween, oscillate } from "../src/dsl.js";
+import { scene, group, rect, text, seq, to, tween, wait, oscillate } from "../src/dsl.js";
 import { evaluate } from "../src/evaluate.js";
 import { SceneValidationError } from "../src/validate.js";
 
@@ -21,7 +21,11 @@ const baseScene = () =>
       shown: { plate: { opacity: 1 }, label: { opacity: 1, y: 0 } },
     },
     initial: "hidden",
-    timeline: seq(to("shown", { duration: 1 })),
+    timeline: seq(
+      to("shown", { duration: 1, label: "reveal" }),
+      wait(2, "hold"),
+      tween("plate", { opacity: 0 }, { duration: 0.5, label: "exit" }),
+    ),
     behaviors: [oscillate("lockup", "y", { amplitude: 5, frequency: 1 })],
   });
 
@@ -201,6 +205,75 @@ describe("multi-layer composition", () => {
     expect(
       (ir.behaviors![0]!.behavior as { params: { amplitude: number } }).params.amplitude,
     ).toBe(20);
+  });
+});
+
+describe("timeline patches via labels", () => {
+  it("patches a to-step's duration and re-infers the scene length", () => {
+    const base = baseScene();
+    expect(base.duration).toBe(3.5); // 1 + 2 + 0.5
+    const { ir, report } = composeScene(
+      base,
+      overlay({ timeline: { reveal: { duration: 2, ease: "easeOutExpo" }, hold: { duration: 1 } } }),
+    );
+    expect(compileScene(ir).duration).toBe(3.5); // 2 + 1 + 0.5
+    expect(ir.duration).toBe(3.5);
+    expect(report.applied.map((a) => a.address).sort()).toEqual([
+      "timeline.hold.duration",
+      "timeline.reveal.duration",
+      "timeline.reveal.ease",
+    ]);
+  });
+
+  it("does not re-infer when the same overlay pins scene.duration", () => {
+    const { ir } = composeScene(
+      baseScene(),
+      overlay({ scene: { duration: 10 }, timeline: { hold: { duration: 0.1 } } }),
+    );
+    expect(ir.duration).toBe(10);
+  });
+
+  it("orphans unknown labels with the known-labels list", () => {
+    const { report } = composeScene(
+      baseScene(),
+      overlay({ timeline: { intro: { duration: 1 } } }),
+    );
+    expect(report.orphans[0]!.address).toBe("timeline.intro");
+    expect(report.orphans[0]!.reason).toMatch(/known labels: reveal, hold, exit/);
+  });
+
+  it("orphans keys not patchable on the step kind, per key", () => {
+    const { report } = composeScene(
+      baseScene(),
+      overlay({ timeline: { exit: { duration: 1, stagger: 0.1 }, hold: { ease: "linear" } } }),
+    );
+    expect(report.orphans.map((o) => o.address).sort()).toEqual([
+      "timeline.exit.stagger",
+      "timeline.hold.ease",
+    ]);
+    expect(report.orphans[0]!.reason).toMatch(/not patchable on a/);
+    expect(report.applied.map((a) => a.address)).toEqual(["timeline.exit.duration"]);
+  });
+
+  it("rejects duplicate labels at scene authoring time", () => {
+    expect(() =>
+      scene({
+        id: "t",
+        size: { width: 100, height: 100 },
+        nodes: [rect({ id: "a", x: 0, y: 0, width: 1, height: 1 })],
+        timeline: seq(wait(1, "x"), wait(1, "x")),
+      }),
+    ).toThrowError(/duplicate timeline label "x"/);
+  });
+
+  it("timeline patches survive overlay JSON round-trips", () => {
+    const doc = overlay({ timeline: { reveal: { duration: 1.5 } } });
+    const direct = composeScene(baseScene(), doc).ir;
+    const roundTripped = composeScene(
+      baseScene(),
+      JSON.parse(JSON.stringify(doc)) as OverlayDoc,
+    ).ir;
+    expect(roundTripped).toEqual(direct);
   });
 });
 

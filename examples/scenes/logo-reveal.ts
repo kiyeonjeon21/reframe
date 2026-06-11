@@ -70,8 +70,8 @@ export default scene({
   initial: "hidden",
 
   timeline: seq(
-    to("revealed", { duration: 0.7, ease: "easeOutExpo", stagger: 0.12 }),
-    wait(2.2),
+    to("revealed", { duration: 0.7, ease: "easeOutExpo", stagger: 0.12, label: "reveal" }),
+    wait(2.2, "hold"),
     par(
       tween("lockup", { opacity: 0 }, { duration: 0.5, ease: "easeInQuad" }),
       tween("lockup", { scale: 1.06 }, { duration: 0.5, ease: "easeInCubic" }),

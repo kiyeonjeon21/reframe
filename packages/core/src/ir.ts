@@ -124,6 +124,8 @@ export type TimelineIR =
       stagger?: number;
       /** Restrict the transition to these node ids. */
       filter?: string[];
+      /** Stable address for overlay timeline patches; must be unique. */
+      label?: string;
     }
   | {
       kind: "tween";
@@ -131,8 +133,9 @@ export type TimelineIR =
       props: Record<string, PropValue>;
       duration?: number;
       ease?: Ease;
+      label?: string;
     }
-  | { kind: "wait"; duration: number };
+  | { kind: "wait"; duration: number; label?: string };
 
 export interface BehaviorIR {
   target: string;

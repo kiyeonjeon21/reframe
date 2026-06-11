@@ -68,7 +68,16 @@ export function validateScene(ir: SceneIR): void {
     );
   }
 
+  const labels = new Set<string>();
   const checkTimeline = (tl: TimelineIR, path: string) => {
+    if ("label" in tl && tl.label !== undefined) {
+      if (labels.has(tl.label)) {
+        problems.push(
+          `${path}: duplicate timeline label "${tl.label}" — labels are overlay addresses and must be unique`,
+        );
+      }
+      labels.add(tl.label);
+    }
     switch (tl.kind) {
       case "seq":
       case "par":
