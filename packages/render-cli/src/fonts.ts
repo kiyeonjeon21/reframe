@@ -8,7 +8,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const FONTS_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "assets", "fonts");
+// packaged: dist/cli.js → <pkg>/assets/fonts; repo: src → <root>/assets/fonts
+const FONTS_DIR =
+  process.env.REFRAME_PACKAGED === "1"
+    ? join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "fonts")
+    : join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "assets", "fonts");
 
 const WEIGHTS = [400, 700, 800] as const;
 

@@ -42,6 +42,15 @@ async function withPage<T>(
 let bundleCache: string | null = null;
 async function browserBundle(): Promise<string> {
   if (bundleCache) return bundleCache;
+  if (process.env.REFRAME_PACKAGED === "1") {
+    // the package build prebundles browserEntry next to dist/cli.js
+    const { readFile } = await import("node:fs/promises");
+    bundleCache = await readFile(
+      join(dirname(fileURLToPath(import.meta.url)), "browserEntry.js"),
+      "utf8",
+    );
+    return bundleCache;
+  }
   const entry = join(dirname(fileURLToPath(import.meta.url)), "browserEntry.ts");
   const result = await build({
     entryPoints: [entry],

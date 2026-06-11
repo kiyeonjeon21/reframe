@@ -35,6 +35,11 @@ overlay documents hold human edits at those addresses. Full contract:
 - `packages/renderer-canvas` — DisplayList → Canvas 2D
 - `packages/render-cli` — Playwright capture + ffmpeg; `reframe.ts` is the user CLI
 - `packages/preview` — Vite editor (edits → overlay draft, `window.__store` debug hook)
+- `packages/reframe-video` — the published npm package (`pnpm build` bundles
+  everything with `REFRAME_PACKAGED` constant-folded; generated dist/assets/
+  guides/preview are gitignored). Publish = build + `npm publish`.
+- `skills/reframe/SKILL.md` + `.claude-plugin/` — the Claude Code plugin
+  (install: `/plugin marketplace add kiyeonjeon21/reframe`)
 - `examples/` — scenes, overlays, edit-survival demo
 - `benchmark/` — measurement artifacts (LLM benchmark, regen experiment, motion
   profiler). These are recorded experimental results — do not regenerate or

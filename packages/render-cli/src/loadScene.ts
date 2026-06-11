@@ -13,10 +13,14 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateScene, type SceneIR } from "@reframe/core";
 
-const CORE_ENTRY = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "..", "..", "core", "src", "index.ts",
-);
+// In the published package the loader sits at dist/cli.js and core is the
+// prebuilt dist/index.js; in the repo it aliases to core's TS source.
+// REFRAME_PACKAGED is constant-folded in by the package build.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const CORE_ENTRY =
+  process.env.REFRAME_PACKAGED === "1"
+    ? resolve(HERE, "index.js")
+    : resolve(HERE, "..", "..", "core", "src", "index.ts");
 
 export async function loadScene(path: string): Promise<SceneIR> {
   if (path.endsWith(".json")) {
@@ -34,7 +38,9 @@ export async function loadScene(path: string): Promise<SceneIR> {
       write: false,
       logLevel: "silent",
       sourcemap: "inline",
-      alias: { "@reframe/core": CORE_ENTRY },
+      // both specifiers accepted: the guide's canonical "@reframe/core" and
+      // the published package name
+      alias: { "@reframe/core": CORE_ENTRY, "reframe-video": CORE_ENTRY },
     });
     code = out.outputFiles[0]!.text;
   } catch (err) {

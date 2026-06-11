@@ -14,7 +14,11 @@ import type { ResolvedCue } from "@reframe/core";
 import { synthAmbientPad, synthSfx } from "./synth.js";
 import { encodeWavMono16 } from "./wav.js";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+// packaged: dist/cli.js → <pkg>/assets/sfx; repo: src/audio → <root>/assets/sfx
+const ROOT =
+  process.env.REFRAME_PACKAGED === "1"
+    ? resolve(dirname(fileURLToPath(import.meta.url)), "..")
+    : resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const VENDORED = join(ROOT, "assets", "sfx");
 const CACHE = join(tmpdir(), "reframe-sfx-cache");
 

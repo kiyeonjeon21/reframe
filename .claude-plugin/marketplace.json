@@ -1,0 +1,14 @@
+{
+  "name": "reframe",
+  "owner": {
+    "name": "Kiyeon Jeon",
+    "url": "https://github.com/kiyeonjeon21"
+  },
+  "plugins": [
+    {
+      "name": "reframe",
+      "source": "./",
+      "description": "Motion-graphics videos as addressable data — generate, tweak, regenerate without losing human edits."
+    }
+  ]
+}

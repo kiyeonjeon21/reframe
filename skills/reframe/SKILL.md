@@ -1,0 +1,63 @@
+---
+name: reframe
+description: Create and iterate motion-graphics videos (mp4) — title cards, lower thirds, kinetic typography, product teasers, data-driven video batches. Use when the user asks to make, edit, retime, personalize, or add sound to an animated video. Scenes are declarative data; renders are deterministic; human edits survive regeneration.
+---
+
+# reframe — motion graphics as addressable data
+
+All commands run through npx; no install or project setup is needed. The
+runtime needs ffmpeg on PATH and a one-time `npx playwright install chromium`
+(the render command prints an actionable hint if either is missing).
+
+## Creating a scene
+
+1. **Read the guide first** — it is the complete, current syntax (~1,700
+   tokens) and one read is enough to write valid scenes:
+   `npx -y reframe-video guide`
+2. Write a single self-contained `<name>.ts` in the user's directory
+   (`npx -y reframe-video new <name>` scaffolds a documented starter).
+   Scenes must be pure functions of time: no `Math.random()`/`Date` — use
+   `wiggle` with a seed. Give every node a meaningful stable `id` and label
+   the key timeline moments — those names are addresses for everything below.
+3. Render and verify: `npx -y reframe-video render <name>.ts` → `out/<name>.mp4`.
+
+## Modifying an existing scene — the contract
+
+Before rewriting any existing scene, read the regeneration contract:
+`npx -y reframe-video guide --regen`. The core rule: **never rename node ids,
+state names, or timeline labels for concepts that survive the redesign** —
+the user's overlay documents hold their hand edits at those addresses.
+
+The user may keep personal edits in an overlay JSON and render with
+`--overlay <file>`. Check the conversation for overlay usage. Two situations
+to handle explicitly:
+
+- After your rewrite, the render's compose report lists orphaned edits for
+  concepts that were genuinely removed — relay that report to the user; never
+  let an edit disappear silently.
+- If the user asks you to change a property their overlay already overrides,
+  editing the scene alone will be invisible in their renders. Resolve the
+  mask (update the scene AND remove/update the superseded overlay entry) and
+  tell them why.
+
+## Other capabilities
+
+- **Batch**: `npx -y reframe-video batch scene.ts data.json` — one mp4 per
+  data row; row keys are overlay addresses (`nodes.<id>.<prop>`,
+  `timeline.<label>.duration`, ...). CSV works too (headers = addresses).
+- **Preview editor**: `npx -y reframe-video preview` — scrub/play/knobs for
+  scenes in the current directory; the user's knob edits export as an overlay
+  JSON they can pass to render.
+- **Audio**: `scene.audio` cues anchor to timeline labels, so sound follows
+  retiming and regeneration. Procedural sfx (whoosh/pop/tick/rise/shimmer/
+  thud) plus bundled CC0 samples (mechanical keypresses, clicks). The guide's
+  Audio section has the schema.
+- **Motion check**: `npx -y reframe-video motion out/<name>.mp4` prints a
+  calibrated motion profile (speeds, static fraction, discontinuities) —
+  useful to verify a vague request like "make it more dynamic" objectively.
+
+## Verification habits
+
+Render after every change. For visual checks, extract a few frames with
+ffmpeg and look at them. Same input renders byte-identically, so "it changed"
+or "it didn't change" is always provable.

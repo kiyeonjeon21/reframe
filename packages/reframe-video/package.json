@@ -1,0 +1,55 @@
+{
+  "name": "reframe-video",
+  "version": "0.1.0",
+  "description": "Declarative motion graphics that AI can write and humans can tweak — human edits survive AI regeneration. Deterministic mp4 renders from a plain-data scene format.",
+  "keywords": [
+    "motion-graphics",
+    "video",
+    "animation",
+    "generative",
+    "ai",
+    "deterministic",
+    "claude",
+    "ffmpeg"
+  ],
+  "license": "MIT",
+  "author": "Kiyeon Jeon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiyeonjeon21/reframe.git"
+  },
+  "homepage": "https://github.com/kiyeonjeon21/reframe#readme",
+  "type": "module",
+  "bin": {
+    "reframe": "./dist/bin.js",
+    "reframe-video": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "assets",
+    "guides",
+    "preview"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "esbuild": "^0.27.0",
+    "playwright": "^1.60.0",
+    "vite": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0"
+  }
+}

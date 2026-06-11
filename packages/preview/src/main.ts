@@ -153,5 +153,10 @@ select.addEventListener("change", () => {
   currentPath = select.value;
   void loadScene(select.value);
 });
-currentPath = select.value || Object.keys(modules)[0]!;
-void loadScene(currentPath);
+if (Object.keys(modules).length === 0) {
+  panelRoot.innerHTML =
+    "<p style='padding:12px;color:#aab'>No scenes found. Scaffold one in this directory with <code>reframe new my-scene</code>, then reload.</p>";
+} else {
+  currentPath = select.value || Object.keys(modules)[0]!;
+  void loadScene(currentPath);
+}

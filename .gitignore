@@ -7,3 +7,9 @@ benchmark/runs/**/*.mp4
 benchmark/runs/**/frames/
 .DS_Store
 benchmark/harness/motion/calibration/work/
+packages/reframe-video/dist/
+packages/reframe-video/assets/
+packages/reframe-video/guides/
+packages/reframe-video/preview/
+packages/reframe-video/LICENSE
+packages/reframe-video/*.tgz

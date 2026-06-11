@@ -73,6 +73,24 @@ will be tweaked, regenerated, and multiplied — that loop is what reframe is fo
 
 ## Quickstart
 
+No clone needed — [`reframe-video` is on npm](https://www.npmjs.com/package/reframe-video):
+
+```bash
+brew install ffmpeg                  # system dep (or apt install ffmpeg)
+npx playwright install chromium      # one-time browser download
+npx reframe-video new hello          # scaffold hello.ts in any directory
+npx reframe-video render hello.ts    # → out/hello.mp4
+```
+
+Using Claude Code? Install the skill and just describe the video you want:
+
+```
+/plugin marketplace add kiyeonjeon21/reframe
+/plugin install reframe@reframe
+```
+
+To hack on reframe itself, clone-based setup:
+
 ```bash
 brew install ffmpeg                          # 0. system dep (or apt install ffmpeg)
 pnpm install                                 # 1.
@@ -239,8 +257,12 @@ them with a diagnosis naming the likely rename. The failure hierarchy:
 
 ## Status
 
-Research prototype. Not yet published to npm — usage is clone-based. The three
-hypotheses behind the design are measured, not assumed: LLM generation parity
-with HTML+GSAP, deterministic byte-identical rendering, and edit survival
-across AI regeneration. See `benchmark/ANALYSIS.md`, `benchmark/MOTION.md`,
-and `benchmark/regen/REGEN-ANALYSIS.md` for the receipts.
+Early alpha (`reframe-video` on npm, Claude Code skill in this repo). The
+research phase is closed: every design hypothesis is measured, not assumed —
+LLM generation parity with HTML+GSAP, deterministic byte-identical rendering,
+edit survival across AI regeneration, and a five-turn natural-language
+iteration loop with zero silent edit loss. Receipts: `benchmark/ANALYSIS.md`,
+`benchmark/MOTION.md`, `benchmark/regen/REGEN-ANALYSIS.md`,
+`benchmark/nl-loop/NL-LOOP.md`. What "alpha" means honestly: it has not met
+strangers yet — surface area is intentionally small (5 node types, one font,
+Canvas 2D) and the IR/overlay schema has no compatibility promise before 1.0.

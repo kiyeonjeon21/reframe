@@ -250,7 +250,7 @@ async function main() {
   else console.log(json);
 }
 
-if (process.argv[1]?.endsWith("analyze.ts")) {
+if (/analyze\.(ts|js)$/.test(process.argv[1] ?? "")) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);

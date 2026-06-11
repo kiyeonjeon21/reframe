@@ -22,21 +22,31 @@ import { basename, isAbsolute, join, resolve } from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+// REFRAME_PACKAGED is constant-folded in by the npm package build: there the
+// dispatcher lives at <pkg>/dist/bin.js next to prebuilt cli/analyze bundles,
+// guides/ and assets/ — no tsx, no repo layout.
+const PACKAGED = process.env.REFRAME_PACKAGED === "1";
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = PACKAGED ? resolve(HERE, "..") : resolve(HERE, "..", "..", "..");
 const USER_CWD = process.env.INIT_CWD ?? process.cwd();
-const RENDER_CLI = join(ROOT, "packages", "render-cli", "src", "cli.ts");
-const ANALYZE = join(ROOT, "benchmark", "harness", "motion", "analyze.ts");
+const RENDER_CLI = PACKAGED
+  ? join(ROOT, "dist", "cli.js")
+  : join(ROOT, "packages", "render-cli", "src", "cli.ts");
+const ANALYZE = PACKAGED
+  ? join(ROOT, "dist", "analyze.js")
+  : join(ROOT, "benchmark", "harness", "motion", "analyze.ts");
+const CMD = PACKAGED ? "reframe" : "pnpm reframe";
 
 const USAGE = `reframe — declarative motion graphics
 
 usage:
-  pnpm reframe render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S] [--no-audio]
-  pnpm reframe batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
-  pnpm reframe preview                 open the scrub/edit UI (examples/scenes/ + scenes in your directory)
-  pnpm reframe new <scene-name>        scaffold <scene-name>.ts (examples/scenes/ inside the repo, ./ elsewhere)
-  pnpm reframe motion <mp4|framesDir>  motion-profile a rendered clip
-  pnpm reframe guide [--regen]         print the scene-authoring guide (for you or your AI)
-  pnpm reframe demo                    run the edit-survival demo (3 mp4s into out/)
+  ${CMD} render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S] [--no-audio]
+  ${CMD} batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
+  ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
+  ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
+  ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
+  ${CMD} guide [--regen]         print the scene-authoring guide (for you or your AI)
+  ${CMD} demo                    run the edit-survival demo (3 mp4s into out/)
 `;
 
 const userPath = (p: string) => (isAbsolute(p) ? p : resolve(USER_CWD, p));
@@ -60,7 +70,7 @@ function run(
 ): Promise<number> {
   return new Promise((res) => {
     const proc = spawn(cmd, args, {
-      cwd: opts.cwd ?? ROOT,
+      cwd: opts.cwd ?? (PACKAGED ? USER_CWD : ROOT),
       stdio: ["inherit", "inherit", "pipe"],
       ...(opts.env && { env: { ...process.env, ...opts.env } }),
     });
@@ -72,7 +82,9 @@ function run(
     });
     proc.on("close", (code) => {
       if (code !== 0 && sawBrowserError) {
-        console.error("\nhint: the Playwright browser is not installed yet — run: pnpm exec playwright install chromium");
+        console.error(
+          `\nhint: the Playwright browser is not installed yet — run: ${PACKAGED ? "npx playwright install chromium" : "pnpm exec playwright install chromium"}`,
+        );
       }
       res(code ?? 1);
     });
@@ -82,7 +94,7 @@ function run(
 const SCENE_TEMPLATE = (name: string, id: string) => `import { scene, group, rect, text, seq, to, wait } from "@reframe/core";
 
 // Scenes are pure functions of time: no Math.random()/Date — randomness via
-// wiggle(seed). Full syntax: pnpm reframe guide
+// wiggle(seed). Full syntax: ${CMD} guide
 export default scene({
   id: "${name}",
   size: { width: 1920, height: 1080 },
@@ -157,28 +169,33 @@ async function main() {
         fail("html render requires --duration <seconds> (the page does not declare its own length)");
       }
       preflightFfmpeg();
-      // default output: <repo>/out/<basename>.mp4
+      // default output: out/<basename>.mp4 (repo out/ in the repo, ./out when installed)
+      const outBase = PACKAGED ? join(USER_CWD, "out") : join(ROOT, "out");
       let outArgs = args;
       if (!args.includes("-o")) {
-        await mkdir(join(ROOT, "out"), { recursive: true });
-        outArgs = [...args, "-o", join(ROOT, "out", `${basename(input).replace(/\.[^.]+$/, "")}.mp4`)];
+        await mkdir(outBase, { recursive: true });
+        outArgs = [...args, "-o", join(outBase, `${basename(input).replace(/\.[^.]+$/, "")}.mp4`)];
       }
       // user-relative paths for overlays and -o
       outArgs = outArgs.map((a, i) =>
         outArgs[i - 1] === "--overlay" || outArgs[i - 1] === "-o" ? userPath(a) : a,
       );
-      process.exit(await run("npx", ["tsx", RENDER_CLI, mode, inputPath, ...outArgs]));
+      process.exit(
+        await (PACKAGED
+          ? run(process.execPath, [RENDER_CLI, mode, inputPath, ...outArgs])
+          : run("npx", ["tsx", RENDER_CLI, mode, inputPath, ...outArgs])),
+      );
     }
 
     case "batch": {
       const [sceneArg, dataArg, ...flags] = rest;
-      if (!sceneArg || !dataArg) fail("usage: pnpm reframe batch <scene.ts> <data.json|csv> [...]");
+      if (!sceneArg || !dataArg) fail(`usage: ${CMD} batch <scene.ts> <data.json|csv> [...]`);
       const scenePath = userPath(sceneArg);
       const dataPath = userPath(dataArg);
       for (const p of [scenePath, dataPath]) if (!existsSync(p)) fail(`no such file: ${p}`);
       preflightFfmpeg();
 
-      let outDir = join(ROOT, "out", "batch");
+      let outDir = PACKAGED ? join(USER_CWD, "out", "batch") : join(ROOT, "out", "batch");
       let concurrency = 3;
       let fps: number | undefined;
       const baseOverlayPaths: string[] = [];
@@ -223,17 +240,30 @@ async function main() {
       process.exit(failed > 0 ? 1 : 0);
     }
 
-    case "preview":
-      // the editor lists examples/scenes/ plus scenes found in the invoking dir
+    case "preview": {
+      // the editor lists examples/scenes/ (repo) plus scenes found in the invoking dir
+      if (PACKAGED) {
+        const { createRequire } = await import("node:module");
+        // vite's exports map blocks resolving bin/vite.js directly — locate it
+        // via package.json (an always-exported subpath)
+        const vitePkg = createRequire(import.meta.url).resolve("vite/package.json");
+        const viteBin = join(dirname(vitePkg), "bin", "vite.js");
+        process.exit(
+          await run(process.execPath, [viteBin, join(ROOT, "preview")], {
+            env: { REFRAME_SCENE_DIR: USER_CWD },
+          }),
+        );
+      }
       process.exit(
         await run("pnpm", ["--filter", "@reframe/preview", "dev"], {
           env: { REFRAME_SCENE_DIR: USER_CWD },
         }),
       );
+    }
 
     case "new": {
       const name = rest[0];
-      if (!name) fail("usage: pnpm reframe new <scene-name>");
+      if (!name) fail(`usage: ${CMD} new <scene-name>`);
       if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
         fail(`scene name must be kebab-case (a-z, 0-9, -): got "${name}"`);
       }
@@ -247,27 +277,42 @@ async function main() {
       const id = name.split("-")[0] ?? name;
       await writeFile(target, SCENE_TEMPLATE(name, id));
       console.log(`created ${shown}
-  preview:  pnpm reframe preview        (pick "${name}" in the dropdown)
-  render:   pnpm reframe render ${shown}
-  syntax:   pnpm reframe guide`);
+  preview:  ${CMD} preview        (pick "${name}" in the dropdown)
+  render:   ${CMD} render ${shown}
+  syntax:   ${CMD} guide`);
       return;
     }
 
     case "motion": {
       const input = rest[0];
-      if (!input) fail("usage: pnpm reframe motion <mp4|framesDir> [...args]");
+      if (!input) fail(`usage: ${CMD} motion <mp4|framesDir> [...args]`);
       preflightFfmpeg();
-      process.exit(await run("npx", ["tsx", ANALYZE, userPath(input), ...rest.slice(1)]));
+      process.exit(
+        await (PACKAGED
+          ? run(process.execPath, [ANALYZE, userPath(input), ...rest.slice(1)])
+          : run("npx", ["tsx", ANALYZE, userPath(input), ...rest.slice(1)])),
+      );
     }
 
     case "guide": {
       const file = rest.includes("--regen")
-        ? join(ROOT, "docs", "regen-contract.md")
-        : join(ROOT, "benchmark", "guides", "edsl-guide.md");
-      process.exit(await run("cat", [file]));
+        ? PACKAGED
+          ? join(ROOT, "guides", "regen-contract.md")
+          : join(ROOT, "docs", "regen-contract.md")
+        : PACKAGED
+          ? join(ROOT, "guides", "edsl-guide.md")
+          : join(ROOT, "benchmark", "guides", "edsl-guide.md");
+      const { readFile } = await import("node:fs/promises");
+      process.stdout.write(await readFile(file, "utf8"));
+      return;
     }
 
     case "demo":
+      if (PACKAGED) {
+        fail(
+          "the edit-survival demo ships with the repo, not the package — git clone https://github.com/kiyeonjeon21/reframe && pnpm install && pnpm reframe demo",
+        );
+      }
       preflightFfmpeg();
       process.exit(
         await run("npx", ["tsx", join(ROOT, "examples", "scripts", "demo-edit-survival.ts")]),
