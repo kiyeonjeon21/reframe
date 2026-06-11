@@ -36,6 +36,13 @@ importers:
       '@reframe/core':
         specifier: workspace:*
         version: link:../packages/core
+      '@reframe/render-cli':
+        specifier: workspace:*
+        version: link:../packages/render-cli
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.20
 
   packages/core: {}
 

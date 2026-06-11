@@ -1,6 +1,12 @@
 export * from "./ir.js";
 export * from "./dsl.js";
-export { validateScene, SceneValidationError } from "./validate.js";
+export { validateScene, SceneValidationError, PROPS_BY_TYPE } from "./validate.js";
+export {
+  composeScene,
+  formatComposeReport,
+  type OverlayDoc,
+  type ComposeReport,
+} from "./compose.js";
 export { compileScene, type CompiledScene, type PropertySegment } from "./compile.js";
 export {
   evaluate,

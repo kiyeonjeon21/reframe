@@ -100,18 +100,26 @@ export function wait(duration: number): TimelineIR {
   return { kind: "wait", duration };
 }
 
+export interface BehaviorWindow {
+  from?: number;
+  until?: number;
+  ramp?: number;
+}
+
 export function oscillate(
   target: string,
   prop: string,
   params: { amplitude: number; frequency: number; phase?: number },
+  window: BehaviorWindow = {},
 ): BehaviorIR {
-  return { target, prop, behavior: { kind: "named", name: "oscillate", params } };
+  return { target, prop, ...window, behavior: { kind: "named", name: "oscillate", params } };
 }
 
 export function wiggle(
   target: string,
   prop: string,
   params: { amplitude: number; frequency: number; seed: number },
+  window: BehaviorWindow = {},
 ): BehaviorIR {
-  return { target, prop, behavior: { kind: "named", name: "wiggle", params } };
+  return { target, prop, ...window, behavior: { kind: "named", name: "wiggle", params } };
 }

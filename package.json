@@ -6,7 +6,8 @@
     "typecheck": "pnpm -r --no-bail exec tsc --noEmit",
     "test": "vitest run",
     "render": "pnpm --filter @reframe/render-cli start",
-    "preview": "pnpm --filter @reframe/preview dev"
+    "preview": "pnpm --filter @reframe/preview dev",
+    "demo:overlay": "npx tsx examples/scripts/demo-edit-survival.ts"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

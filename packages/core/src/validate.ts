@@ -7,11 +7,11 @@
 import type { NodeIR, SceneIR, TimelineIR } from "./ir.js";
 
 const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "anchor"];
-const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
+export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   rect: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth", "radius"],
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
   line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress"],
-  text: [...COMMON_PROPS, "content", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
+  text: [...COMMON_PROPS, "content", "contentDecimals", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
   group: COMMON_PROPS,
 };
 

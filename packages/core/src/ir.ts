@@ -82,8 +82,10 @@ export interface LineProps {
 }
 
 export interface TextProps extends BaseProps {
-  /** Numbers interpolate (count-up) and render rounded to integers. */
+  /** Numbers interpolate (count-up) and render via toFixed(contentDecimals). */
   content: string | number;
+  /** Decimal places when content is numeric (default 0). */
+  contentDecimals?: number;
   fontFamily: string;
   fontSize: number;
   fontWeight?: number;
@@ -135,6 +137,11 @@ export type TimelineIR =
 export interface BehaviorIR {
   target: string;
   prop: string;
+  /** Active window in seconds; omit for the whole scene. */
+  from?: number;
+  until?: number;
+  /** Linear fade length (s) at each window boundary, avoiding pops. Default 0.2. */
+  ramp?: number;
   /** Composed additively on top of the timeline value. */
   behavior:
     | { kind: "named"; name: "oscillate"; params: { amplitude: number; frequency: number; phase?: number } }

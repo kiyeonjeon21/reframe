@@ -5,19 +5,11 @@
 
 import { compileScene, type CompiledScene, type SceneIR } from "@reframe/core";
 import { renderFrame } from "@reframe/renderer-canvas";
+import "./reframeGlobal.js";
 
 let compiled: CompiledScene | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let canvas: HTMLCanvasElement | null = null;
-
-declare global {
-  interface Window {
-    __reframe: {
-      init(ir: SceneIR): { duration: number; fps: number };
-      renderFrame(t: number): string;
-    };
-  }
-}
 
 window.__reframe = {
   init(ir: SceneIR) {

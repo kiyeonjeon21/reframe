@@ -30,8 +30,10 @@ Factories return plain data. Every node needs a unique `id`.
 - `ellipse({ id, x, y, width, height, fill?, stroke?, strokeWidth?, ... })`
 - `line({ id, x1, y1, x2, y2, stroke, strokeWidth?, opacity?, progress? })` —
   `progress` 0..1 draws the line on (1 = full line).
-- `text({ id, x, y, content, fontFamily, fontSize, fontWeight?, fill?, letterSpacing?, ... })` —
-  `content` may be a number; numeric content interpolates (count-up) and renders rounded.
+- `text({ id, x, y, content, contentDecimals?, fontFamily, fontSize, fontWeight?, fill?, letterSpacing?, ... })` —
+  `content` may be a number; numeric content interpolates (count-up) and renders
+  via `toFixed(contentDecimals ?? 0)`. For a "8.2"-style label, set
+  `contentDecimals: 1`.
 - `group({ id, x, y, opacity?, rotation?, scale?, anchor? }, children)` — children's
   coordinates are relative to the group; group opacity/transform multiply down.
 
@@ -77,10 +79,16 @@ Scene duration is inferred from the timeline.
 
 ## Behaviors: continuous motion during holds
 
-Composed additively on top of the timeline, for the whole scene duration:
+Composed additively on top of the timeline:
 
-- `oscillate(nodeId, prop, { amplitude, frequency, phase? })` — sine.
-- `wiggle(nodeId, prop, { amplitude, frequency, seed })` — smooth seeded noise.
+- `oscillate(nodeId, prop, { amplitude, frequency, phase? }, window?)` — sine.
+- `wiggle(nodeId, prop, { amplitude, frequency, seed }, window?)` — smooth seeded noise.
+
+The optional 4th argument `{ from?, until?, ramp? }` limits the behavior to a
+time window (seconds) with a linear fade of `ramp` (default 0.2s) at each
+bound — e.g. a pulse only during the hold:
+`oscillate("title", "scale", { amplitude: 0.04, frequency: 1.2 }, { from: 1.5, until: 3.5 })`.
+Omit the window to run for the whole scene.
 
 ## Rules
 
@@ -89,6 +97,8 @@ Composed additively on top of the timeline, for the whole scene duration:
 - Node ids must be unique; states/tweens may only reference existing ids and
   real props of that node type.
 - Overshoot pops are two steps: tween scale past 1 (`1.15`), then settle to 1.
+- When a node enters by scaling from 0, start it at `opacity: 0` too and fade
+  in alongside — a scale-0 shape can still rasterize as a 1px dot at frame 0.
 
 ## Worked example A — countdown (3, 2, 1, GO!)
 

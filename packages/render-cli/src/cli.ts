@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * reframe-render ir <scene.ts|scene.json> [-o out.mp4] [--fps N] [--keep-frames]
+ * reframe-render ir <scene.ts|scene.json> [--overlay edits.json ...] [-o out.mp4] [--fps N] [--keep-frames]
  * reframe-render html <page.html> --duration S [-o out.mp4] [--fps N] [--keep-frames]
  */
 
@@ -8,8 +8,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { SceneIR } from "@reframe/core";
-import { validateScene } from "@reframe/core";
+import type { OverlayDoc, SceneIR } from "@reframe/core";
+import { composeScene, formatComposeReport, validateScene } from "@reframe/core";
 import { encodeMp4 } from "./encode.js";
 import { captureHtml, captureIr } from "./frameLoop.js";
 
@@ -21,6 +21,7 @@ interface Args {
   duration?: number;
   keepFrames: boolean;
   framesDir?: string;
+  overlays: string[];
 }
 
 function parseArgs(argv: string[]): Args {
@@ -37,6 +38,7 @@ function parseArgs(argv: string[]): Args {
     input: resolve(input),
     out: `${basename(input).replace(/\.[^.]+$/, "")}.mp4`,
     keepFrames: false,
+    overlays: [],
   };
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
@@ -45,6 +47,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--duration") args.duration = Number(rest[++i]);
     else if (a === "--keep-frames") args.keepFrames = true;
     else if (a === "--frames-dir") args.framesDir = resolve(rest[++i]!);
+    else if (a === "--overlay") args.overlays.push(resolve(rest[++i]!));
     else {
       console.error(`unknown flag ${a}`);
       process.exit(2);
@@ -70,7 +73,15 @@ async function main() {
 
   let result;
   if (args.mode === "ir") {
-    const ir = await loadScene(args.input);
+    let ir = await loadScene(args.input);
+    if (args.overlays.length > 0) {
+      const docs = await Promise.all(
+        args.overlays.map(async (p) => JSON.parse(await readFile(p, "utf8")) as OverlayDoc),
+      );
+      const composed = composeScene(ir, ...docs);
+      console.error(formatComposeReport(composed.report));
+      ir = composed.ir;
+    }
     result = await captureIr(ir, {
       framesDir,
       ...(args.fps !== undefined && { fps: args.fps }),

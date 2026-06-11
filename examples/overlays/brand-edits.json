@@ -1,0 +1,42 @@
+{
+  "reframeOverlay": 1,
+  "name": "brand-edits",
+  "target": "logo-reveal",
+  "nodes": {
+    "disc": { "fill": "#3B82F6" },
+    "tagline": { "content": "declare the motion" }
+  },
+  "states": {
+    "hidden": { "tagline": { "y": 260 } },
+    "revealed": { "tagline": { "y": 230 } }
+  },
+  "behaviors": {
+    "set": [
+      {
+        "target": "lockup",
+        "prop": "y",
+        "behavior": {
+          "kind": "named",
+          "name": "oscillate",
+          "params": { "amplitude": 14, "frequency": 0.4 }
+        }
+      }
+    ]
+  },
+  "addNodes": [
+    {
+      "type": "text",
+      "id": "watermark",
+      "props": {
+        "x": 1880,
+        "y": 1048,
+        "anchor": "bottom-right",
+        "content": "© kiyeon",
+        "fontFamily": "Inter",
+        "fontSize": 22,
+        "fill": "#5A6275",
+        "opacity": 0.8
+      }
+    }
+  ]
+}

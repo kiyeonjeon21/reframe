@@ -1,0 +1,208 @@
+/**
+ * USD-style non-destructive layer composition: human edits live in overlay
+ * documents that re-apply on top of a regenerated base scene.
+ *
+ * Contract: composeScene never throws because the base drifted (a renamed or
+ * retyped node) — those edits are skipped and reported as orphans, loudly.
+ * Defects in the overlay itself (duplicate ids, invalid values) surface as
+ * validation errors on the composed result. Silent failure is the one
+ * behavior this module must never have.
+ */
+
+import type { BehaviorIR, NodeIR, PropValue, SceneIR } from "./ir.js";
+import { PROPS_BY_TYPE, validateScene } from "./validate.js";
+
+export interface OverlayDoc {
+  reframeOverlay: 1;
+  /** Shown in reports; falls back to "overlay-<index>". */
+  name?: string;
+  /** Scene id this overlay was authored against — mismatch is a warning. */
+  target?: string;
+  scene?: { background?: string; duration?: number; fps?: number };
+  /** nodeId -> prop -> value; null deletes the prop key (USD "block"). */
+  nodes?: Record<string, Record<string, PropValue | null>>;
+  /** stateName -> nodeId -> prop -> value/null. */
+  states?: Record<string, Record<string, Record<string, PropValue | null>>>;
+  behaviors?: {
+    /** Upsert keyed by (target, prop): replaces a matching behavior or appends. */
+    set?: BehaviorIR[];
+    remove?: { target: string; prop: string }[];
+  };
+  /** Complete nodes appended at the scene root, owned by this overlay. */
+  addNodes?: NodeIR[];
+}
+
+export interface ComposeReport {
+  applied: {
+    layer: string;
+    address: string;
+    action: "set" | "unset" | "add-node" | "behavior-set" | "behavior-remove";
+  }[];
+  orphans: { layer: string; address: string; reason: string }[];
+  warnings: string[];
+}
+
+const SCENE_PATCHABLE = ["background", "duration", "fps"] as const;
+
+export function composeScene(
+  base: SceneIR,
+  ...overlays: OverlayDoc[]
+): { ir: SceneIR; report: ComposeReport } {
+  const ir = structuredClone(base);
+  const report: ComposeReport = { applied: [], orphans: [], warnings: [] };
+
+  overlays.forEach((overlay, index) => {
+    const layer = overlay.name ?? `overlay-${index}`;
+    if (overlay.target !== undefined && overlay.target !== ir.id) {
+      report.warnings.push(
+        `${layer}: authored against scene "${overlay.target}" but composing onto "${ir.id}"`,
+      );
+    }
+    applyOverlay(ir, overlay, layer, report);
+  });
+
+  validateScene(ir);
+  return { ir, report };
+}
+
+function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: ComposeReport) {
+  const nodeById = new Map<string, NodeIR>();
+  const collect = (nodes: NodeIR[]) => {
+    for (const node of nodes) {
+      nodeById.set(node.id, node);
+      if (node.type === "group") collect(node.children);
+    }
+  };
+  collect(ir.nodes);
+  const knownIds = () => [...nodeById.keys()].join(", ");
+
+  const orphan = (address: string, reason: string) =>
+    report.orphans.push({ layer, address, reason });
+  const applied = (address: string, action: ComposeReport["applied"][number]["action"]) =>
+    report.applied.push({ layer, address, action });
+
+  // Patch a node's props map (used for both base props and state overrides).
+  const patchProps = (
+    address: string,
+    node: NodeIR,
+    target: Record<string, unknown>,
+    patch: Record<string, PropValue | null>,
+  ) => {
+    const allowed = PROPS_BY_TYPE[node.type];
+    for (const [prop, value] of Object.entries(patch)) {
+      if (!allowed.includes(prop)) {
+        orphan(
+          `${address}.${prop}`,
+          `"${prop}" is not a prop of ${node.type} "${node.id}" — the base may have changed this node's type; valid props: ${allowed.join(", ")}`,
+        );
+        continue;
+      }
+      if (value === null) {
+        delete target[prop];
+        applied(`${address}.${prop}`, "unset");
+      } else {
+        target[prop] = value;
+        applied(`${address}.${prop}`, "set");
+      }
+    }
+  };
+
+  // --- scene-level (whitelisted keys only) ---
+  if (overlay.scene) {
+    for (const key of SCENE_PATCHABLE) {
+      const value = overlay.scene[key];
+      if (value !== undefined) {
+        (ir as unknown as Record<string, unknown>)[key] = value;
+        applied(`scene.${key}`, "set");
+      }
+    }
+  }
+
+  // --- node base props ---
+  for (const [id, patch] of Object.entries(overlay.nodes ?? {})) {
+    const node = nodeById.get(id);
+    if (!node) {
+      orphan(
+        `nodes.${id}`,
+        `unknown node "${id}" — known ids: ${knownIds()}; did the base regeneration rename it?`,
+      );
+      continue;
+    }
+    patchProps(`nodes.${id}`, node, node.props as unknown as Record<string, unknown>, patch);
+  }
+
+  // --- state overrides (stateName -> nodeId -> prop) ---
+  for (const [stateName, statePatch] of Object.entries(overlay.states ?? {})) {
+    const state = ir.states?.[stateName];
+    if (!state) {
+      orphan(
+        `states.${stateName}`,
+        `unknown state "${stateName}" — defined states: ${Object.keys(ir.states ?? {}).join(", ") || "(none)"}`,
+      );
+      continue;
+    }
+    for (const [id, patch] of Object.entries(statePatch)) {
+      const node = nodeById.get(id);
+      if (!node) {
+        orphan(
+          `states.${stateName}.${id}`,
+          `unknown node "${id}" — known ids: ${knownIds()}; did the base regeneration rename it?`,
+        );
+        continue;
+      }
+      const target = (state[id] ??= {});
+      patchProps(`states.${stateName}.${id}`, node, target, patch);
+    }
+  }
+
+  // --- behaviors: remove first, then upsert ---
+  if (overlay.behaviors?.remove || overlay.behaviors?.set) {
+    ir.behaviors ??= [];
+    for (const { target, prop } of overlay.behaviors.remove ?? []) {
+      const index = ir.behaviors.findIndex((b) => b.target === target && b.prop === prop);
+      if (index < 0) {
+        orphan(
+          `behaviors.remove.${target}.${prop}`,
+          `no behavior on "${target}.${prop}" to remove`,
+        );
+        continue;
+      }
+      ir.behaviors.splice(index, 1);
+      applied(`behaviors.${target}.${prop}`, "behavior-remove");
+    }
+    for (const behavior of overlay.behaviors.set ?? []) {
+      if (!nodeById.has(behavior.target)) {
+        orphan(
+          `behaviors.set.${behavior.target}.${behavior.prop}`,
+          `unknown node "${behavior.target}" — known ids: ${knownIds()}`,
+        );
+        continue;
+      }
+      const index = ir.behaviors.findIndex(
+        (b) => b.target === behavior.target && b.prop === behavior.prop,
+      );
+      if (index >= 0) ir.behaviors[index] = structuredClone(behavior);
+      else ir.behaviors.push(structuredClone(behavior));
+      applied(`behaviors.${behavior.target}.${behavior.prop}`, "behavior-set");
+    }
+  }
+
+  // --- added nodes: appended at root, painted on top. Duplicate ids are an
+  // overlay authoring defect and surface via validateScene after composition.
+  for (const node of overlay.addNodes ?? []) {
+    ir.nodes.push(structuredClone(node));
+    nodeById.set(node.id, node);
+    applied(`addNodes.${node.id}`, "add-node");
+  }
+}
+
+export function formatComposeReport(report: ComposeReport): string {
+  const lines: string[] = [];
+  lines.push(
+    `compose: ${report.applied.length} applied, ${report.orphans.length} orphaned, ${report.warnings.length} warnings`,
+  );
+  for (const a of report.applied) lines.push(`  ✓ [${a.layer}] ${a.address} (${a.action})`);
+  for (const o of report.orphans) lines.push(`  ✗ [${o.layer}] ${o.address}: ${o.reason}`);
+  for (const w of report.warnings) lines.push(`  ! ${w}`);
+  return lines.join("\n");
+}

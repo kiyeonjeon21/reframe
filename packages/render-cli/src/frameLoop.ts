@@ -6,6 +6,7 @@ import { chromium, type Page } from "playwright";
 import type { SceneIR } from "@reframe/core";
 import { fontFaceCss } from "./fonts.js";
 import { VCLOCK_SOURCE } from "./vclock.js";
+import "./reframeGlobal.js";
 
 async function injectFonts(page: Page): Promise<void> {
   await page.addStyleTag({ content: await fontFaceCss() });

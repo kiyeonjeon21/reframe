@@ -102,6 +102,18 @@ const ANCHOR_FACTORS: Record<Anchor, [number, number]> = {
 const TEXT_ALIGN: Record<number, TextAlign> = { 0: "left", 0.5: "center", 1: "right" };
 const TEXT_BASELINE: Record<number, TextBaseline> = { 0: "top", 0.5: "middle", 1: "bottom" };
 
+/** 0 outside the behavior's [from, until] window, with a linear ramp at each bound. */
+function behaviorEnvelope(b: { from?: number; until?: number; ramp?: number }, t: number): number {
+  const from = b.from ?? Number.NEGATIVE_INFINITY;
+  const until = b.until ?? Number.POSITIVE_INFINITY;
+  if (t < from || t > until) return 0;
+  const ramp = b.ramp ?? 0.2;
+  let envelope = 1;
+  if (Number.isFinite(from) && ramp > 0) envelope = Math.min(envelope, (t - from) / ramp);
+  if (Number.isFinite(until) && ramp > 0) envelope = Math.min(envelope, (until - t) / ramp);
+  return Math.max(0, Math.min(1, envelope));
+}
+
 export function evaluate(compiled: CompiledScene, t: number): DisplayList {
   const ops: DisplayList = [];
 
@@ -125,7 +137,8 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     }
     for (const b of compiled.ir.behaviors ?? []) {
       if (b.target === target && b.prop === prop && typeof value === "number") {
-        value = value + sampleBehavior(b.behavior, t);
+        const envelope = behaviorEnvelope(b, t);
+        if (envelope > 0) value = value + envelope * sampleBehavior(b.behavior, t);
       }
     }
     return value;
@@ -208,11 +221,15 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
       case "text": {
         const [ax, ay] = ANCHOR_FACTORS[node.props.anchor ?? "top-left"];
         const raw = valueAt(id, "content", node.props.content);
+        const decimals = Math.max(
+          0,
+          Math.round(num(id, "contentDecimals", node.props.contentDecimals ?? 0)),
+        );
         ops.push({
           type: "text",
           transform: matrix,
           opacity,
-          content: typeof raw === "number" ? String(Math.round(raw)) : raw,
+          content: typeof raw === "number" ? raw.toFixed(decimals) : raw,
           fontFamily: str(id, "fontFamily", node.props.fontFamily),
           fontSize: num(id, "fontSize", node.props.fontSize),
           fontWeight: num(id, "fontWeight", node.props.fontWeight ?? 400),
