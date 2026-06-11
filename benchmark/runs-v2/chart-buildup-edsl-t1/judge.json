@@ -1,0 +1,8 @@
+{
+ "fidelity": 5,
+ "layout": 5,
+ "motion": 5,
+ "polish": 4,
+ "overall": 4,
+ "rationale": "Title reads exactly '2025 Revenue ($M)', bars are the correct blue with rounded tops, values 8.2/9.1/11.4/14.0 are proportional, and quarter labels sit below a thin baseline as specified. The filmstrip shows the full choreography: title first, left-to-right staggered bar growth with value labels counting up (e.g. 5.2/4.1/2.3 with Q4 not yet started in one tile), a hold, then a group fade-out. Composition is balanced with consistent gutters, centered labels, and nothing clipped. Minor finishing issues: during the fade-out a brighter blue strip lingers at each bar's base while the rest dims, and the final still is not fully faded to background, so it needs one small cleanup pass before shipping."
+}

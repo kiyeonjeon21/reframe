@@ -92,3 +92,28 @@ catastrophes" intuition.**
    asymmetry is the editability/verifiability thesis in action — Madeus-style
    static checks can catch the eDSL failure class before rendering, but
    nothing can lint "SOLUTION" vs "THE SOLUTION" out of freeform HTML.
+
+---
+
+## Addendum (same day): v2 re-run confirms the gap was the runtime, not the format
+
+After shipping the v2 fixes (`contentDecimals`, time-bounded behaviors, the
+scale-in guide note, denser filmstrip sampling at clip start/end), the
+chart-buildup eDSL cell was re-run: 3 fresh single-shot generations against
+the updated guide, rendered first-attempt 3/3, judged blind with the same
+rubric (results in `benchmark/runs-v2/`, kept separate from the v1 record).
+
+| | t1 | t2 | t3 | mean |
+|---|---|---|---|---|
+| chart-buildup eDSL **v1** | 17 | 17 | 23 | 19.00 |
+| chart-buildup eDSL **v2** | 23 | 23 | 25 | **23.67** |
+| chart-buildup HTML (v1, unchanged) | 24 | 25 | 22 | 23.67 |
+
+All three v2 generations used `contentDecimals: 1` unprompted (beyond the
+guide mentioning it), every judge saw correct one-decimal count-ups, and no
+decimal-related deduction remains. **The eDSL now scores identical to HTML on
+the task that produced the entire arm-level gap** — supporting the original
+reading that the 21.47-vs-20.40 difference measured a missing runtime feature,
+not a format-level generation disadvantage. Remaining deductions (late/abrupt
+final fade) are shared by both arms and are choreography taste, not format
+artifacts. n remains 3; directional, as ever.
