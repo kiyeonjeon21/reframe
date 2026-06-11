@@ -1,0 +1,49 @@
+{
+  "runId": "cb-t3-1",
+  "taskId": "cb-t3",
+  "baseScene": "chart-buildup",
+  "difficulty": "trap/data-count-change (implicit ids)",
+  "expectedRemoved": [
+    "bar-4",
+    "value-4",
+    "label-4"
+  ],
+  "trial": 1,
+  "idMetrics": {
+    "nodeIdRecall": 1,
+    "stateNameRecall": 1,
+    "labelRecall": 1,
+    "lost": [],
+    "lostExpected": [
+      "bar-4",
+      "value-4",
+      "label-4"
+    ],
+    "added": [],
+    "typeChanged": [],
+    "lostStates": [],
+    "lostLabels": []
+  },
+  "probe": {
+    "applied": 30,
+    "orphaned": 3,
+    "orphanKinds": {
+      "renamedNode": 0,
+      "removedNode": 3,
+      "renamedState": 0,
+      "stateNodeLost": 0,
+      "typeChange": 0,
+      "lostLabel": 0,
+      "labelKindChange": 0,
+      "other": 0
+    },
+    "sceneIdWarning": false,
+    "integrityOk": true,
+    "composeThrew": null
+  },
+  "generation": {
+    "validateOk": true,
+    "renderOk": true,
+    "static": false
+  }
+}

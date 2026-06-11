@@ -1,0 +1,49 @@
+{
+  "runId": "cb-t2-1",
+  "taskId": "cb-t2",
+  "baseScene": "chart-buildup",
+  "difficulty": "hard/overhaul (implicit ids)",
+  "expectedRemoved": [],
+  "trial": 1,
+  "idMetrics": {
+    "nodeIdRecall": 1,
+    "stateNameRecall": 1,
+    "labelRecall": 1,
+    "lost": [],
+    "lostExpected": [],
+    "added": [
+      "subtitle",
+      "grid-0",
+      "grid-1",
+      "grid-2",
+      "tick-0",
+      "tick-1",
+      "tick-2"
+    ],
+    "typeChanged": [],
+    "lostStates": [],
+    "lostLabels": []
+  },
+  "probe": {
+    "applied": 36,
+    "orphaned": 0,
+    "orphanKinds": {
+      "renamedNode": 0,
+      "removedNode": 0,
+      "renamedState": 0,
+      "stateNodeLost": 0,
+      "typeChange": 0,
+      "lostLabel": 0,
+      "labelKindChange": 0,
+      "other": 0
+    },
+    "sceneIdWarning": false,
+    "integrityOk": true,
+    "composeThrew": null
+  },
+  "generation": {
+    "validateOk": true,
+    "renderOk": true,
+    "static": false
+  }
+}

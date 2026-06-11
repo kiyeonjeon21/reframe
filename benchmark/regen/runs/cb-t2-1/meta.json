@@ -1,0 +1,8 @@
+{
+ "runId": "cb-t2-1",
+ "taskId": "cb-t2",
+ "baseScene": "chart-buildup",
+ "difficulty": "hard/overhaul (implicit ids)",
+ "expectedRemoved": [],
+ "trial": 1
+}

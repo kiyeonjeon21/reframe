@@ -43,6 +43,26 @@ orphaned — zero silent drops, zero compose throws).
    may need the hardening fallbacks (id manifest in the prompt, post-regen
    id-diff lint) — which the orphan report already makes cheap to build.
 
+## Addendum: code-implicit ids (the deferred hard case)
+
+The original experiment used only literal ids and deferred loop-generated ids
+(`bar-${i}`) as a confound. Three follow-up runs on chart-buildup closed that
+gap (cb-t1/t2/t3 in the results table): **3/3 first-attempt renders, 100%
+node/state/label recall.**
+
+- **Restyle** (cb-t1): trivially clean.
+- **Layout transposition** (cb-t2, vertical→horizontal bars with new
+  choreography): the model kept the `.map()` structure and the `bar-${i}`
+  scheme; new decorations (grid/tick lines) got new ids.
+- **Data-count trap** (cb-t3, 5 daily bars → 4 quarterly bars): exactly the
+  contract-correct outcome — `bar-4`/`value-4`/`label-4` disappeared (matching
+  `expectedRemoved`), surviving indices kept their ids while their content
+  changed from weekdays to quarters.
+
+The feared failure mode (rewriting the loop with a new id scheme like
+`bar-q1`) did not occur. Caveat unchanged: still single-shot; multi-turn
+drift remains untested.
+
 ## What this buys the thesis
 
 The edit-survival story no longer rests on a hand-written regeneration: a

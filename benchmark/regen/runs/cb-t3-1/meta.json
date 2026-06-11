@@ -1,0 +1,12 @@
+{
+ "runId": "cb-t3-1",
+ "taskId": "cb-t3",
+ "baseScene": "chart-buildup",
+ "difficulty": "trap/data-count-change (implicit ids)",
+ "expectedRemoved": [
+  "bar-4",
+  "value-4",
+  "label-4"
+ ],
+ "trial": 1
+}
