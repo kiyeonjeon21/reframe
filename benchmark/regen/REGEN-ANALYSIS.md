@@ -63,6 +63,30 @@ The feared failure mode (rewriting the loop with a new id scheme like
 `bar-q1`) did not occur. Caveat unchanged: still single-shot; multi-turn
 drift remains untested.
 
+## Addendum 2: multi-turn drift (the last open caveat)
+
+Single-shot regeneration left one question: does id discipline decay over a
+realistic editing session? Two chains of **6 sequential edit turns** each
+(logo-reveal and lower-third; restyle → content tweak → additions →
+re-choreograph → briefed removal → layout overhaul), every turn editing the
+previous turn's output (`chains/{a,b}/`, measured by
+`harness/measure-chain.ts`):
+
+- **Stepwise recall: 100% at every one of the 12 turns** — no id, state name,
+  or timeline label was lost at any step except the briefed removals.
+- **Headline: a probe overlay authored against the day-1 scene applies at
+  turn 6 with zero unexpected orphans** — chain A: 11 applied / 1 orphaned
+  (`tagline`, removed by the turn-5 brief), chain B: 7 applied / 1 orphaned
+  (`role`, same). Drift did not accumulate.
+- All 12 outputs validated and rendered; final frames visually carry the full
+  six-turn edit history (light theme + left alignment + rings; corner
+  placement + LIVE badge + handle) with no quality collapse.
+
+Remaining honest limits: n=2 chains, 6 turns, single model family, and the
+contract sat adjacent to the scene in every prompt. But the verification-debt
+list from the original analysis is now empty: literal ids (8/8), implicit
+loop ids (3/3), and multi-turn sessions (12/12 turns) all measured at 100%.
+
 ## What this buys the thesis
 
 The edit-survival story no longer rests on a hand-written regeneration: a

@@ -1,0 +1,66 @@
+{
+  "chain": "b",
+  "baseScene": "lower-third",
+  "turnsMeasured": 6,
+  "stepwise": [
+    {
+      "turn": 1,
+      "recall": 1,
+      "lost": [],
+      "added": [],
+      "labelsLost": []
+    },
+    {
+      "turn": 2,
+      "recall": 1,
+      "lost": [],
+      "added": [
+        "live",
+        "live-plate",
+        "live-label"
+      ],
+      "labelsLost": []
+    },
+    {
+      "turn": 3,
+      "recall": 1,
+      "lost": [],
+      "added": [],
+      "labelsLost": []
+    },
+    {
+      "turn": 4,
+      "recall": 1,
+      "lost": [],
+      "added": [],
+      "labelsLost": []
+    },
+    {
+      "turn": 5,
+      "recall": 1,
+      "lost": [],
+      "added": [
+        "handle"
+      ],
+      "labelsLost": []
+    },
+    {
+      "turn": 6,
+      "recall": 1,
+      "lost": [],
+      "added": [],
+      "labelsLost": []
+    }
+  ],
+  "day1OverlayAtFinalTurn": {
+    "applied": 7,
+    "orphaned": 1,
+    "orphanedAddresses": [
+      "nodes.role"
+    ],
+    "expectedRemovedIds": [
+      "role"
+    ],
+    "unexpectedOrphans": []
+  }
+}

@@ -1,0 +1,10 @@
+{
+ "chain": "a",
+ "baseScene": "logo-reveal",
+ "turns": 6,
+ "expectedRemovedByTurn": {
+  "5": [
+   "tagline"
+  ]
+ }
+}

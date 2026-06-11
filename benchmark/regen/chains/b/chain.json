@@ -1,0 +1,10 @@
+{
+ "chain": "b",
+ "baseScene": "lower-third",
+ "turns": 6,
+ "expectedRemovedByTurn": {
+  "5": [
+   "role"
+  ]
+ }
+}
