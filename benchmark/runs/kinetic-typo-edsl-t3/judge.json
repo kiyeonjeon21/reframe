@@ -1,0 +1,8 @@
+{
+ "fidelity": 4,
+ "layout": 4,
+ "motion": 3,
+ "polish": 4,
+ "overall": 3,
+ "rationale": "All four words are present with correct text, weights, and colors: SHIP/FAST/BREAK in heavy white caps and NOTHING larger in the specified yellow, centered as a block with consistent line spacing and nothing clipped. Timing deviates from the brief: the first ~20% of the strip is empty black and words are still punching in around the 25-30% mark, so the stagger reads slower than ~0.25s apart, and the hold then occupies most of the remaining tiles. The exit is never visible in any tile \u2014 the block is fully intact in the last strip tile and simply gone at the 100% still, so the alternating horizontal fly-out cannot be confirmed and reads as an abrupt cut; the pulse on NOTHING is imperceptible across tiles, making the long hold feel frozen. Typography itself is clean and high-contrast, but the dead air at the start and unverified exit choreography mean it needs a timing revision pass before shipping."
+}

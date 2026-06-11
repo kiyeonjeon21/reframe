@@ -1,0 +1,20 @@
+{
+  "runId": "kinetic-typo-edsl-t3",
+  "task": "kinetic-typo",
+  "arm": "edsl",
+  "trial": 3,
+  "duration": 5,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 83,
+    "codeChars": 3207
+  }
+}

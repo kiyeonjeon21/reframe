@@ -1,0 +1,20 @@
+{
+  "runId": "lower-third-edsl-t3",
+  "task": "lower-third",
+  "arm": "edsl",
+  "trial": 3,
+  "duration": 5,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 95,
+    "codeChars": 2815
+  }
+}

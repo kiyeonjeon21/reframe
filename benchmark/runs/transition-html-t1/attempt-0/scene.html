@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #101014; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+
+  /* ---------- slides ---------- */
+  .slide {
+    position: absolute; left: 0; top: 0;
+    width: 1920px; height: 1080px;
+    overflow: hidden;
+  }
+  #slideA { background: #14324F; }
+  #slideB { background: #1F4032; }
+
+  /* subtle broadcast-style vignette / lighting (static) */
+  .slide::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(120% 90% at 50% 38%, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(140% 120% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.28) 100%);
+    pointer-events: none;
+  }
+
+  .content {
+    position: absolute; left: 960px; top: 540px;
+    transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center;
+    white-space: nowrap;
+  }
+  .kicker {
+    font-size: 30px; font-weight: 700; letter-spacing: 14px;
+    text-indent: 14px; /* optically center the tracked text */
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 30px;
+  }
+  .title {
+    font-size: 168px; font-weight: 800; letter-spacing: 8px;
+    text-indent: 8px;
+    color: #ffffff; line-height: 1;
+  }
+  .rule {
+    width: 120px; height: 6px; border-radius: 3px;
+    background: #FF5C39; margin-top: 44px;
+  }
+  .index {
+    position: absolute; left: 110px; bottom: 84px;
+    font-size: 26px; font-weight: 700; letter-spacing: 10px;
+    color: rgba(255,255,255,0.38);
+  }
+
+  /* slide B is revealed by the wipe: start fully clipped */
+  #slideB { clip-path: inset(0px 1920px 0px 0px); }
+
+  /* ---------- wipe bar ---------- */
+  #bar {
+    position: absolute; top: 0; left: 0;
+    width: 140px; height: 1080px;
+    background: #FF5C39;
+    transform: translateX(-150px);
+    box-shadow: 0 0 60px rgba(255,92,57,0.45);
+  }
+  /* slim trailing echo riding the bar's tail */
+  #bar::after {
+    content: ""; position: absolute; top: 0; left: -26px;
+    width: 10px; height: 1080px;
+    background: rgba(255,92,57,0.55);
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- Slide A (base layer) -->
+  <div class="slide" id="slideA">
+    <div class="content" id="contentA">
+      <div class="kicker">CHAPTER 01</div>
+      <div class="title">THE PROBLEM</div>
+      <div class="rule"></div>
+    </div>
+    <div class="index">01 / 02</div>
+  </div>
+
+  <!-- Slide B (revealed behind the bar) -->
+  <div class="slide" id="slideB">
+    <div class="content" id="contentB">
+      <div class="kicker">CHAPTER 02</div>
+      <div class="title">THE SOLUTION</div>
+      <div class="rule"></div>
+    </div>
+    <div class="index">02 / 02</div>
+  </div>
+
+  <!-- Wipe bar (top layer) -->
+  <div id="bar"></div>
+
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  const slideB = document.getElementById("slideB");
+  const bar    = document.getElementById("bar");
+
+  const BAR_W   = 140;
+  const START_X = -BAR_W - 10;  // fully off left edge
+  const END_X   = 1930;         // fully off right edge
+
+  // Single progress value drives both the bar and the reveal, so the
+  // revealed edge of slide B is always welded to the bar's trailing edge.
+  const wipe = { x: START_X };
+  function applyWipe() {
+    bar.style.transform = "translateX(" + wipe.x + "px)";
+    // everything left of the bar's trailing (left) edge shows slide B
+    const revealed = Math.max(0, Math.min(1920, wipe.x + BAR_W * 0.5));
+    slideB.style.clipPath = "inset(0px " + (1920 - revealed) + "px 0px 0px)";
+  }
+  applyWipe();
+
+  const tl = gsap.timeline();
+
+  /* --- 0.0–0.4s : slide A title settles in --- */
+  tl.fromTo("#contentA .kicker",
+    { opacity: 0, y: -26 },
+    { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 0.0);
+  tl.fromTo("#contentA .title",
+    { opacity: 0, y: 36, scale: 0.97 },
+    { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" }, 0.05);
+  tl.fromTo("#contentA .rule",
+    { scaleX: 0 },
+    { scaleX: 1, duration: 0.35, ease: "power2.out" }, 0.15);
+  tl.fromTo("#slideA .index",
+    { opacity: 0 },
+    { opacity: 1, duration: 0.3, ease: "power1.out" }, 0.2);
+
+  /* --- 1.2–2.2s : the wipe. One ease, fast through the middle. --- */
+  tl.to(wipe, {
+    x: END_X, duration: 1.0, ease: "power3.inOut", onUpdate: applyWipe
+  }, 1.2);
+
+  // Slide A's title gives a gentle push-off as the bar overtakes it,
+  // selling the mechanical hand-off (it is covered by ~1.7s anyway).
+  tl.to("#contentA", {
+    xPercent: -53, opacity: 0.85, duration: 0.45, ease: "power2.in"
+  }, 1.35);
+
+  /* --- 2.2–4.0s : slide B holds; title lands with a small settle --- */
+  // B's content is pre-placed slightly right and eases home as the bar
+  // clears the right edge. It is clipped until the bar passes center,
+  // so it never appears early.
+  gsap.set("#contentB", { xPercent: -47 });
+  tl.to("#contentB", {
+    xPercent: -50, duration: 0.55, ease: "power3.out"
+  }, 1.85);
+  tl.fromTo("#contentB .title",
+    { scale: 1.025 },
+    { scale: 1, duration: 0.45, ease: "power2.out" }, 2.1);
+  tl.fromTo("#contentB .rule",
+    { scaleX: 0.4, opacity: 0.6 },
+    { scaleX: 1, opacity: 1, duration: 0.45, ease: "power2.out" }, 2.1);
+
+  // hold to exactly 4.0s
+  tl.to({}, { duration: 0.01 }, 3.99);
+</script>
+</body>
+</html>

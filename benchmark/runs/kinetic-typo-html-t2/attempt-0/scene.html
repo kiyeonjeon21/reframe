@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #0D0D0F; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+  /* subtle static vignette so the dark field has depth */
+  #stage::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 62% 55% at 50% 47%,
+                rgba(255,255,255,0.045) 0%, rgba(255,255,255,0) 62%);
+    pointer-events: none;
+  }
+  #block {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center;
+    gap: 26px;
+  }
+  .word {
+    font-weight: 800; text-transform: uppercase;
+    line-height: 0.92; white-space: nowrap;
+    opacity: 0; will-change: transform, opacity;
+  }
+  .word span { display: inline-block; }
+  .word-plain {
+    font-size: 158px; color: #FFFFFF; letter-spacing: 0.045em;
+  }
+  #w-nothing {
+    font-size: 226px; color: #FFC400; letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="block">
+    <div class="word word-plain" id="w-ship"><span>SHIP</span></div>
+    <div class="word word-plain" id="w-fast"><span>FAST</span></div>
+    <div class="word word-plain" id="w-break"><span>BREAK</span></div>
+    <div class="word" id="w-nothing"><span>NOTHING</span></div>
+  </div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  const words = ["#w-ship", "#w-fast", "#w-break", "#w-nothing"];
+
+  // initial state
+  gsap.set(words, { opacity: 0, scale: 0.4, transformOrigin: "50% 50%" });
+
+  const tl = gsap.timeline();
+
+  // 1) Punch-in, one word at a time, in reading order (~0.26s apart).
+  //    Scale from 40% with a quick overshoot, then a crisp settle.
+  const START = 0.45, STEP = 0.26;
+  words.forEach((sel, i) => {
+    const t = START + i * STEP;
+    tl.to(sel, { opacity: 1, duration: 0.12, ease: "power1.out" }, t)
+      .to(sel, { scale: 1.07, duration: 0.2, ease: "power3.out" }, t)
+      .to(sel, { scale: 1, duration: 0.14, ease: "power2.inOut" }, t + 0.2);
+  });
+  // NOTHING lands at ~1.57s
+
+  // 2) Hold: subtle continuous pulse on NOTHING (inner span, so it
+  //    composes cleanly with the wrapper's pop/exit transforms).
+  gsap.to("#w-nothing span", {
+    scale: 1.028, duration: 0.55, yoyo: true, repeat: -1,
+    ease: "sine.inOut", delay: 1.7, transformOrigin: "50% 50%"
+  });
+
+  // 3) Exit: final ~0.6s — lines fly out horizontally, alternating
+  //    directions, accelerating, while fading.
+  const EXIT = 4.35;
+  words.forEach((sel, i) => {
+    const dir = i % 2 === 0 ? -1 : 1; // SHIP left, FAST right, BREAK left, NOTHING right
+    tl.to(sel, {
+      x: dir * 1500, opacity: 0, duration: 0.42, ease: "power3.in"
+    }, EXIT + i * 0.045);
+  });
+  // exits complete by ~4.91s; short trailing hold to 5.0s
+</script>
+</body>
+</html>

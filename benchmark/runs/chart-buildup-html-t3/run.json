@@ -1,0 +1,20 @@
+{
+  "runId": "chart-buildup-html-t3",
+  "task": "chart-buildup",
+  "arm": "html",
+  "trial": 3,
+  "duration": 6,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 135,
+    "codeChars": 5267
+  }
+}

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #101014; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #slideA { background: #14324F; z-index: 1; }
+  #slideB { background: #1F4032; z-index: 2;
+            clip-path: inset(0 1920px 0 0); }
+
+  .content {
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .kicker {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 30px; font-weight: 700;
+    letter-spacing: 14px; text-indent: 14px; /* balance tracking */
+    margin-bottom: 30px;
+  }
+
+  .rule {
+    width: 96px; height: 6px; background: #FF5C39;
+    border-radius: 3px; margin-bottom: 42px;
+    transform-origin: 50% 50%;
+  }
+
+  .title {
+    color: #ffffff;
+    font-size: 168px; font-weight: 800;
+    letter-spacing: 6px; text-indent: 6px;
+    line-height: 1; white-space: nowrap;
+  }
+
+  .index {
+    position: absolute; left: 90px; bottom: 76px;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 28px; font-weight: 700; letter-spacing: 8px;
+  }
+
+  #bar {
+    position: absolute; left: 0; top: 0;
+    width: 140px; height: 1080px;
+    background: #FF5C39; z-index: 3;
+    transform: translateX(-150px); /* fully off-frame left */
+  }
+  /* soft trailing edge so the bar reads as a moving blade, no hard seam */
+  #bar::before {
+    content: ""; position: absolute; top: 0; bottom: 0;
+    left: -56px; width: 56px;
+    background: linear-gradient(to right, rgba(255,92,57,0), rgba(255,92,57,0.55));
+  }
+  #bar::after {
+    content: ""; position: absolute; top: 0; bottom: 0;
+    right: -56px; width: 56px;
+    background: linear-gradient(to left, rgba(255,92,57,0), rgba(255,92,57,0.55));
+  }
+  #barCore {
+    position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 8px; margin-left: -4px;
+    background: rgba(255, 255, 255, 0.35);
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div class="slide" id="slideA">
+    <div class="content" id="contentA">
+      <div class="kicker">CHAPTER 01</div>
+      <div class="rule" id="ruleA"></div>
+      <div class="title" id="titleA">THE PROBLEM</div>
+    </div>
+    <div class="index">01 / 02</div>
+  </div>
+
+  <div class="slide" id="slideB">
+    <div class="content" id="contentB">
+      <div class="kicker">CHAPTER 02</div>
+      <div class="rule" id="ruleB"></div>
+      <div class="title" id="titleB">THE SOLUTION</div>
+    </div>
+    <div class="index">02 / 02</div>
+  </div>
+
+  <div id="bar"><div id="barCore"></div></div>
+
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  const W = 1920;
+  const BAR_W = 140;
+  const slideB = document.getElementById("slideB");
+  const bar = document.getElementById("bar");
+
+  // ---------------------------------------------------------------
+  // Wipe driver: one proxy value drives BOTH the bar position and
+  // slide B's reveal edge, so the seam is mechanically locked to the
+  // bar's trailing edge — no flash frames, no gaps.
+  // ---------------------------------------------------------------
+  const sweep = { p: 0 };
+  const START_X = -BAR_W - 10;   // bar fully off-frame left (incl. glow)
+  const END_X   = W + 10;        // bar fully off-frame right
+  const SPAN    = END_X - START_X;
+
+  function applySweep() {
+    const edge = START_X + SPAN * sweep.p;          // bar's left (trailing) edge
+    gsap.set(bar, { x: edge });
+    const reveal = Math.max(0, Math.min(W, edge));  // B revealed up to the seam
+    slideB.style.clipPath = "inset(0 " + (W - reveal) + "px 0 0)";
+  }
+  applySweep();
+
+  // Pre-state for elements that animate in later.
+  gsap.set("#titleA",   { opacity: 0, y: 46 });
+  gsap.set("#ruleA",    { scaleX: 0 });
+  gsap.set("#contentA .kicker", { opacity: 0, y: 24 });
+
+  gsap.set("#titleB",   { opacity: 0, y: 56 });
+  gsap.set("#ruleB",    { scaleX: 0 });
+  gsap.set("#contentB .kicker", { opacity: 0, y: 24 });
+  gsap.set("#slideB .index",    { opacity: 0 });
+  gsap.set("#slideA .index",    { opacity: 0 });
+
+  const tl = gsap.timeline();
+
+  // ----- Phase 1 (0.0–1.2s): slide A settles in, then holds --------
+  tl.to("#contentA .kicker", { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0.02)
+    .to("#ruleA",  { scaleX: 1, duration: 0.35, ease: "power3.out" }, 0.08)
+    .to("#titleA", { opacity: 1, y: 0, duration: 0.40, ease: "power3.out" }, 0.06)
+    .to("#slideA .index", { opacity: 1, duration: 0.30, ease: "power2.out" }, 0.20);
+
+  // ----- Phase 2 (1.2–2.2s): the wipe ------------------------------
+  // Confident in-out: slow launch, fast through the middle, eased landing.
+  tl.to(sweep, {
+    p: 1, duration: 1.0, ease: "power3.inOut", onUpdate: applySweep
+  }, 1.2);
+
+  // Slide A's content gets gently pushed as the blade approaches,
+  // selling the mechanical shove of the wipe.
+  tl.to("#contentA", { x: -70, duration: 0.85, ease: "power2.in" }, 1.25);
+
+  // ----- Phase 3 (2.2–4.0s): slide B lands and holds ----------------
+  // The bar's trailing edge crosses center (~t=1.70s); B's title only
+  // begins appearing after that, and settles as the bar clears right.
+  tl.to("#contentB .kicker", { opacity: 1, y: 0, duration: 0.40, ease: "power3.out" }, 1.86)
+    .to("#ruleB",  { scaleX: 1, duration: 0.42, ease: "power3.out" }, 1.90)
+    .to("#titleB", { opacity: 1, y: 0, duration: 0.48, ease: "power3.out" }, 1.92)
+    .to("#titleB", { scale: 1.012, duration: 0.14, ease: "power1.out" }, 2.40)
+    .to("#titleB", { scale: 1,     duration: 0.20, ease: "power1.inOut" }, 2.54)
+    .to("#slideB .index", { opacity: 1, duration: 0.35, ease: "power2.out" }, 2.20);
+
+  // Hold to exactly 4.0 seconds.
+  tl.to({}, { duration: 0.01 }, 3.99);
+</script>
+</body>
+</html>

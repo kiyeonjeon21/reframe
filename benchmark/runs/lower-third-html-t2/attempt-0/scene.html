@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #0E1116; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+
+  /* Lower-third group anchored in the lower-left safe area.
+     Baseline of the name sits around y = 940. */
+  #lower-third {
+    position: absolute;
+    left: 120px;
+    top: 832px;            /* group top; name baseline lands near y=940 */
+    display: flex;
+    align-items: stretch;
+  }
+
+  /* Accent: vertical bar in #00C2A8. Anchored at top, grows downward. */
+  #accent {
+    width: 10px;
+    height: 138px;
+    background: #00C2A8;
+    border-radius: 2px;
+    margin-right: 28px;
+    transform-origin: 50% 0%;
+    opacity: 0;
+  }
+
+  #text-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  #name {
+    font-size: 76px;
+    font-weight: 800;
+    color: #FFFFFF;
+    line-height: 1.0;
+    letter-spacing: -1px;
+    opacity: 0;
+    white-space: nowrap;
+  }
+
+  #role {
+    margin-top: 16px;
+    font-size: 34px;
+    font-weight: 400;
+    color: #A8B0BD;
+    line-height: 1.0;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    opacity: 0;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="lower-third">
+    <div id="accent"></div>
+    <div id="text-block">
+      <div id="name">Dr. Maya Chen</div>
+      <div id="role">Climate Scientist, NOAA</div>
+    </div>
+  </div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  // Timeline: 0.0–0.4 hold, 0.4–1.2 enter, hold to 4.2, 4.2–5.0 exit.
+  const tl = gsap.timeline({ delay: 0.4 });
+
+  // --- ENTRANCE (0.4s – 1.2s) ---
+  // Accent bar leads: fades in while scaling down its height and sliding from the left.
+  tl.fromTo("#accent",
+    { opacity: 0, x: -36, scaleY: 0 },
+    { opacity: 1, x: 0, scaleY: 1, duration: 0.45, ease: "power3.out" }, 0);
+
+  // Name follows with a slight delay.
+  tl.fromTo("#name",
+    { opacity: 0, x: -48 },
+    { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 0.12);
+
+  // Role last.
+  tl.fromTo("#role",
+    { opacity: 0, x: -40 },
+    { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 0.25);
+  // Entrance fully settled by 0.4 + 0.25 + 0.55 = 1.2s.
+
+  // --- HOLD until 4.2s, then EXIT (4.2s – 5.0s) ---
+  // Absolute timeline positions (timeline starts at 0.4s real time, so 3.8 = 4.2s).
+  tl.to("#role",
+    { opacity: 0, x: -36, duration: 0.45, ease: "power2.in" }, 3.8);
+  tl.to("#name",
+    { opacity: 0, x: -44, duration: 0.5, ease: "power2.in" }, 3.86);
+  tl.to("#accent",
+    { opacity: 0, x: -28, scaleY: 0, duration: 0.5, ease: "power2.in" }, 3.94);
+  // Exit complete at 0.4 + 3.94 + 0.5 = 4.84s; clean empty frame through 5.0s.
+</script>
+</body>
+</html>

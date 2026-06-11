@@ -1,0 +1,8 @@
+{
+ "fidelity": 5,
+ "layout": 5,
+ "motion": 4,
+ "polish": 5,
+ "overall": 5,
+ "rationale": "Exact text 'Dr. Maya Chen' and 'CLIMATE SCIENTIST, NOAA' render in correct hierarchy with the teal #00C2A8 vertical bar plus underline, positioned in the lower-left safe area on the dark background, with empty first frame and a clean exit by 100%. Layout is tightly aligned with the bar spanning both lines and nothing clipped. The filmstrip shows the accent bar alone in tile 2 before the text appears, confirming the staged accent-leads entrance, though the in-between easing of entrance and exit is only barely sampled so the eases cannot be fully verified. Typography and contrast look broadcast-ready; this could ship as-is."
+}

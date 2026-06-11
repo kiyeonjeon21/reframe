@@ -1,0 +1,8 @@
+{
+ "fidelity": 2,
+ "layout": 2,
+ "motion": 4,
+ "polish": 4,
+ "overall": 2,
+ "rationale": "Slide A matches the brief (navy #14324F, centered bold white 'THE PROBLEM'), but slide B's title reads 'SOLUTION' instead of 'THE SOLUTION' (wrong text caps fidelity at 2) and is flush against the left frame edge rather than centered, with the S appearing to touch/clip the edge. The wipe itself is mechanically coherent: A holds through 1.2s, the orange ~140px bar sweeps left-to-right revealing B behind it (visible mid-sweep in tile 5 and exiting right in the 50% still), and B holds for the back half, though B's title sits at a different position during the reveal than in its final resting place. Typography and finishing (eyebrow label, accent underline, page counter) are clean and confident, but the off-brief text and badly off-center slide B mean it needs a revision pass before shipping."
+}

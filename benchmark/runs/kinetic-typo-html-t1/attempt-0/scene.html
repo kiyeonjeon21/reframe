@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #0D0D0F; overflow: hidden;
+    font-family: Inter, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #block {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .word {
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    line-height: 1.0;
+    letter-spacing: 0.05em;
+    margin-right: -0.05em; /* compensate trailing letter-spacing for optical centering */
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  .small {
+    font-size: 148px;
+    margin-bottom: 26px;
+  }
+  #w4 {
+    font-size: 226px;
+    color: #FFC400;
+    margin-bottom: 0;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="block">
+    <div class="word small" id="w1">SHIP</div>
+    <div class="word small" id="w2">FAST</div>
+    <div class="word small" id="w3">BREAK</div>
+    <div class="word" id="w4">NOTHING</div>
+  </div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  // Timeline map (absolute seconds, 5.0s total):
+  //   0.55 - 1.64  words punch in, 0.25s apart, overshoot pop + settle
+  //   1.64 - 4.30  block hold; NOTHING pulses gently
+  //   4.30 - 4.92  fast horizontal exit, alternating directions per line
+
+  gsap.set(".word", { transformOrigin: "50% 50%" });
+
+  const tl = gsap.timeline({ delay: 0.55 });
+  const words = ["#w1", "#w2", "#w3", "#w4"];
+
+  words.forEach((w, i) => {
+    const t = i * 0.25;
+    tl.fromTo(w,
+      { opacity: 0, scale: 0.4 },
+      { opacity: 1, scale: 1.1, duration: 0.2, ease: "power3.out" }, t)
+      .to(w, { scale: 1, duration: 0.14, ease: "power2.inOut" }, t + 0.2);
+  });
+
+  // Subtle continuous pulse on NOTHING during the hold (starts after it settles).
+  gsap.to("#w4", {
+    scale: 1.035, duration: 0.55, yoyo: true, repeat: -1,
+    ease: "sine.inOut", delay: 1.72
+  });
+
+  // Exit: alternating directions per line, accelerating, fading.
+  const exitT = 3.75; // timeline time => 4.30s absolute
+  const dirs = [-1, 1, -1, 1];
+  words.forEach((w, i) => {
+    tl.to(w, {
+      x: dirs[i] * 760,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power3.in"
+    }, exitT + i * 0.04);
+  });
+</script>
+</body>
+</html>

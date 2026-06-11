@@ -1,0 +1,8 @@
+{
+ "fidelity": 4,
+ "layout": 4,
+ "motion": 4,
+ "polish": 4,
+ "overall": 4,
+ "rationale": "All required content is present and correct: #14324F slide A with bold white 'THE PROBLEM', #1F4032 slide B with 'THE SOLUTION', and an orange #FF5C39 vertical bar that sweeps left-to-right mid-clip (filmstrip tile 5 shows the bar near the right with B already revealed behind it, and B's title only appears after the pass). Typography is confident with tasteful extras (kicker 'CHAPTER 01/02', accent underline, page counter), and the title lands with a visible opacity settle in tiles 6-7. The main flaws are a persistent motion-blur smear of the bar that never fully clears the frame edges \u2014 a faint red gradient at the left during slide A (visible even at 0s, before the sweep should start) and an orange residue at the right edge through the final frames, which reads as a visible seam the brief explicitly forbids. The 0% frame is also fully empty of text, and these lingering artifacts keep an otherwise shippable clip at one revision pass short of broadcast-ready."
+}

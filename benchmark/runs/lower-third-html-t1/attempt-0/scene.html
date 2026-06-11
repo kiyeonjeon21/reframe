@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #0E1116; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+
+  /* Lower-third block anchored in the lower-left safe area.
+     Baseline of the name sits around y = 940. */
+  #lower-third {
+    position: absolute;
+    left: 120px;
+    top: 832px;          /* block top; name baseline lands ~y940 */
+    display: flex;
+    align-items: stretch;
+  }
+
+  /* Clipping wrappers so text reveals feel like a true broadcast wipe */
+  .clip {
+    overflow: hidden;
+  }
+
+  #accent {
+    width: 10px;
+    background: #00C2A8;
+    border-radius: 2px;
+    margin-right: 34px;
+    transform-origin: top center;
+    /* height animated via GSAP; full height set there */
+    height: 168px;
+  }
+
+  #text-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  #name {
+    color: #FFFFFF;
+    font-size: 84px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+  }
+
+  #role {
+    color: #A8B0BD;
+    font-size: 38px;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-top: 10px;
+    white-space: nowrap;
+  }
+
+  /* subtle keyline under the role, in the accent color, very thin */
+  #underline {
+    height: 2px;
+    background: rgba(0, 194, 168, 0.55);
+    margin-top: 16px;
+    width: 100%;
+    transform-origin: left center;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="lower-third">
+    <div id="accent"></div>
+    <div id="text-col">
+      <div class="clip"><div id="name">Dr. Maya Chen</div></div>
+      <div class="clip"><div id="role">Climate Scientist, NOAA</div></div>
+      <div id="underline"></div>
+    </div>
+  </div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  // Total: 5.0s. 0.0–0.4 empty hold, 0.4–1.2 enter, hold to 4.2, 4.2–5.0 exit.
+
+  // Initial states
+  gsap.set("#accent",    { scaleY: 0, opacity: 0 });
+  gsap.set("#name",      { x: -70, opacity: 0 });
+  gsap.set("#role",      { x: -50, opacity: 0 });
+  gsap.set("#underline", { scaleX: 0, opacity: 0 });
+
+  const tl = gsap.timeline({ delay: 0.4 });
+
+  // --- ENTER (0.4s – 1.2s) ---
+  // Accent bar leads: grows down + slight slide-in feel via scale
+  tl.to("#accent", {
+      scaleY: 1, opacity: 1,
+      duration: 0.45, ease: "power3.out"
+    }, 0)
+    // Name follows with a slight delay
+    .to("#name", {
+      x: 0, opacity: 1,
+      duration: 0.55, ease: "power3.out"
+    }, 0.12)
+    // Role next
+    .to("#role", {
+      x: 0, opacity: 1,
+      duration: 0.5, ease: "power3.out"
+    }, 0.26)
+    // Thin keyline draws out last
+    .to("#underline", {
+      scaleX: 1, opacity: 1,
+      duration: 0.45, ease: "power2.out"
+    }, 0.34);
+  // Enter completes at 0.4 + 0.34 + 0.45 = 1.19s ≈ 1.2s
+
+  // --- HOLD until 4.2s (absolute), then EXIT (4.2s – 5.0s) ---
+  // Timeline-local time for 4.2s absolute = 4.2 - 0.4 = 3.8
+  tl.to("#underline", {
+      scaleX: 0, opacity: 0,
+      duration: 0.3, ease: "power2.in"
+    }, 3.8)
+    .to("#role", {
+      x: -40, opacity: 0,
+      duration: 0.4, ease: "power2.in"
+    }, 3.84)
+    .to("#name", {
+      x: -60, opacity: 0,
+      duration: 0.45, ease: "power2.in"
+    }, 3.9)
+    .to("#accent", {
+      scaleY: 0, opacity: 0,
+      duration: 0.4, ease: "power2.in"
+    }, 4.0);
+  // Exit completes at 0.4 + 3.9 + 0.45 = 4.75s — clean by 5.0s.
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+ "fidelity": 2,
+ "layout": 4,
+ "motion": 4,
+ "polish": 4,
+ "overall": 3,
+ "rationale": "Value labels read '8', '9', '11', '14' instead of the required one-decimal strings '8.2', '9.1', '11.4', '14.0', a wrong-text violation that caps fidelity at 2; the title, bar color, baseline, and muted quarter labels are otherwise correct. The filmstrip shows a coherent build: empty first tile, title plus a staggered left-to-right bar growth with count-up labels riding the bar tops, a long hold, and a dimming fade-out, though the 100% still is only partially faded rather than fully out. Layout is clean and proportional (heights track the data, labels centered, nothing clipped) with the chart block sitting slightly left in the frame. Typography and rounded bar tops are tidy, so it needs one revision pass mainly for the label formatting and fade-out completion."
+}

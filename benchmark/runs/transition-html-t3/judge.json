@@ -1,0 +1,8 @@
+{
+ "fidelity": 4,
+ "layout": 5,
+ "motion": 4,
+ "polish": 5,
+ "overall": 4,
+ "rationale": "Both required titles appear with correct text, white bold type on the specified blue and green fields, and the orange #FF5C39 vertical bar visibly leads the wipe with slide B revealed behind it (tile 5 shows green trailing the bar while slide A's clipped title still sits ahead of it, which is mechanically coherent). Fidelity loses a point for additions and small timing drift: uncatalogued eyebrow labels ('01 \u2014 DIAGNOSIS', '02 \u2014 RESPONSE') and underline ticks, gradient rather than flat backgrounds, and the bar has not yet entered the frame at ~1.33s though the sweep is briefed to start at 1.2s. Motion otherwise reads well \u2014 title settles in during the first beat, fast mid-sweep, B holds cleanly \u2014 but a thin orange sliver near the bottom-row tile seam (~2.2-2.7s) suggests the bar lingers or re-registers at an edge, a minor coherence smudge. Layout and typography are confidently centered, hierarchized, and broadcast-clean; one revision pass on timing would make it shippable as-is."
+}

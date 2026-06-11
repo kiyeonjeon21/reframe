@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #08090B; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+
+  /* soft ambient glow behind the lockup */
+  #glow {
+    position: absolute; left: 960px; top: 430px;
+    width: 1100px; height: 1100px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle,
+      rgba(124, 92, 255, 0.16) 0%,
+      rgba(124, 92, 255, 0.05) 38%,
+      rgba(124, 92, 255, 0) 68%);
+    opacity: 0;
+  }
+
+  /* whole lockup — used for the final scale-up + fade */
+  #lockup {
+    position: absolute; left: 0; top: 0;
+    width: 1920px; height: 1080px;
+  }
+
+  /* ---- mark ---- */
+  #markFloat {
+    position: absolute; left: 960px; top: 388px;
+    width: 0; height: 0;            /* pure anchor; children center on it */
+  }
+  #mark { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+
+  #ring {
+    position: absolute; left: 0; top: 0;
+    width: 248px; height: 248px; margin: -124px 0 0 -124px;
+    border: 14px solid #7C5CFF; border-radius: 50%;
+    box-shadow: 0 0 60px rgba(124, 92, 255, 0.35),
+                inset 0 0 28px rgba(124, 92, 255, 0.18);
+    opacity: 0;
+  }
+
+  #core {
+    position: absolute; left: 0; top: 0;
+    width: 92px; height: 92px; margin: -46px 0 0 -46px;
+    background: #FFFFFF; border-radius: 22px;
+    box-shadow: 0 0 44px rgba(255, 255, 255, 0.45);
+    opacity: 0;
+  }
+
+  .orbitDot {
+    position: absolute; left: 0; top: 0;
+    width: 26px; height: 26px; margin: -13px 0 0 -13px;
+    background: #B9A6FF; border-radius: 50%;
+    opacity: 0;
+  }
+
+  /* ---- type ---- */
+  #wordmark {
+    position: absolute; left: 0; top: 562px; width: 1920px;
+    text-align: center;
+    font-size: 148px; font-weight: 800; color: #FFFFFF;
+    letter-spacing: 0.42em;
+    text-indent: 0.42em;            /* re-center: cancels trailing tracking */
+    line-height: 1;
+  }
+  #wordmark span { display: inline-block; opacity: 0; }
+
+  #tagline {
+    position: absolute; left: 0; top: 742px; width: 1920px;
+    text-align: center;
+    font-size: 34px; font-weight: 400; color: #8B8F9A;
+    letter-spacing: 0.55em;
+    text-indent: 0.55em;
+    line-height: 1;
+    opacity: 0;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow"></div>
+  <div id="lockup">
+    <div id="markFloat">
+      <div id="mark">
+        <div id="ring"></div>
+        <div class="orbitDot" id="dotA"></div>
+        <div class="orbitDot" id="dotB"></div>
+        <div id="core"></div>
+      </div>
+    </div>
+    <div id="wordmark"
+      ><span>N</span><span>O</span><span>V</span><span>A</span></div>
+    <div id="tagline">light the way</div>
+  </div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  const R = 124 - 7; // ring centerline radius (outer 124, border 14 -> mid 117)
+
+  // park the orbit dots on the ring's left/right centerline
+  gsap.set("#dotA", { x: -R, y: 0 });
+  gsap.set("#dotB", { x:  R, y: 0 });
+
+  const tl = gsap.timeline();
+
+  /* ---------- 0.0 – 1.2s : mark assembles ---------- */
+
+  // ambient glow breathes in underneath everything
+  tl.to("#glow", { opacity: 1, duration: 1.4, ease: "power2.out" }, 0.0);
+
+  // ring: scales in while its rotation settles to 0 (shadow makes spin read)
+  tl.fromTo("#ring",
+    { scale: 0.35, rotation: -150, opacity: 0 },
+    { scale: 1, rotation: 0, opacity: 1, duration: 1.05, ease: "expo.out" },
+    0.0);
+
+  // orbit dots: sweep around the ring into their resting positions
+  tl.fromTo("#dotA",
+    { rotation: -200, transformOrigin: `${13 + R}px 13px`, opacity: 0, scale: 0.4 },
+    { rotation: 0, opacity: 1, scale: 1, duration: 0.95, ease: "power3.out" },
+    0.18);
+  tl.fromTo("#dotB",
+    { rotation: -200, transformOrigin: `${13 - R}px 13px`, opacity: 0, scale: 0.4 },
+    { rotation: 0, opacity: 1, scale: 1, duration: 0.95, ease: "power3.out" },
+    0.26);
+
+  // core: pops in rotated 45deg as a diamond, settles square with overshoot
+  tl.fromTo("#core",
+    { scale: 0, rotation: 165, opacity: 0 },
+    { scale: 1.12, rotation: 45, opacity: 1, duration: 0.62, ease: "back.out(1.6)" },
+    0.34);
+  tl.to("#core", { scale: 1, duration: 0.24, ease: "power1.inOut" }, 0.96);
+
+  /* ---------- 1.0 – 1.8s : wordmark + tagline ---------- */
+
+  tl.fromTo("#wordmark span",
+    { y: 56, opacity: 0 },
+    { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", stagger: 0.055 },
+    1.0);
+
+  tl.fromTo("#tagline",
+    { y: 30, opacity: 0 },
+    { y: 0, opacity: 1, duration: 0.62, ease: "power3.out" },
+    1.2);
+
+  /* ---------- 1.8 – 4.2s : hold; mark floats subtly ---------- */
+
+  // gentle vertical drift on the float wrapper (separate from assembly tweens)
+  tl.to("#markFloat", {
+    y: -8, duration: 1.25, ease: "sine.inOut",
+    yoyo: true, repeat: 3
+  }, 1.7);
+
+  // faint glow breathing keeps the frame alive without drawing attention
+  tl.to("#glow", {
+    opacity: 0.78, duration: 1.25, ease: "sine.inOut",
+    yoyo: true, repeat: 3
+  }, 1.7);
+
+  /* ---------- 4.2 – 5.0s : scale up slightly and fade out ---------- */
+
+  gsap.set("#lockup", { transformOrigin: "960px 505px" }); // optical center
+  tl.to("#lockup", { scale: 1.06, duration: 0.8, ease: "power2.inOut" }, 4.2);
+  tl.to("#lockup", { opacity: 0, duration: 0.65, ease: "power2.in" }, 4.3);
+  tl.to("#glow",   { opacity: 0, duration: 0.65, ease: "power2.in" }, 4.3);
+</script>
+</body>
+</html>

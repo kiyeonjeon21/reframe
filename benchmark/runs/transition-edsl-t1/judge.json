@@ -1,0 +1,8 @@
+{
+ "fidelity": 4,
+ "layout": 5,
+ "motion": 4,
+ "polish": 4,
+ "overall": 4,
+ "rationale": "Both titles render correctly ('THE PROBLEM' on the #14324F blue, 'THE SOLUTION' on the #1F4032 green) with the orange #FF5C39 bar sweeping left-to-right and the green slide correctly revealed only behind the bar, with B's title appearing only after the bar passes center. Two deviations: slide A is completely blank at 0% (title settles in late but acceptably per the brief), and in the mid-sweep tile slide A's title has already vanished from the blue region ahead of the bar, slightly breaking the 'content changes behind the bar' coherence. The sweep itself reads fast through the middle (bar visible at ~17% then ~98% in adjacent tiles), consistent with the requested ease-in-out, with no flash frames or seams. Typography is bold, centered, high-contrast and consistent across slides; this would ship with at most one small timing touch-up."
+}

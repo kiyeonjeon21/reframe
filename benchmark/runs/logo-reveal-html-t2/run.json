@@ -1,0 +1,20 @@
+{
+  "runId": "logo-reveal-html-t2",
+  "task": "logo-reveal",
+  "arm": "html",
+  "trial": 2,
+  "duration": 5,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 177,
+    "codeChars": 5116
+  }
+}

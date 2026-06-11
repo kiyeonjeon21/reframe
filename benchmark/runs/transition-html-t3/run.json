@@ -1,0 +1,20 @@
+{
+  "runId": "transition-html-t3",
+  "task": "transition",
+  "arm": "html",
+  "trial": 3,
+  "duration": 4,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 124,
+    "codeChars": 4549
+  }
+}

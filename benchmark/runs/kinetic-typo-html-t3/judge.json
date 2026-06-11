@@ -1,0 +1,8 @@
+{
+ "fidelity": 4,
+ "layout": 5,
+ "motion": 4,
+ "polish": 4,
+ "overall": 4,
+ "rationale": "All four words appear with correct text, casing, and hierarchy: SHIP/FAST/BREAK in heavy white and NOTHING larger in gold, and the filmstrip shows a clear staggered build (SHIP alone, then three words, then the full block) followed by a long hold and an empty final frame implying the exit. The block is optically centered with consistent line spacing and nothing clipped. However, the exit fly-out is not captured in any tile (the second-to-last tile still shows the static block, then black), so the alternating horizontal exit cannot be confirmed and may read as an abrupt cut; the hold pulse on NOTHING is barely perceptible across tiles, and NOTHING reads duller gold at 25% than later. Typography is clean and broadcast-adjacent but fairly default; one revision pass on the exit and pulse would make it shippable."
+}

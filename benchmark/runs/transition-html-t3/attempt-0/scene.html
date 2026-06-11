@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #101014; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #slideA { background: #14324F; }
+  #slideB { background: #1F4032; }
+
+  /* subtle vertical light falloff so the flats read broadcast-grade */
+  .slide::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg,
+      rgba(255,255,255,0.05) 0%,
+      rgba(255,255,255,0.00) 34%,
+      rgba(0,0,0,0.00) 62%,
+      rgba(0,0,0,0.16) 100%);
+  }
+
+  .content {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+  }
+  .kicker {
+    font-size: 30px; font-weight: 700; letter-spacing: 14px;
+    color: #FF5C39; margin-bottom: 34px;
+    text-indent: 14px; /* optically recenters tracked text */
+  }
+  .title {
+    font-size: 168px; font-weight: 800; letter-spacing: 4px;
+    line-height: 1; color: #FFFFFF; white-space: nowrap;
+    text-indent: 4px;
+  }
+  .rule {
+    width: 120px; height: 6px; background: rgba(255,255,255,0.35);
+    border-radius: 3px; margin-top: 46px;
+  }
+
+  /* the wipe bar — its LEFT edge is the reveal edge of slide B */
+  #bar {
+    position: absolute; top: 0; left: 0;
+    width: 140px; height: 1080px;
+    background: #FF5C39;
+    transform: translateX(-160px);
+    box-shadow: 0 0 90px rgba(255, 92, 57, 0.45);
+  }
+  /* thin highlight on the leading edge for a machined feel */
+  #bar::after {
+    content: ""; position: absolute; top: 0; right: 0;
+    width: 10px; height: 100%;
+    background: rgba(255,255,255,0.28);
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div class="slide" id="slideA">
+    <div class="content" id="contentA">
+      <div class="kicker">01 &mdash; DIAGNOSIS</div>
+      <div class="title">THE PROBLEM</div>
+      <div class="rule"></div>
+    </div>
+  </div>
+
+  <div class="slide" id="slideB">
+    <div class="content" id="contentB">
+      <div class="kicker">02 &mdash; RESPONSE</div>
+      <div class="title">THE SOLUTION</div>
+      <div class="rule"></div>
+    </div>
+  </div>
+
+  <div id="bar"></div>
+
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  const W = 1920;
+  const BAR_W = 140;
+  const slideB = document.getElementById("slideB");
+  const bar = document.getElementById("bar");
+
+  // ----- initial state ---------------------------------------------------
+  // Slide B hidden behind the (not yet arrived) wipe edge.
+  gsap.set(slideB, { clipPath: "inset(0px 1920px 0px 0px)" });
+  // Slide A title settles in during the first 0.4s.
+  gsap.set("#contentA", { opacity: 0, y: 36 });
+  // Slide B content pre-offset so it can land with a settle once revealed.
+  gsap.set("#contentB", { opacity: 0, x: 120 });
+
+  // Single proxy drives BOTH the bar and the reveal edge → zero seams.
+  const sweep = { x: -160 }; // bar's left edge, starts fully off-frame left
+  function applySweep() {
+    gsap.set(bar, { x: sweep.x });
+    // Slide B is visible strictly LEFT of the bar's trailing (left) edge.
+    const edge = Math.max(0, Math.min(W, sweep.x));
+    gsap.set(slideB, { clipPath: `inset(0px ${W - edge}px 0px 0px)` });
+  }
+  applySweep();
+
+  // ----- timeline (total 4.0s) -------------------------------------------
+  const tl = gsap.timeline();
+
+  // 0.0–0.4s : slide A title settles in
+  tl.to("#contentA", { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0);
+
+  // 1.2–2.2s : the wipe — fast through the middle (confident in-out)
+  tl.to(sweep, {
+    x: W + 40,                 // left edge clears 1920 → B fully revealed, bar off-frame
+    duration: 1.0,
+    ease: "power2.inOut",
+    onUpdate: applySweep
+  }, 1.2);
+
+  // Slide A content gets pushed gently as the bar shoves it off (parallax drift)
+  tl.to("#contentA", { x: -110, opacity: 0.85, duration: 1.0, ease: "power2.inOut" }, 1.2);
+
+  // Slide B content: invisible before the bar passes center (clip guarantees it),
+  // then lands with a small settle as the bar clears the right edge.
+  tl.to("#contentB", { opacity: 1, duration: 0.25, ease: "power1.out" }, 1.70);
+  tl.to("#contentB", { x: -10, duration: 0.55, ease: "power2.out" }, 1.70);
+  tl.to("#contentB", { x: 0, duration: 0.35, ease: "power1.inOut" }, 2.25);
+
+  // 2.2–4.0s : slide B holds (trailing hold to exactly 4.0s)
+  tl.to({}, { duration: 0.01 }, 3.99);
+</script>
+</body>
+</html>

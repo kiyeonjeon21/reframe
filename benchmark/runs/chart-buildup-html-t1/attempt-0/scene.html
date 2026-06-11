@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #0B0E14; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+  #scene { position: absolute; inset: 0; }
+
+  /* Title */
+  #title {
+    position: absolute; left: 410px; top: 128px;
+    color: #FFFFFF; font-size: 64px; font-weight: 800;
+    letter-spacing: -0.5px; opacity: 0;
+  }
+  #title .accent {
+    display: inline-block; width: 14px; height: 48px;
+    background: #5B8CFF; border-radius: 4px;
+    margin-right: 22px; transform: translateY(2px);
+  }
+  #subtitle {
+    position: absolute; left: 446px; top: 212px;
+    color: #8B93A7; font-size: 28px; font-weight: 400;
+    letter-spacing: 0.5px; opacity: 0;
+  }
+
+  /* Plot */
+  .gridline {
+    position: absolute; left: 380px; width: 1160px; height: 1px;
+    background: #1B2230; opacity: 0;
+  }
+  #axis {
+    position: absolute; left: 380px; top: 850px;
+    width: 1160px; height: 2px; background: #3A4150;
+    transform-origin: 50% 50%; opacity: 0;
+  }
+
+  .bar {
+    position: absolute; bottom: 230px; width: 180px; height: 0;
+    background: linear-gradient(180deg, #7FA6FF 0%, #5B8CFF 38%, #4F7FF2 100%);
+    border-radius: 12px 12px 0 0;
+  }
+  .value-label {
+    position: absolute; width: 180px; bottom: 248px;
+    text-align: center; color: #FFFFFF;
+    font-size: 44px; font-weight: 700;
+    font-variant-numeric: tabular-nums; opacity: 0;
+  }
+  .quarter-label {
+    position: absolute; width: 180px; top: 876px;
+    text-align: center; color: #8B93A7;
+    font-size: 34px; font-weight: 700; letter-spacing: 1px;
+    opacity: 0;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="scene">
+    <div id="title"><span class="accent"></span>2025 Revenue ($M)</div>
+    <div id="subtitle">Quarterly performance</div>
+    <div id="plot"></div>
+    <div id="axis"></div>
+  </div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  // ---------- Layout constants ----------
+  const BASELINE_BOTTOM = 230;   // px from stage bottom (axis at y = 850)
+  const MAX_VALUE = 14.0;
+  const MAX_HEIGHT = 540;        // px height of the tallest bar (Q4 = 14.0)
+  const BAR_W = 180;
+  const GAP = 130;
+  const data = [
+    { q: "Q1", v: 8.2 },
+    { q: "Q2", v: 9.1 },
+    { q: "Q3", v: 11.4 },
+    { q: "Q4", v: 14.0 }
+  ];
+  const totalW = data.length * BAR_W + (data.length - 1) * GAP; // 1110
+  const startX = (1920 - totalW) / 2;                           // 405
+
+  // ---------- Build elements ----------
+  const plot = document.getElementById("plot");
+  const scene = document.getElementById("scene");
+  const bars = [];
+
+  // Faint horizontal gridlines (every 3.5 $M above the baseline)
+  for (let i = 1; i <= 4; i++) {
+    const g = document.createElement("div");
+    g.className = "gridline";
+    g.style.top = (850 - (i / 4) * MAX_HEIGHT) + "px";
+    plot.appendChild(g);
+  }
+
+  data.forEach((d, i) => {
+    const x = startX + i * (BAR_W + GAP);
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.style.left = x + "px";
+    plot.appendChild(bar);
+
+    const val = document.createElement("div");
+    val.className = "value-label";
+    val.style.left = x + "px";
+    val.textContent = "0.0";
+    plot.appendChild(val);
+
+    const q = document.createElement("div");
+    q.className = "quarter-label";
+    q.style.left = x + "px";
+    q.textContent = d.q;
+    plot.appendChild(q);
+
+    bars.push({ d, bar, val, q });
+  });
+
+  // ---------- Timeline ----------
+  const tl = gsap.timeline();
+
+  // 1. 0.0–0.5s: title fades in (axis + gridlines settle in alongside).
+  tl.fromTo("#title",
+    { opacity: 0, y: 24 },
+    { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0);
+  tl.fromTo("#subtitle",
+    { opacity: 0, y: 18 },
+    { opacity: 0.9, y: 0, duration: 0.5, ease: "power2.out" }, 0.08);
+  tl.fromTo("#axis",
+    { opacity: 0, scaleX: 0 },
+    { opacity: 1, scaleX: 1, duration: 0.55, ease: "power3.out" }, 0.05);
+  tl.to(".gridline", { opacity: 1, duration: 0.4, ease: "power1.out", stagger: 0.05 }, 0.15);
+
+  // 2. 0.5–2.5s: bars grow left-to-right, 0.15s stagger, decelerating ease.
+  //    Value labels count up and ride just above the bar top.
+  const GROW_DUR = 1.55;
+  const STAGGER = 0.15;
+  bars.forEach((b, i) => {
+    const t0 = 0.5 + i * STAGGER;
+    const targetH = (b.d.v / MAX_VALUE) * MAX_HEIGHT;
+    const proxy = { h: 0, v: 0 };
+
+    tl.to(proxy, {
+      h: targetH,
+      v: b.d.v,
+      duration: GROW_DUR,
+      ease: "power3.out",
+      onUpdate: () => {
+        b.bar.style.height = proxy.h + "px";
+        b.val.style.bottom = (BASELINE_BOTTOM + proxy.h + 18) + "px";
+        b.val.textContent = proxy.v.toFixed(1);
+      }
+    }, t0);
+
+    // Value label appears as its bar starts rising.
+    tl.to(b.val, { opacity: 1, duration: 0.3, ease: "power1.out" }, t0 + 0.06);
+
+    // 3. Quarter labels fade in with their bars.
+    tl.fromTo(b.q,
+      { opacity: 0, y: 12 },
+      { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, t0 + 0.05);
+  });
+
+  // 4. Hold until 5.2s. 5. 5.2–6.0s: everything fades out together.
+  tl.to("#scene", { opacity: 0, duration: 0.8, ease: "power2.inOut" }, 5.2);
+</script>
+</body>
+</html>

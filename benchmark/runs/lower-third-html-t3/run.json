@@ -1,0 +1,20 @@
+{
+  "runId": "lower-third-html-t3",
+  "task": "lower-third",
+  "arm": "html",
+  "trial": 3,
+  "duration": 5,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 105,
+    "codeChars": 2809
+  }
+}

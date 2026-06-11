@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+
+  #stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    background: #08090B;
+    overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+
+  /* Whole lockup — scaled up + faded out at the end */
+  #lockup {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Soft ambient glow behind the mark */
+  #glow {
+    position: absolute;
+    left: 960px;
+    top: 430px;
+    width: 1100px;
+    height: 900px;
+    margin: -450px 0 0 -550px;
+    background: radial-gradient(closest-side,
+      rgba(124, 92, 255, 0.16) 0%,
+      rgba(124, 92, 255, 0.05) 45%,
+      rgba(124, 92, 255, 0) 72%);
+    opacity: 0;
+  }
+
+  /* Float wrapper (continuous subtle drift) around the mark */
+  #markFloat {
+    position: absolute;
+    left: 840px;
+    top: 260px;
+    width: 240px;
+    height: 240px;
+  }
+
+  #mark {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Two half-arcs that compose the ring */
+  .arc {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 240px;
+    box-sizing: border-box;
+    border: 16px solid #7C5CFF;
+    border-radius: 50%;
+    opacity: 0;
+  }
+  #arc1 { border-bottom-color: transparent; border-left-color: transparent; }
+  #arc2 { border-bottom-color: transparent; border-left-color: transparent; }
+
+  /* Inner diamond core */
+  #core {
+    position: absolute;
+    left: 120px;
+    top: 120px;
+    width: 76px;
+    height: 76px;
+    margin: -38px 0 0 -38px;
+    background: #F5F3FF;
+    border-radius: 10px;
+    opacity: 0;
+  }
+
+  /* Accent dot at the top of the ring */
+  #dot {
+    position: absolute;
+    left: 120px;
+    top: 8px;
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+    background: #B7A6FF;
+    border-radius: 50%;
+    opacity: 0;
+  }
+
+  #wordmark {
+    position: absolute;
+    left: 0;
+    top: 552px;
+    width: 1920px;
+    text-align: center;
+    font-size: 152px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: 0.30em;
+    padding-left: 0.30em; /* optical centering: compensates trailing tracking */
+    line-height: 1;
+    opacity: 0;
+  }
+
+  #tagline {
+    position: absolute;
+    left: 0;
+    top: 752px;
+    width: 1920px;
+    text-align: center;
+    font-size: 33px;
+    font-weight: 400;
+    color: #8A8F9B;
+    letter-spacing: 0.52em;
+    padding-left: 0.52em;
+    line-height: 1;
+    opacity: 0;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="lockup">
+    <div id="glow"></div>
+    <div id="markFloat">
+      <div id="mark">
+        <div class="arc" id="arc1"></div>
+        <div class="arc" id="arc2"></div>
+        <div id="core"></div>
+        <div id="dot"></div>
+      </div>
+    </div>
+    <div id="wordmark">NOVA</div>
+    <div id="tagline">light the way</div>
+  </div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  gsap.set("#lockup", { transformOrigin: "50% 50%" });
+  gsap.set(".arc, #core, #dot", { transformOrigin: "50% 50%" });
+
+  const tl = gsap.timeline();
+
+  // ---- 0.0–1.2s: mark assembles ----------------------------------------
+  tl.to("#glow", { opacity: 1, duration: 1.4, ease: "power2.out" }, 0);
+
+  // Two ring halves sweep in from opposite directions and settle
+  tl.fromTo("#arc1",
+    { rotation: -150, scale: 0.45, opacity: 0 },
+    { rotation: 0, scale: 1, opacity: 1, duration: 0.95, ease: "power3.out" },
+    0.0);
+  tl.fromTo("#arc2",
+    { rotation: 330, scale: 0.45, opacity: 0 },
+    { rotation: 180, scale: 1, opacity: 1, duration: 0.95, ease: "power3.out" },
+    0.12);
+
+  // Diamond core pops in, rotation settling onto its 45° resting pose
+  tl.fromTo("#core",
+    { rotation: 225, scale: 0, opacity: 0 },
+    { rotation: 45, scale: 1, opacity: 1, duration: 0.85, ease: "back.out(1.5)" },
+    0.30);
+
+  // Accent dot lands last
+  tl.fromTo("#dot",
+    { scale: 0, opacity: 0 },
+    { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" },
+    0.62);
+
+  // ---- 1.0–1.8s: wordmark rises in; tagline follows ~0.2s later --------
+  tl.fromTo("#wordmark",
+    { y: 46, opacity: 0 },
+    { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" },
+    1.0);
+  tl.fromTo("#tagline",
+    { y: 30, opacity: 0 },
+    { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" },
+    1.2);
+
+  // ---- Hold: mark floats gently so the frame stays alive ---------------
+  gsap.to("#markFloat", {
+    y: -9,
+    duration: 1.45,
+    delay: 1.3,
+    repeat: -1,
+    yoyo: true,
+    ease: "sine.inOut"
+  });
+
+  // ---- 4.2–5.0s: whole lockup scales up slightly and fades out ---------
+  tl.to("#lockup", { scale: 1.06, duration: 0.8, ease: "power2.inOut" }, 4.2);
+  tl.to("#lockup", { opacity: 0, duration: 0.8, ease: "power1.inOut" }, 4.2);
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+ "fidelity": 4,
+ "layout": 5,
+ "motion": 3,
+ "polish": 4,
+ "overall": 4,
+ "rationale": "All four words are present with correct text, weights, and colors: SHIP/FAST/BREAK in heavy white and NOTHING larger in yellow, optically centered with consistent spacing and nothing clipped. The filmstrip shows the staggered reading-order build (SHIP, then through BREAK, then NOTHING) but the stagger reads closer to ~0.5s than the briefed ~0.25s, and the hold occupies tiles 4-10 (~3s) with no visible pulse on NOTHING and no overshoot pop captured. The exit is not evidenced anywhere in the strip \u2014 the last tile still shows the fully centered block while the 100% still is black, so the fly-out reads as an abrupt disappearance rather than the briefed alternating horizontal exit. Typography and contrast are clean and near broadcast-ready; one timing/exit revision pass would be needed."
+}

@@ -1,0 +1,8 @@
+{
+ "fidelity": 4,
+ "layout": 5,
+ "motion": 3,
+ "polish": 4,
+ "overall": 4,
+ "rationale": "All four words are present with correct text, white 800-weight caps for SHIP/FAST/BREAK and a larger #FFC400 NOTHING, optically centered with consistent line spacing and nothing clipped. The filmstrip shows a clear staggered punch-in (SHIP alone, then FAST/BREAK fading in, then NOTHING), but the stagger reads closer to ~0.5s than the briefed 0.25s, and the hold occupies roughly tiles 5-10 (~3s) with no perceptible pulse on NOTHING, so the back half feels frozen. The exit is never captured in any tile \u2014 the full block is intact at the last tile and simply gone at 100%, so the briefed alternating horizontal fly-out cannot be confirmed and the ending reads as a cut. Typography is clean and high-contrast, though somewhat default; one pacing/exit revision pass would make it shippable."
+}
