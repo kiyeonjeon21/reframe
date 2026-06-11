@@ -42,16 +42,18 @@ no randomness without a seed, scrubbing and distributed rendering for free.
 
 ## Generative choreography at scale
 
-![Bloom: 300 dots on a golden-angle spiral — bloom, traveling wave, chromatic ripple, vortex collapse](docs/assets/bloom.gif)
+The kind of scene that is hand-rolled timeline math in GSAP or per-element
+`interpolate()` plumbing in React is ~100 lines here, because the host
+language *generates* the nodes, states, and phase-shifted behaviors — and the
+output is still data: **every dot, glyph, and moon keeps a stable id you can
+tweak in the preview.**
 
-[`examples/scenes/bloom.ts`](examples/scenes/bloom.ts): **300 dots** on a
-golden-angle spiral bloom out 6ms apart, breathe as a phase-shifted traveling
-wave, get washed by a radial color ripple, and collapse into a vortex —
-~120 lines, because host TypeScript *generates* the nodes, the 300-entry
-states, and the per-dot phase-shifted behaviors. Hand-rolling this timeline
-in GSAP or per-element `interpolate()` math in React is the hard way; and
-unlike either, the output here is still data — **every one of the 300 dots
-keeps a stable id you can tweak in the preview.**
+| | |
+|---|---|
+| ![Bloom](docs/assets/bloom.gif) | ![Wavefield](docs/assets/wavefield.gif) |
+| [`bloom.ts`](examples/scenes/bloom.ts) — 300 dots on a golden-angle spiral: radial bloom, traveling breath wave, chromatic ripple, vortex collapse | [`wavefield.ts`](examples/scenes/wavefield.ts) — physical interference: 1,152 phase-shifted oscillators on a 32×18 grid, second ripple source joins mid-scene |
+| ![Orbit](docs/assets/orbit.gif) | ![Typewave](docs/assets/typewave.gif) |
+| [`orbit.ts`](examples/scenes/orbit.ts) — nested transform composition: moons orbit planets orbit a sun, the whole system tilts — three nested groups, three linear tweens | [`typewave.ts`](examples/scenes/typewave.ts) — character-level kinetic type: cascade, standing wave, shatter with spin, and a second phrase assembling from the debris |
 
 ## Why not just Hyperframes / Remotion?
 
