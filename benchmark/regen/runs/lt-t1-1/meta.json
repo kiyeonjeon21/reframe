@@ -1,0 +1,8 @@
+{
+ "runId": "lt-t1-1",
+ "taskId": "lt-t1",
+ "baseScene": "lower-third",
+ "difficulty": "easy/restyle",
+ "expectedRemoved": [],
+ "trial": 1
+}

@@ -1,0 +1,10 @@
+{
+ "runId": "lr-t4-1",
+ "taskId": "lr-t4",
+ "baseScene": "logo-reveal",
+ "difficulty": "trap/add-remove-retype",
+ "expectedRemoved": [
+  "tagline"
+ ],
+ "trial": 1
+}

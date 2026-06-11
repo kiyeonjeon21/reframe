@@ -1,0 +1,46 @@
+{
+  "runId": "calibration",
+  "taskId": "calibration",
+  "baseScene": "logo-reveal",
+  "difficulty": "fixture",
+  "expectedRemoved": [],
+  "trial": 0,
+  "idMetrics": {
+    "nodeIdRecall": 0.8,
+    "stateNameRecall": 1,
+    "labelRecall": 1,
+    "lost": [
+      "tagline"
+    ],
+    "lostExpected": [],
+    "added": [
+      "underline",
+      "subtitle"
+    ],
+    "typeChanged": [],
+    "lostStates": [],
+    "lostLabels": []
+  },
+  "probe": {
+    "applied": 11,
+    "orphaned": 1,
+    "orphanKinds": {
+      "renamedNode": 1,
+      "removedNode": 0,
+      "renamedState": 0,
+      "stateNodeLost": 0,
+      "typeChange": 0,
+      "lostLabel": 0,
+      "labelKindChange": 0,
+      "other": 0
+    },
+    "sceneIdWarning": false,
+    "integrityOk": true,
+    "composeThrew": null
+  },
+  "generation": {
+    "validateOk": true,
+    "renderOk": true,
+    "static": false
+  }
+}

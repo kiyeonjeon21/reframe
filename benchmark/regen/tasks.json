@@ -1,0 +1,10 @@
+[
+  { "taskId": "lr-t1", "baseScene": "logo-reveal", "difficulty": "easy/restyle", "expectedRemoved": [] },
+  { "taskId": "lr-t2", "baseScene": "logo-reveal", "difficulty": "medium/re-choreograph", "expectedRemoved": [] },
+  { "taskId": "lr-t3", "baseScene": "logo-reveal", "difficulty": "hard/overhaul", "expectedRemoved": [] },
+  { "taskId": "lr-t4", "baseScene": "logo-reveal", "difficulty": "trap/add-remove-retype", "expectedRemoved": ["tagline"] },
+  { "taskId": "lt-t1", "baseScene": "lower-third", "difficulty": "easy/restyle", "expectedRemoved": [] },
+  { "taskId": "lt-t2", "baseScene": "lower-third", "difficulty": "medium/re-choreograph", "expectedRemoved": [] },
+  { "taskId": "lt-t3", "baseScene": "lower-third", "difficulty": "hard/overhaul", "expectedRemoved": [] },
+  { "taskId": "lt-t4", "baseScene": "lower-third", "difficulty": "trap/add-remove-retype", "expectedRemoved": ["role"] }
+]

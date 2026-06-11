@@ -1,0 +1,55 @@
+{
+  "runId": "lt-t4-1",
+  "taskId": "lt-t4",
+  "baseScene": "lower-third",
+  "difficulty": "trap/add-remove-retype",
+  "expectedRemoved": [
+    "role"
+  ],
+  "trial": 1,
+  "idMetrics": {
+    "nodeIdRecall": 1,
+    "stateNameRecall": 1,
+    "labelRecall": 1,
+    "lost": [],
+    "lostExpected": [
+      "role"
+    ],
+    "added": [
+      "dot-left",
+      "handle",
+      "dot-right"
+    ],
+    "typeChanged": [
+      {
+        "id": "bar",
+        "from": "rect",
+        "to": "line"
+      }
+    ],
+    "lostStates": [],
+    "lostLabels": []
+  },
+  "probe": {
+    "applied": 4,
+    "orphaned": 4,
+    "orphanKinds": {
+      "renamedNode": 0,
+      "removedNode": 1,
+      "renamedState": 0,
+      "stateNodeLost": 0,
+      "typeChange": 3,
+      "lostLabel": 0,
+      "labelKindChange": 0,
+      "other": 0
+    },
+    "sceneIdWarning": false,
+    "integrityOk": true,
+    "composeThrew": null
+  },
+  "generation": {
+    "validateOk": true,
+    "renderOk": true,
+    "static": false
+  }
+}

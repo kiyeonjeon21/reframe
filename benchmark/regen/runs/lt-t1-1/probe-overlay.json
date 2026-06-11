@@ -1,0 +1,34 @@
+{
+  "reframeOverlay": 1,
+  "name": "probe",
+  "target": "lower-third",
+  "nodes": {
+    "lt": {
+      "opacity": 1
+    },
+    "bar": {
+      "opacity": 1,
+      "radius": 0
+    },
+    "name": {
+      "opacity": 1,
+      "fontSize": 48
+    },
+    "role": {
+      "opacity": 1,
+      "fontSize": 28
+    }
+  },
+  "states": {
+    "hidden": {
+      "bar": {
+        "height": 0
+      }
+    },
+    "shown": {
+      "bar": {
+        "height": 110
+      }
+    }
+  }
+}

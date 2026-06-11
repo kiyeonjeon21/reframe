@@ -1,0 +1,46 @@
+{
+  "reframeOverlay": 1,
+  "name": "probe",
+  "target": "logo-reveal",
+  "nodes": {
+    "lockup": {
+      "opacity": 1
+    },
+    "disc": {
+      "opacity": 1,
+      "strokeWidth": 1
+    },
+    "mark": {
+      "opacity": 1,
+      "radius": 18
+    },
+    "wordmark": {
+      "opacity": 1,
+      "fontSize": 84
+    },
+    "tagline": {
+      "opacity": 1,
+      "fontSize": 30
+    }
+  },
+  "states": {
+    "hidden": {
+      "disc": {
+        "scale": 0
+      }
+    },
+    "revealed": {
+      "disc": {
+        "scale": 1
+      }
+    }
+  },
+  "timeline": {
+    "reveal": {
+      "duration": 0.7
+    },
+    "hold": {
+      "duration": 2.2
+    }
+  }
+}

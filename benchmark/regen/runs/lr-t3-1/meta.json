@@ -1,0 +1,8 @@
+{
+ "runId": "lr-t3-1",
+ "taskId": "lr-t3",
+ "baseScene": "logo-reveal",
+ "difficulty": "hard/overhaul",
+ "expectedRemoved": [],
+ "trial": 1
+}

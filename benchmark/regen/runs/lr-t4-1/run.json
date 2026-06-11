@@ -1,0 +1,54 @@
+{
+  "runId": "lr-t4-1",
+  "taskId": "lr-t4",
+  "baseScene": "logo-reveal",
+  "difficulty": "trap/add-remove-retype",
+  "expectedRemoved": [
+    "tagline"
+  ],
+  "trial": 1,
+  "idMetrics": {
+    "nodeIdRecall": 1,
+    "stateNameRecall": 1,
+    "labelRecall": 1,
+    "lost": [],
+    "lostExpected": [
+      "tagline"
+    ],
+    "added": [
+      "url",
+      "underline"
+    ],
+    "typeChanged": [
+      {
+        "id": "disc",
+        "from": "ellipse",
+        "to": "rect"
+      }
+    ],
+    "lostStates": [],
+    "lostLabels": []
+  },
+  "probe": {
+    "applied": 11,
+    "orphaned": 1,
+    "orphanKinds": {
+      "renamedNode": 0,
+      "removedNode": 1,
+      "renamedState": 0,
+      "stateNodeLost": 0,
+      "typeChange": 0,
+      "lostLabel": 0,
+      "labelKindChange": 0,
+      "other": 0
+    },
+    "sceneIdWarning": false,
+    "integrityOk": true,
+    "composeThrew": null
+  },
+  "generation": {
+    "validateOk": true,
+    "renderOk": true,
+    "static": false
+  }
+}

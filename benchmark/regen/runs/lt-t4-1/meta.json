@@ -1,0 +1,10 @@
+{
+ "runId": "lt-t4-1",
+ "taskId": "lt-t4",
+ "baseScene": "lower-third",
+ "difficulty": "trap/add-remove-retype",
+ "expectedRemoved": [
+  "role"
+ ],
+ "trial": 1
+}

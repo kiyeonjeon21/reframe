@@ -1,0 +1,44 @@
+{
+  "runId": "lr-t3-1",
+  "taskId": "lr-t3",
+  "baseScene": "logo-reveal",
+  "difficulty": "hard/overhaul",
+  "expectedRemoved": [],
+  "trial": 1,
+  "idMetrics": {
+    "nodeIdRecall": 1,
+    "stateNameRecall": 1,
+    "labelRecall": 1,
+    "lost": [],
+    "lostExpected": [],
+    "added": [
+      "bg-ring",
+      "bg-rule"
+    ],
+    "typeChanged": [],
+    "lostStates": [],
+    "lostLabels": []
+  },
+  "probe": {
+    "applied": 13,
+    "orphaned": 0,
+    "orphanKinds": {
+      "renamedNode": 0,
+      "removedNode": 0,
+      "renamedState": 0,
+      "stateNodeLost": 0,
+      "typeChange": 0,
+      "lostLabel": 0,
+      "labelKindChange": 0,
+      "other": 0
+    },
+    "sceneIdWarning": false,
+    "integrityOk": true,
+    "composeThrew": null
+  },
+  "generation": {
+    "validateOk": true,
+    "renderOk": true,
+    "static": false
+  }
+}
