@@ -7,10 +7,24 @@
 
 import { evaluate, type DisplayOp, type SceneIR } from "@reframe/core";
 import { renderFrame } from "@reframe/renderer-canvas";
+import { userScenes } from "virtual:reframe-user-scenes";
 import { buildPanel } from "./panel.js";
 import { EditorStore } from "./store.js";
 
-const modules = import.meta.glob<{ default: SceneIR }>("../../../examples/scenes/*.ts");
+interface SceneEntry {
+  label: string;
+  load: () => Promise<{ default: SceneIR }>;
+}
+
+const exampleModules = import.meta.glob<{ default: SceneIR }>("../../../examples/scenes/*.ts");
+const modules: Record<string, SceneEntry> = {};
+for (const path of Object.keys(exampleModules).sort()) {
+  modules[path] = { label: path.split("/").pop()!.replace(".ts", ""), load: exampleModules[path]! };
+}
+// scenes from the directory `reframe preview` was invoked in
+for (const { name, load } of userScenes) {
+  modules[`user:${name}`] ??= { label: `${name} (cwd)`, load };
+}
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
@@ -26,15 +40,15 @@ let t = 0;
 let playing = false;
 let lastTick = 0;
 
-for (const path of Object.keys(modules).sort()) {
+for (const [key, entry] of Object.entries(modules)) {
   const option = document.createElement("option");
-  option.value = path;
-  option.textContent = path.split("/").pop()!.replace(".ts", "");
+  option.value = key;
+  option.textContent = entry.label;
   select.appendChild(option);
 }
 
 async function loadScene(path: string) {
-  const mod = await modules[path]!();
+  const mod = await modules[path]!.load();
   store = new EditorStore(mod.default);
   (window as unknown as { __store: EditorStore }).__store = store; // debug/testing hook
   panel = buildPanel(store, panelRoot);
@@ -139,5 +153,5 @@ select.addEventListener("change", () => {
   currentPath = select.value;
   void loadScene(select.value);
 });
-currentPath = select.value || Object.keys(modules).sort()[0]!;
+currentPath = select.value || Object.keys(modules)[0]!;
 void loadScene(currentPath);

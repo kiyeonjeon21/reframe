@@ -15,8 +15,10 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 
 Before writing or modifying any scene (.ts), **read
 `benchmark/guides/edsl-guide.md`** — it is the complete, current syntax.
-Scenes live in `examples/scenes/` (the preview's scene list and `@reframe/core`
-workspace resolution only work there) and must be pure functions of time:
+A scene `.ts` file can live anywhere on disk — `render`/`batch` bundle it with
+esbuild and resolve `@reframe/core` themselves, and the preview lists scenes
+from the invoking directory alongside `examples/scenes/`. The repo's showcase
+scenes stay in `examples/scenes/`. Scenes must be pure functions of time:
 no `Math.random()`/`Date` (use `wiggle` with a seed).
 
 ## Regeneration contract — stable addresses

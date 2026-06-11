@@ -7,18 +7,17 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import type { OverlayDoc, SceneIR } from "@reframe/core";
+import type { OverlayDoc } from "@reframe/core";
 import {
   compileScene,
   composeScene,
   formatComposeReport,
   resolveAudioPlan,
-  validateScene,
 } from "@reframe/core";
 import { buildAudioTrack } from "./audio/index.js";
 import { encodeMp4 } from "./encode.js";
 import { captureHtml, captureIr } from "./frameLoop.js";
+import { loadScene } from "./loadScene.js";
 
 interface Args {
   mode: "ir" | "html";
@@ -64,17 +63,6 @@ function parseArgs(argv: string[]): Args {
     }
   }
   return args;
-}
-
-async function loadScene(path: string): Promise<SceneIR> {
-  if (path.endsWith(".json")) {
-    const ir = JSON.parse(await readFile(path, "utf8")) as SceneIR;
-    validateScene(ir);
-    return ir;
-  }
-  const mod = (await import(pathToFileURL(path).href)) as { default?: SceneIR };
-  if (!mod.default) throw new Error(`${path} must default-export a scene`);
-  return mod.default;
 }
 
 async function main() {

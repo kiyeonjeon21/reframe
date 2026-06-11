@@ -180,8 +180,12 @@ states, timeline operators, behaviors): `pnpm reframe guide` — the same
 ~1,700-token guide that lets an LLM write valid scenes on the first try
 (33/33 first-attempt renders in our benchmark).
 
-Scenes live in `examples/scenes/` — that's where the preview's scene list and
-the workspace import of `@reframe/core` both resolve.
+A scene is a single self-contained file, not an app: it can live in **any
+directory** — no package.json or node_modules next to it. `render` bundles it
+on the fly (resolving `@reframe/core` and any relative imports beside it), and
+`preview` lists scenes from the directory you launched it in alongside the
+repo's `examples/scenes/`. Keep overlays and batch data files right next to
+your scene.
 
 ## CLI
 
@@ -229,8 +233,9 @@ them with a diagnosis naming the likely rename. The failure hierarchy:
   scripts, so the browser is not fetched automatically).
 - `spawn ffmpeg ENOENT` → install ffmpeg (step 0).
 - Fonts: only Inter 400/700/800 are bundled; other families silently fall back.
-- Scene file outside `examples/scenes/`? `@reframe/core` won't resolve and the
-  preview won't list it — keep scenes there (or add your own workspace package).
+- A scene importing npm packages beyond `@reframe/core` only bundles if those
+  packages are resolvable from the scene's directory — scenes are meant to be
+  dependency-free documents.
 
 ## Status
 

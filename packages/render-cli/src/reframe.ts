@@ -21,7 +21,6 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SceneIR } from "@reframe/core";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const USER_CWD = process.env.INIT_CWD ?? process.cwd();
@@ -33,8 +32,8 @@ const USAGE = `reframe — declarative motion graphics
 usage:
   pnpm reframe render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S] [--no-audio]
   pnpm reframe batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
-  pnpm reframe preview                 open the scrub/edit UI (scenes from examples/scenes/)
-  pnpm reframe new <scene-name>        scaffold examples/scenes/<scene-name>.ts
+  pnpm reframe preview                 open the scrub/edit UI (examples/scenes/ + scenes in your directory)
+  pnpm reframe new <scene-name>        scaffold <scene-name>.ts (examples/scenes/ inside the repo, ./ elsewhere)
   pnpm reframe motion <mp4|framesDir>  motion-profile a rendered clip
   pnpm reframe guide [--regen]         print the scene-authoring guide (for you or your AI)
   pnpm reframe demo                    run the edit-survival demo (3 mp4s into out/)
@@ -54,9 +53,17 @@ function preflightFfmpeg() {
 }
 
 /** Run a child, mirroring output and appending a hint on known failures. */
-function run(cmd: string, args: string[], opts: { cwd?: string } = {}): Promise<number> {
+function run(
+  cmd: string,
+  args: string[],
+  opts: { cwd?: string; env?: Record<string, string> } = {},
+): Promise<number> {
   return new Promise((res) => {
-    const proc = spawn(cmd, args, { cwd: opts.cwd ?? ROOT, stdio: ["inherit", "inherit", "pipe"] });
+    const proc = spawn(cmd, args, {
+      cwd: opts.cwd ?? ROOT,
+      stdio: ["inherit", "inherit", "pipe"],
+      ...(opts.env && { env: { ...process.env, ...opts.env } }),
+    });
     let sawBrowserError = false;
     proc.stderr.on("data", (d: Buffer) => {
       const text = d.toString();
@@ -184,10 +191,9 @@ async function main() {
       }
 
       const { loadRows, runBatch } = await import("./batch.js");
-      const { pathToFileURL } = await import("node:url");
+      const { loadScene } = await import("./loadScene.js");
       const { readFile } = await import("node:fs/promises");
-      const scene = ((await import(pathToFileURL(scenePath).href)) as { default: SceneIR }).default;
-      if (!scene) fail(`${scenePath} must default-export a scene`);
+      const scene = await loadScene(scenePath);
       const baseOverlays = await Promise.all(
         baseOverlayPaths.map(async (p) => JSON.parse(await readFile(p, "utf8"))),
       );
@@ -218,7 +224,12 @@ async function main() {
     }
 
     case "preview":
-      process.exit(await run("pnpm", ["--filter", "@reframe/preview", "dev"]));
+      // the editor lists examples/scenes/ plus scenes found in the invoking dir
+      process.exit(
+        await run("pnpm", ["--filter", "@reframe/preview", "dev"], {
+          env: { REFRAME_SCENE_DIR: USER_CWD },
+        }),
+      );
 
     case "new": {
       const name = rest[0];
@@ -226,15 +237,18 @@ async function main() {
       if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
         fail(`scene name must be kebab-case (a-z, 0-9, -): got "${name}"`);
       }
-      // Scenes must live here: the preview's scene list and the workspace
-      // resolution of @reframe/core both only work inside examples/scenes/.
-      const target = join(ROOT, "examples", "scenes", `${name}.ts`);
-      if (existsSync(target)) fail(`examples/scenes/${name}.ts already exists`);
+      // Inside the repo, scenes go to the showcase dir; elsewhere a scene is
+      // a standalone document — render/preview resolve @reframe/core for it.
+      const inRepo = USER_CWD === ROOT || USER_CWD.startsWith(ROOT + "/");
+      const targetDir = inRepo ? join(ROOT, "examples", "scenes") : USER_CWD;
+      const target = join(targetDir, `${name}.ts`);
+      const shown = inRepo ? `examples/scenes/${name}.ts` : `${name}.ts`;
+      if (existsSync(target)) fail(`${shown} already exists`);
       const id = name.split("-")[0] ?? name;
       await writeFile(target, SCENE_TEMPLATE(name, id));
-      console.log(`created examples/scenes/${name}.ts
+      console.log(`created ${shown}
   preview:  pnpm reframe preview        (pick "${name}" in the dropdown)
-  render:   pnpm reframe render examples/scenes/${name}.ts
+  render:   pnpm reframe render ${shown}
   syntax:   pnpm reframe guide`);
       return;
     }
