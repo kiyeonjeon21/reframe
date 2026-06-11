@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px;
+    background: #101014; overflow: hidden;
+    font-family: Inter, sans-serif;
+  }
+  #ring {
+    position: absolute; left: 960px; top: 540px;
+    width: 360px; height: 360px; margin: -180px 0 0 -180px;
+    border: 10px solid #3B82F6; border-radius: 50%;
+    opacity: 0;
+  }
+  .num, #go {
+    position: absolute; left: 960px; top: 540px;
+    transform: translate(-50%, -50%);
+    font-weight: 800; color: #fff; opacity: 0;
+  }
+  .num { font-size: 220px; }
+  #go { font-size: 320px; color: #FF4D00; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="ring"></div>
+  <div class="num" id="num-3">3</div>
+  <div class="num" id="num-2">2</div>
+  <div class="num" id="num-1">1</div>
+  <div id="go">GO!</div>
+</div>
+<script src="./gsap.min.js"></script>
+<script>
+  // Countdown sting: 3 -> 2 -> 1 -> GO! One second per number.
+  const tl = gsap.timeline();
+  tl.to("#ring", { opacity: 1, duration: 0.3, ease: "power2.out" });
+
+  for (const n of ["3", "2", "1"]) {
+    tl.fromTo(`#num-${n}`,
+      { opacity: 0, scale: 0.5 },
+      { opacity: 1, scale: 1.1, duration: 0.2, ease: "power2.out" })
+      .to(`#num-${n}`, { scale: 1, duration: 0.1, ease: "power1.inOut" })
+      .to(`#num-${n}`, { opacity: 0, scale: 0.7, duration: 0.1, ease: "power1.in" }, "+=0.45");
+  }
+
+  tl.fromTo("#go",
+    { opacity: 0, scale: 0.5 },
+    { opacity: 1, scale: 1.15, duration: 0.25, ease: "power2.out" })
+    .to("#ring", { scale: 1.6, opacity: 0, duration: 0.4, ease: "power2.out" }, "<")
+    .to("#go", { scale: 1, duration: 0.15, ease: "power1.inOut" });
+</script>
+</body>
+</html>

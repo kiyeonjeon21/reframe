@@ -1,0 +1,20 @@
+{
+  "runId": "pilot-smoke-edsl",
+  "task": "countdown",
+  "arm": "edsl",
+  "trial": 0,
+  "duration": 4.2,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 74,
+    "codeChars": 2113
+  }
+}

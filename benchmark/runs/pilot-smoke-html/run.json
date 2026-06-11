@@ -1,0 +1,20 @@
+{
+  "runId": "pilot-smoke-html",
+  "task": "badge-pop",
+  "arm": "html",
+  "trial": 0,
+  "duration": 2.8,
+  "fps": 30,
+  "attempts": [
+    {
+      "round": 0,
+      "renderOk": true,
+      "static": false,
+      "error": null
+    }
+  ],
+  "objective": {
+    "loc": 46,
+    "codeChars": 1384
+  }
+}

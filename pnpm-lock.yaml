@@ -15,6 +15,22 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/node@22.19.20)(tsx@4.22.4)
 
+  benchmark:
+    dependencies:
+      '@reframe/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@reframe/render-cli':
+        specifier: workspace:*
+        version: link:../packages/render-cli
+      tsx:
+        specifier: ^4.19.0
+        version: 4.22.4
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.20
+
   examples:
     dependencies:
       '@reframe/core':

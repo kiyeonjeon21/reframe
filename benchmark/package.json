@@ -1,0 +1,14 @@
+{
+  "name": "@reframe/benchmark",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@reframe/core": "workspace:*",
+    "@reframe/render-cli": "workspace:*",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}
