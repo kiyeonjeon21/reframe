@@ -4,6 +4,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
 {
   "ops": [
     {
+      "id": "axis",
       "opacity": 1,
       "stroke": "#444444",
       "strokeWidth": 3,
@@ -24,6 +25,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-0",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -42,6 +44,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-1",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -60,6 +63,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-2",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -78,6 +82,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-3",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -96,6 +101,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-4",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -127,6 +133,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 44,
       "fontWeight": 700,
+      "id": "title",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -140,6 +147,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "type": "text",
     },
     {
+      "id": "axis",
       "opacity": 1,
       "stroke": "#444444",
       "strokeWidth": 3,
@@ -160,6 +168,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 280,
+      "id": "bar-0",
       "offsetX": -0,
       "offsetY": -280,
       "opacity": 1,
@@ -178,6 +187,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 473.3333333333333,
+      "id": "bar-1",
       "offsetX": -0,
       "offsetY": -473.3333333333333,
       "opacity": 1,
@@ -196,6 +206,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 366.6666666666667,
+      "id": "bar-2",
       "offsetX": -0,
       "offsetY": -366.6666666666667,
       "opacity": 1,
@@ -214,6 +225,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 600,
+      "id": "bar-3",
       "offsetX": -0,
       "offsetY": -600,
       "opacity": 1,
@@ -232,6 +244,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 426.6666666666667,
+      "id": "bar-4",
       "offsetX": -0,
       "offsetY": -426.6666666666667,
       "opacity": 1,
@@ -255,6 +268,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-0",
       "letterSpacing": 0,
       "opacity": 0.9999829211786756,
       "transform": [
@@ -275,6 +289,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-1",
       "letterSpacing": 0,
       "opacity": 0.9986166154727197,
       "transform": [
@@ -295,6 +310,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-2",
       "letterSpacing": 0,
       "opacity": 0.9893257366722199,
       "transform": [
@@ -315,6 +331,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-3",
       "letterSpacing": 0,
       "opacity": 0.95899375,
       "transform": [
@@ -335,6 +352,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-4",
       "letterSpacing": 0,
       "opacity": 0.8879458532902956,
       "transform": [
@@ -355,6 +373,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-0",
       "letterSpacing": 0,
       "opacity": 0.7499489769887544,
       "transform": [
@@ -375,6 +394,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-1",
       "letterSpacing": 0,
       "opacity": 0.5122117841524364,
       "transform": [
@@ -395,6 +415,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-2",
       "letterSpacing": 0,
       "opacity": 0.13538467044981217,
       "transform": [
@@ -423,6 +444,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 44,
       "fontWeight": 700,
+      "id": "title",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -436,6 +458,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "type": "text",
     },
     {
+      "id": "axis",
       "opacity": 1,
       "stroke": "#444444",
       "strokeWidth": 3,
@@ -456,6 +479,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 280,
+      "id": "bar-0",
       "offsetX": -0,
       "offsetY": -280,
       "opacity": 1,
@@ -474,6 +498,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 473.3333333333333,
+      "id": "bar-1",
       "offsetX": -0,
       "offsetY": -473.3333333333333,
       "opacity": 1,
@@ -492,6 +517,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 366.6666666666667,
+      "id": "bar-2",
       "offsetX": -0,
       "offsetY": -366.6666666666667,
       "opacity": 1,
@@ -510,6 +536,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 600,
+      "id": "bar-3",
       "offsetX": -0,
       "offsetY": -600,
       "opacity": 1,
@@ -528,6 +555,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 426.6666666666667,
+      "id": "bar-4",
       "offsetX": -0,
       "offsetY": -426.6666666666667,
       "opacity": 1,
@@ -551,6 +579,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-0",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -571,6 +600,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-1",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -591,6 +621,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-2",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -611,6 +642,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-3",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -631,6 +663,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-4",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -651,6 +684,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-0",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -671,6 +705,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-1",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -691,6 +726,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-2",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -711,6 +747,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-3",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -731,6 +768,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-4",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -759,6 +797,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 44,
       "fontWeight": 700,
+      "id": "title",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -772,6 +811,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "type": "text",
     },
     {
+      "id": "axis",
       "opacity": 1,
       "stroke": "#444444",
       "strokeWidth": 3,
@@ -792,6 +832,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 280,
+      "id": "bar-0",
       "offsetX": -0,
       "offsetY": -280,
       "opacity": 1,
@@ -810,6 +851,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 473.3333333333333,
+      "id": "bar-1",
       "offsetX": -0,
       "offsetY": -473.3333333333333,
       "opacity": 1,
@@ -828,6 +870,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 366.6666666666667,
+      "id": "bar-2",
       "offsetX": -0,
       "offsetY": -366.6666666666667,
       "opacity": 1,
@@ -846,6 +889,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 600,
+      "id": "bar-3",
       "offsetX": -0,
       "offsetY": -600,
       "opacity": 1,
@@ -864,6 +908,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 426.6666666666667,
+      "id": "bar-4",
       "offsetX": -0,
       "offsetY": -426.6666666666667,
       "opacity": 1,
@@ -887,6 +932,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-0",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -907,6 +953,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-1",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -927,6 +974,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-2",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -947,6 +995,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-3",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -967,6 +1016,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 36,
       "fontWeight": 700,
+      "id": "value-4",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -987,6 +1037,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-0",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1007,6 +1058,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-1",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1027,6 +1079,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-2",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1047,6 +1100,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-3",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1067,6 +1121,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "label-4",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1088,6 +1143,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
 {
   "ops": [
     {
+      "id": "axis",
       "opacity": 1,
       "stroke": "#444444",
       "strokeWidth": 3,
@@ -1108,6 +1164,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-0",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1126,6 +1183,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-1",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1144,6 +1202,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-2",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1162,6 +1221,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-3",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1180,6 +1240,7 @@ exports[`example scenes golden snapshots > chart-buildup evaluates deterministic
     {
       "fill": "#3B82F6",
       "height": 0,
+      "id": "bar-4",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1218,6 +1279,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-0",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1238,6 +1300,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-1",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1258,6 +1321,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-2",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1278,6 +1342,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-3",
       "letterSpacing": 0,
       "opacity": 0.8487654320987652,
       "transform": [
@@ -1306,6 +1371,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-0",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1326,6 +1392,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-1",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1346,6 +1413,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-2",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1366,6 +1434,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-3",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1386,6 +1455,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 140,
       "fontWeight": 800,
+      "id": "word-4",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1414,6 +1484,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-0",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1434,6 +1505,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-1",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1454,6 +1526,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-2",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1474,6 +1547,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 96,
       "fontWeight": 800,
+      "id": "word-3",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1494,6 +1568,7 @@ exports[`example scenes golden snapshots > kinetic-typo evaluates deterministica
       "fontFamily": "Inter",
       "fontSize": 140,
       "fontWeight": 800,
+      "id": "word-4",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1531,6 +1606,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
     {
       "fill": "#FF4D00",
       "height": 220,
+      "id": "disc",
       "offsetX": -110,
       "offsetY": -110,
       "opacity": 1,
@@ -1548,6 +1624,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
     {
       "fill": "#0A0A0C",
       "height": 88,
+      "id": "mark",
       "offsetX": -44,
       "offsetY": -44,
       "opacity": 1,
@@ -1571,6 +1648,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 84,
       "fontWeight": 700,
+      "id": "wordmark",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1591,6 +1669,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 30,
       "fontWeight": 400,
+      "id": "tagline",
       "letterSpacing": 0,
       "opacity": 0.9967955650155952,
       "transform": [
@@ -1614,6 +1693,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
     {
       "fill": "#FF4D00",
       "height": 220,
+      "id": "disc",
       "offsetX": -110,
       "offsetY": -110,
       "opacity": 1,
@@ -1631,6 +1711,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
     {
       "fill": "#0A0A0C",
       "height": 88,
+      "id": "mark",
       "offsetX": -44,
       "offsetY": -44,
       "opacity": 1,
@@ -1654,6 +1735,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 84,
       "fontWeight": 700,
+      "id": "wordmark",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1674,6 +1756,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 30,
       "fontWeight": 400,
+      "id": "tagline",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1697,6 +1780,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
     {
       "fill": "#FF4D00",
       "height": 220,
+      "id": "disc",
       "offsetX": -110,
       "offsetY": -110,
       "opacity": 1,
@@ -1714,6 +1798,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
     {
       "fill": "#0A0A0C",
       "height": 88,
+      "id": "mark",
       "offsetX": -44,
       "offsetY": -44,
       "opacity": 1,
@@ -1737,6 +1822,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 84,
       "fontWeight": 700,
+      "id": "wordmark",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1757,6 +1843,7 @@ exports[`example scenes golden snapshots > logo-reveal evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 30,
       "fontWeight": 400,
+      "id": "tagline",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1794,6 +1881,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
     {
       "fill": "#FF4D00",
       "height": 110,
+      "id": "bar",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1817,6 +1905,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 48,
       "fontWeight": 700,
+      "id": "name",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1837,6 +1926,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "role",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1860,6 +1950,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
     {
       "fill": "#FF4D00",
       "height": 110,
+      "id": "bar",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1883,6 +1974,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 48,
       "fontWeight": 700,
+      "id": "name",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1903,6 +1995,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "role",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1926,6 +2019,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
     {
       "fill": "#FF4D00",
       "height": 110,
+      "id": "bar",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -1949,6 +2043,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 48,
       "fontWeight": 700,
+      "id": "name",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1969,6 +2064,7 @@ exports[`example scenes golden snapshots > lower-third evaluates deterministical
       "fontFamily": "Inter",
       "fontSize": 28,
       "fontWeight": 400,
+      "id": "role",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -1999,6 +2095,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#16324F",
       "height": 1080,
+      "id": "bgA",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2022,6 +2119,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleA",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -2037,6 +2135,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#3B1F47",
       "height": 1080,
+      "id": "bgB",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2055,6 +2154,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#FF4D00",
       "height": 1080,
+      "id": "sweep",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2081,6 +2181,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#16324F",
       "height": 1080,
+      "id": "bgA",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2104,6 +2205,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleA",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -2119,6 +2221,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#3B1F47",
       "height": 1080,
+      "id": "bgB",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2137,6 +2240,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#FF4D00",
       "height": 1080,
+      "id": "sweep",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2163,6 +2267,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#16324F",
       "height": 1080,
+      "id": "bgA",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2186,6 +2291,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleA",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -2201,6 +2307,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#3B1F47",
       "height": 1080,
+      "id": "bgB",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2224,6 +2331,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleB",
       "letterSpacing": 0,
       "opacity": 0.96875,
       "transform": [
@@ -2239,6 +2347,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#FF4D00",
       "height": 1080,
+      "id": "sweep",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2265,6 +2374,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#16324F",
       "height": 1080,
+      "id": "bgA",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2288,6 +2398,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleA",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -2303,6 +2414,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#3B1F47",
       "height": 1080,
+      "id": "bgB",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2326,6 +2438,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleB",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -2341,6 +2454,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#FF4D00",
       "height": 1080,
+      "id": "sweep",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2367,6 +2481,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#16324F",
       "height": 1080,
+      "id": "bgA",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2390,6 +2505,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleA",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -2405,6 +2521,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#3B1F47",
       "height": 1080,
+      "id": "bgB",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,
@@ -2428,6 +2545,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
       "fontFamily": "Inter",
       "fontSize": 110,
       "fontWeight": 800,
+      "id": "titleB",
       "letterSpacing": 0,
       "opacity": 1,
       "transform": [
@@ -2443,6 +2561,7 @@ exports[`example scenes golden snapshots > transition evaluates deterministicall
     {
       "fill": "#FF4D00",
       "height": 1080,
+      "id": "sweep",
       "offsetX": -0,
       "offsetY": -0,
       "opacity": 1,

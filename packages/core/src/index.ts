@@ -16,5 +16,5 @@ export {
   type TextAlign,
   type TextBaseline,
 } from "./evaluate.js";
-export { resolveEase, lerpValue, isColor } from "./interpolate.js";
+export { resolveEase, lerpValue, isColor, EASE_NAMES } from "./interpolate.js";
 export { sampleBehavior } from "./behaviors.js";

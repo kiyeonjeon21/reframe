@@ -1,0 +1,347 @@
+/**
+ * Inspector panel: scene knobs, node tree, per-prop rows with state-scope
+ * expansion, labeled timeline steps, behaviors, compose report, overlay IO.
+ * Plain DOM; rebuilt on "structure" changes, report-only refresh on "value".
+ */
+
+import {
+  EASE_NAMES,
+  PROPS_BY_TYPE,
+  isColor,
+  type NodeIR,
+  type OverlayDoc,
+  type PropValue,
+  type TimelineIR,
+} from "@reframe/core";
+import type { EditorStore } from "./store.js";
+
+const NUMERIC_DEFAULTS: Record<string, number> = { opacity: 1, scale: 1, rotation: 0 };
+const RANGES: Record<string, [number, number, number]> = {
+  opacity: [0, 1, 0.01],
+  progress: [0, 1, 0.01],
+  scale: [0, 3, 0.01],
+  rotation: [-360, 360, 1],
+};
+const ANCHORS = [
+  "top-left", "top-center", "top-right",
+  "center-left", "center", "center-right",
+  "bottom-left", "bottom-center", "bottom-right",
+];
+
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  attrs: Record<string, string> = {},
+  ...children: (HTMLElement | string)[]
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") node.className = v;
+    else node.setAttribute(k, v);
+  }
+  node.append(...children);
+  return node;
+}
+
+function findNode(nodes: NodeIR[], id: string): NodeIR | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.type === "group") {
+      const hit = findNode(node.children, id);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+/** Value editor for one PropValue; numbers get ranges where it makes sense. */
+function makeControl(
+  prop: string,
+  value: PropValue | undefined,
+  edited: boolean,
+  onChange: (v: PropValue) => void,
+  onRevert: () => void,
+): HTMLElement {
+  let input: HTMLElement;
+  if (prop === "anchor") {
+    const select = el("select");
+    for (const a of ANCHORS) select.append(el("option", { value: a }, a));
+    select.value = String(value ?? "top-left");
+    select.addEventListener("change", () => onChange(select.value));
+    input = select;
+  } else if (typeof value === "number" || (value === undefined && prop in NUMERIC_DEFAULTS)) {
+    const v = typeof value === "number" ? value : NUMERIC_DEFAULTS[prop]!;
+    const range = RANGES[prop];
+    const number = el("input", { type: range ? "range" : "number", value: String(v) }) as HTMLInputElement;
+    if (range) {
+      number.min = String(range[0]);
+      number.max = String(range[1]);
+      number.step = String(range[2]);
+    } else {
+      number.step = "1";
+    }
+    number.addEventListener("input", () => {
+      const parsed = Number(number.value);
+      if (!Number.isNaN(parsed)) onChange(parsed);
+    });
+    input = number;
+  } else if (typeof value === "string" && isColor(value)) {
+    const color = el("input", { type: "color", value: value.slice(0, 7) }) as HTMLInputElement;
+    color.addEventListener("input", () => onChange(color.value));
+    input = color;
+  } else {
+    const text = el("input", { type: "text", value: String(value ?? "") }) as HTMLInputElement;
+    text.addEventListener("change", () => onChange(text.value));
+    input = text;
+  }
+  const revert = el("button", { class: "revert", title: "revert" }, "×");
+  revert.addEventListener("click", onRevert);
+  const row = el("div", { class: `prop-row${edited ? " edited" : ""}` }, input);
+  if (edited) row.append(revert);
+  return row;
+}
+
+export function buildPanel(store: EditorStore, root: HTMLElement) {
+  let reportBox: HTMLElement | null = null;
+
+  function rebuild() {
+    root.replaceChildren();
+    const ir = store.compiled.ir;
+
+    // --- scene ---
+    root.append(el("h3", {}, "Scene"));
+    const bg = makeControl(
+      "background",
+      ir.background ?? "#000000",
+      store.draft.scene?.background !== undefined,
+      (v) => store.setSceneProp("background", v),
+      () => store.unsetSceneProp("background"),
+    );
+    bg.prepend(el("label", {}, "background"));
+    root.append(bg);
+    const dur = makeControl(
+      "duration",
+      ir.duration ?? 0,
+      store.draft.scene?.duration !== undefined,
+      (v) => store.setSceneProp("duration", Number(v)),
+      () => store.unsetSceneProp("duration"),
+    );
+    dur.prepend(el("label", {}, "duration (s)"));
+    root.append(dur);
+
+    // --- node tree ---
+    root.append(el("h3", {}, "Nodes"));
+    const renderTree = (nodes: NodeIR[], depth: number) => {
+      for (const node of nodes) {
+        const edits = store.nodeEditCount(node.id);
+        const item = el(
+          "div",
+          { class: `tree-item${store.selectedId === node.id ? " selected" : ""}` },
+          el("span", { style: `padding-left:${depth * 14}px` }, `${node.id} `),
+          el("span", { class: "badge" }, edits > 0 ? `●${edits}` : ""),
+        );
+        item.addEventListener("click", () => store.select(node.id));
+        root.append(item);
+        if (node.type === "group") renderTree(node.children, depth + 1);
+      }
+    };
+    renderTree(ir.nodes, 0);
+
+    // --- selected node props with scope expansion ---
+    if (store.selectedId) {
+      const node = findNode(ir.nodes, store.selectedId);
+      if (node) {
+        const id = node.id;
+        root.append(el("h3", {}, `Props: ${id} (${node.type})`));
+        const props = node.props as unknown as Record<string, PropValue | undefined>;
+        const states = ir.states ?? {};
+        const initial = ir.initial;
+
+        for (const prop of PROPS_BY_TYPE[node.type]) {
+          const baseValue = props[prop] ?? (prop in NUMERIC_DEFAULTS ? NUMERIC_DEFAULTS[prop] : undefined);
+          if (baseValue === undefined && !(prop in NUMERIC_DEFAULTS)) continue; // unset optional prop
+          const touchingStates = Object.keys(states).filter(
+            (s) => states[s]?.[id]?.[prop] !== undefined,
+          );
+          const deadBase = initial !== undefined && touchingStates.includes(initial);
+
+          const baseRow = makeControl(
+            prop,
+            baseValue,
+            store.hasNodeEdit(id, prop),
+            (v) => store.setNodeProp(id, prop, v),
+            () => store.unsetNodeProp(id, prop),
+          );
+          baseRow.prepend(
+            el("label", {}, touchingStates.length > 0 ? `${prop} (base)` : prop),
+          );
+          if (deadBase) {
+            baseRow.classList.add("dead");
+            baseRow.querySelectorAll("input,select").forEach((i) => i.setAttribute("disabled", ""));
+          }
+          root.append(baseRow);
+          if (deadBase) {
+            root.append(el("div", { class: "hint" }, `overridden by initial "${initial}" — edit the state rows below`));
+          }
+
+          for (const s of touchingStates) {
+            const row = makeControl(
+              prop,
+              states[s]![id]![prop],
+              store.hasStateEdit(s, id, prop),
+              (v) => store.setStateProp(s, id, prop, v),
+              () => store.unsetStateProp(s, id, prop),
+            );
+            const label = el("label", {}, `${prop} `);
+            label.append(el("span", { class: "scope" }, `@${s}`));
+            row.prepend(label);
+            root.append(row);
+          }
+        }
+      }
+    }
+
+    // --- labeled timeline steps ---
+    const steps: Extract<TimelineIR, { label?: string }>[] = [];
+    const walkTl = (tl: TimelineIR) => {
+      if ("label" in tl && tl.label !== undefined) steps.push(tl);
+      if ("children" in tl) tl.children.forEach(walkTl);
+    };
+    if (ir.timeline) walkTl(ir.timeline);
+    if (steps.length > 0) {
+      root.append(el("h3", {}, "Timeline"));
+      for (const step of steps) {
+        const label = step.label!;
+        const card = el("div", { class: "step-card" },
+          el("div", {}, `${label} `, el("span", { class: "kind" }, `(${step.kind})`)),
+        );
+        const durRow = makeControl(
+          "duration",
+          "duration" in step ? (step.duration ?? 0.5) : 0.5,
+          store.hasTimelineEdit(label, "duration"),
+          (v) => store.setTimelineParam(label, "duration", Number(v)),
+          () => store.unsetTimelineParam(label, "duration"),
+        );
+        durRow.prepend(el("label", {}, "duration"));
+        card.append(durRow);
+        if (step.kind === "to" || step.kind === "tween") {
+          const easeSelect = el("select");
+          const current = "ease" in step ? step.ease : undefined;
+          for (const name of EASE_NAMES) easeSelect.append(el("option", { value: name }, name));
+          if (typeof current === "object") easeSelect.append(el("option", { value: "__custom" }, "custom bezier"));
+          easeSelect.value = typeof current === "string" ? current : typeof current === "object" ? "__custom" : "linear";
+          easeSelect.addEventListener("change", () => {
+            if (easeSelect.value !== "__custom") store.setTimelineParam(label, "ease", easeSelect.value);
+          });
+          const easeRow = el("div", { class: `prop-row${store.hasTimelineEdit(label, "ease") ? " edited" : ""}` }, el("label", {}, "ease"), easeSelect);
+          card.append(easeRow);
+        }
+        if (step.kind === "to") {
+          const stRow = makeControl(
+            "stagger",
+            step.stagger ?? 0,
+            store.hasTimelineEdit(label, "stagger"),
+            (v) => store.setTimelineParam(label, "stagger", Number(v)),
+            () => store.unsetTimelineParam(label, "stagger"),
+          );
+          stRow.prepend(el("label", {}, "stagger"));
+          card.append(stRow);
+        }
+        root.append(card);
+      }
+    }
+
+    // --- behaviors ---
+    if ((ir.behaviors ?? []).length > 0) {
+      root.append(el("h3", {}, "Behaviors"));
+      for (const b of ir.behaviors!) {
+        const card = el("div", { class: "behavior-card" },
+          el("div", {}, `${b.target}.${b.prop} `, el("span", { class: "kind" }, b.behavior.name)),
+        );
+        for (const [param, value] of Object.entries(b.behavior.params)) {
+          const row = makeControl(
+            param,
+            value,
+            store.hasBehaviorEdit(b.target, b.prop),
+            (v) => store.setBehaviorParam(b.target, b.prop, param, Number(v)),
+            () => store.unsetBehavior(b.target, b.prop),
+          );
+          row.prepend(el("label", {}, param));
+          card.append(row);
+        }
+        root.append(card);
+      }
+    }
+
+    // --- report ---
+    root.append(el("h3", {}, "Compose"));
+    reportBox = el("div", { id: "report" });
+    root.append(reportBox);
+    refreshReport();
+
+    // --- io ---
+    root.append(el("h3", {}, "Overlay"));
+    const name = el("input", { type: "text", id: "overlay-name", value: store.overlayName }) as HTMLInputElement;
+    name.addEventListener("change", () => (store.overlayName = name.value));
+    const download = el("button", {}, "download");
+    download.addEventListener("click", () => {
+      const json = JSON.stringify(store.exportDraft(), null, 2);
+      const a = el("a", {
+        href: URL.createObjectURL(new Blob([json], { type: "application/json" })),
+        download: `${store.overlayName}.json`,
+      });
+      a.click();
+    });
+    const copy = el("button", {}, "copy");
+    copy.addEventListener("click", () => {
+      void navigator.clipboard.writeText(JSON.stringify(store.exportDraft(), null, 2));
+      copy.textContent = "copied!";
+      setTimeout(() => (copy.textContent = "copy"), 1200);
+    });
+    const load = el("button", {}, "load…");
+    const file = el("input", { type: "file", accept: ".json", style: "display:none" }) as HTMLInputElement;
+    load.addEventListener("click", () => file.click());
+    file.addEventListener("change", async () => {
+      const f = file.files?.[0];
+      if (!f) return;
+      try {
+        const doc = JSON.parse(await f.text()) as OverlayDoc;
+        if (doc.reframeOverlay !== 1) throw new Error("not a reframe overlay (reframeOverlay: 1 missing)");
+        store.importDraft(doc);
+      } catch (err) {
+        alert(`could not load overlay: ${err instanceof Error ? err.message : err}`);
+      }
+      file.value = "";
+    });
+    const reset = el("button", {}, "reset");
+    reset.addEventListener("click", () => {
+      if (!store.dirty || confirm("Discard all edits?")) store.resetDraft();
+    });
+    root.append(name, el("div", { id: "io" }, download, copy, load, file, reset));
+  }
+
+  function refreshReport() {
+    if (!reportBox) return;
+    reportBox.replaceChildren();
+    if (store.composeError) {
+      reportBox.append(el("div", { class: "error" }, store.composeError));
+    }
+    const report = store.report;
+    if (!report) return;
+    reportBox.append(
+      el("div", {}, `${report.applied.length} applied, ${report.orphans.length} orphaned, ${report.warnings.length} warnings`),
+    );
+    for (const o of report.orphans) {
+      reportBox.append(el("div", { class: "orphan" }, `✗ ${o.address}: ${o.reason}`));
+    }
+    for (const w of report.warnings) {
+      reportBox.append(el("div", { class: "warning" }, `! ${w}`));
+    }
+    if (report.applied.length > 0) {
+      const details = el("details", {}, el("summary", {}, "applied"));
+      for (const a of report.applied) details.append(el("div", {}, `✓ ${a.address}`));
+      reportBox.append(details);
+    }
+  }
+
+  return { rebuild, refreshReport };
+}

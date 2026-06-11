@@ -19,6 +19,8 @@ const EASE_TABLE: Record<string, EaseFn> = {
     u === 0 ? 0 : u === 1 ? 1 : u < 0.5 ? 2 ** (20 * u - 10) / 2 : (2 - 2 ** (-20 * u + 10)) / 2,
 };
 
+export const EASE_NAMES = Object.keys(EASE_TABLE) as import("./ir.js").EaseName[];
+
 export function resolveEase(ease: Ease | undefined): EaseFn {
   if (ease === undefined) return EASE_TABLE.linear!;
   if (typeof ease === "string") {

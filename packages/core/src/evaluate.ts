@@ -16,6 +16,8 @@ export type TextAlign = "left" | "center" | "right";
 export type TextBaseline = "top" | "middle" | "bottom";
 
 interface OpBase {
+  /** Source node id — lets editors map ops back to the scene graph. */
+  id: string;
   /** Maps local coords (origin = anchor point) to scene coords. */
   transform: Mat2D;
   /** Cumulative opacity, parent-multiplied. */
@@ -168,6 +170,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
       const y1 = num(id, "y1", node.props.y1);
       ops.push({
         type: "line",
+        id,
         transform: parent,
         opacity,
         x1,
@@ -206,6 +209,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         const stroke = opt(id, "stroke", node.props.stroke);
         ops.push({
           type: node.type,
+          id,
           transform: matrix,
           opacity,
           width,
@@ -227,6 +231,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         );
         ops.push({
           type: "text",
+          id,
           transform: matrix,
           opacity,
           content: typeof raw === "number" ? raw.toFixed(decimals) : raw,
