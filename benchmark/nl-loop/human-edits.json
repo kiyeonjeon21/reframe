@@ -1,0 +1,12 @@
+{
+  "reframeOverlay": 1,
+  "name": "human-edits",
+  "target": "nova-teaser",
+  "nodes": {
+    "underline": { "stroke": "#FF6B35" },
+    "tagline": { "fill": "#9AA3B8" }
+  },
+  "timeline": {
+    "coming-soon": { "duration": 1.0 }
+  }
+}
