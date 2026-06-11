@@ -1,0 +1,24 @@
+{
+  "calibratedAt": "see git history",
+  "analysis": {
+    "width": 480,
+    "height": 270,
+    "scale": 4,
+    "blockSize": 16,
+    "searchRadius": 12
+  },
+  "mp4": {
+    "changedThreshold": 6,
+    "staticDiffP99": 0.2386033950617284,
+    "flowRelDiffMedian": 0.0005225311303595665
+  },
+  "gates": {
+    "C1": true,
+    "C2": true,
+    "C3": true,
+    "C4": true,
+    "C5": true,
+    "C6": true,
+    "C7": true
+  }
+}

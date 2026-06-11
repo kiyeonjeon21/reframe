@@ -6,3 +6,4 @@ frames/
 benchmark/runs/**/*.mp4
 benchmark/runs/**/frames/
 .DS_Store
+benchmark/harness/motion/calibration/work/
