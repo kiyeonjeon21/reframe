@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { writeFileSync } from "node:fs";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -15,7 +16,7 @@ const SCRIPT: { cmd?: string; lines: Line[]; pause: number }[] = [
       ["ok", "  ✓ [my-edits] addNodes.watermark (add-node)"],
       ["out", "out/scene.mp4 (134 frames @ 30fps)"],
     ],
-    pause: 1300,
+    pause: 1100,
   },
   {
     lines: [
@@ -24,7 +25,7 @@ const SCRIPT: { cmd?: string; lines: Line[]; pause: number }[] = [
       ["comment", "# it rewrites scene.ts completely (regen contract: ids/labels survive)"],
       ["comment", ""],
     ],
-    pause: 1500,
+    pause: 1300,
   },
   {
     cmd: "npx reframe-video render scene.ts --overlay my-edits.json",
@@ -36,10 +37,12 @@ const SCRIPT: { cmd?: string; lines: Line[]; pause: number }[] = [
       ["bad", '  ✗ [my-edits] nodes.tagline: unknown node "tagline" — did the base regeneration rename it?'],
       ["out", "out/scene.mp4 (138 frames @ 30fps)"],
     ],
-    pause: 2600,
+    pause: 2200,
   },
 ];
 
+const keyLog: number[] = [];
+let t0 = 0;
 async function main() {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({
@@ -62,6 +65,7 @@ async function main() {
   </style><body><div id="term"><div id="bar"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></div><div id="lines"></div><span id="cur" class="cursor"></span></div></body>`);
 
   await sleep(700);
+  t0 = Date.now();
   for (const block of SCRIPT) {
     if (block.cmd) {
       // type the command char by char into a new prompt line
@@ -75,7 +79,8 @@ async function main() {
         await page.evaluate(
           `document.getElementById("typed").textContent += ${JSON.stringify(ch)}`,
         );
-        await sleep(ch === " " ? 38 : 22);
+        keyLog.push((Date.now() - t0) / 1000);
+        await sleep(ch === " " ? 30 : 17);
       }
       await page.evaluate(
         `(() => { document.getElementById("typed").id = ""; document.getElementById("active").id = ""; })()`,
@@ -94,6 +99,7 @@ async function main() {
     await sleep(block.pause);
   }
   await sleep(800);
+  writeFileSync("/tmp/term-keys.json", JSON.stringify({ t0Offset: 0.7, keys: keyLog }));
   await ctx.close();
   await browser.close();
   console.log("recorded");
