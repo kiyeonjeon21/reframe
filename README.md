@@ -17,7 +17,11 @@ layout, different timing — and the same overlay reapplied by stable id.
 4 edits survived; the one renamed node was reported as an orphan, never
 silently dropped.*
 
-![reframe hero](docs/assets/hero.gif)
+![The reframe demo — made with reframe itself](docs/assets/hero.gif)
+
+*The demo above is a reframe scene
+([`examples/scenes/reframe-demo.ts`](examples/scenes/reframe-demo.ts)) —
+render it yourself: `pnpm reframe render examples/scenes/reframe-demo.ts`.*
 
 ## The loop
 
