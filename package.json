@@ -3,13 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "reframe": "tsx packages/render-cli/src/reframe.ts",
     "typecheck": "pnpm -r --no-bail exec tsc --noEmit",
     "test": "vitest run",
-    "render": "pnpm --filter @reframe/render-cli start",
     "preview": "pnpm --filter @reframe/preview dev",
     "demo:overlay": "npx tsx examples/scripts/demo-edit-survival.ts"
   },
   "devDependencies": {
+    "tsx": "^4.19.0",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   }
