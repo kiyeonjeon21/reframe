@@ -3,6 +3,12 @@
 **Declarative motion graphics that AI can write, humans can tweak — and the
 human's edits survive an AI regeneration.**
 
+At "prompt → mp4", reframe is on par with Hyperframes or a Remotion skill —
+our own benchmark says exactly that, parity not superiority. **The difference
+starts on the second turn**: what you get back is not freeform code but an
+addressable document, so you can keep tweaking, regenerating, and scaling it
+without your changes being silently lost.
+
 ![A human-edited scene (top) and the same edits surviving a full AI redesign of the base scene (bottom)](docs/assets/edit-survival.png)
 
 *Top: a scene with human overlay edits applied (brand color, retimed reveal,
@@ -29,6 +35,22 @@ render: deterministic mp4 (same input → byte-identical frames)   ◀── ove
 
 Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks,
 no randomness without a seed, scrubbing and distributed rendering for free.
+
+## Why not just Hyperframes / Remotion?
+
+Because their output is arbitrary HTML/React — great to generate once,
+impossible to safely operate on afterwards. reframe's output is data with
+stable addresses, and everything below falls out of that one difference:
+
+| the second turn | HTML / React output | reframe |
+|---|---|---|
+| "tweak just the color and timing" | edit code by hand, or re-prompt and hope nothing else changes (no visual editor is *possible* over arbitrary code) | turn knobs in the preview — no code |
+| "now redesign it" after my tweaks | your hand edits live inside the code; regeneration overwrites them or you merge diffs — silent loss is the default | edits live in an overlay; they reapply onto the regenerated scene (measured 100% across 23 regenerations/turns), breaks are reported loudly |
+| "make 50 personalized versions" | only what the author pre-parameterized (props) | any address, post-hoc: `nodes.name.content` |
+| "is it wrong before I render?" | semantic failures are invisible until pixels (wrong text, off-frame) | structure validates pre-render with actionable errors; motion is computable from the IR |
+
+If your video is fire-and-forget, use the simpler tool. If it's an asset that
+will be tweaked, regenerated, and multiplied — that loop is what reframe is for.
 
 ## Quickstart
 
