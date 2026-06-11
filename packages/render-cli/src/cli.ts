@@ -9,7 +9,14 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { OverlayDoc, SceneIR } from "@reframe/core";
-import { composeScene, formatComposeReport, validateScene } from "@reframe/core";
+import {
+  compileScene,
+  composeScene,
+  formatComposeReport,
+  resolveAudioPlan,
+  validateScene,
+} from "@reframe/core";
+import { buildAudioTrack } from "./audio/index.js";
 import { encodeMp4 } from "./encode.js";
 import { captureHtml, captureIr } from "./frameLoop.js";
 
@@ -22,6 +29,7 @@ interface Args {
   keepFrames: boolean;
   framesDir?: string;
   overlays: string[];
+  noAudio: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -39,6 +47,7 @@ function parseArgs(argv: string[]): Args {
     out: `${basename(input).replace(/\.[^.]+$/, "")}.mp4`,
     keepFrames: false,
     overlays: [],
+    noAudio: false,
   };
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
@@ -48,6 +57,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--keep-frames") args.keepFrames = true;
     else if (a === "--frames-dir") args.framesDir = resolve(rest[++i]!);
     else if (a === "--overlay") args.overlays.push(resolve(rest[++i]!));
+    else if (a === "--no-audio") args.noAudio = true;
     else {
       console.error(`unknown flag ${a}`);
       process.exit(2);
@@ -72,6 +82,7 @@ async function main() {
   const framesDir = args.framesDir ?? (await mkdtemp(join(tmpdir(), "reframe-frames-")));
 
   let result;
+  let audioJob: { plan: import("@reframe/core").AudioPlan; videoOut: string } | null = null;
   if (args.mode === "ir") {
     let ir = await loadScene(args.input);
     if (args.overlays.length > 0) {
@@ -81,6 +92,13 @@ async function main() {
       const composed = composeScene(ir, ...docs);
       console.error(formatComposeReport(composed.report));
       ir = composed.ir;
+    }
+    if (!args.noAudio) {
+      const plan = resolveAudioPlan(compileScene(ir));
+      if (plan) {
+        for (const w of plan.warnings) console.error(`audio: ${w}`);
+        audioJob = { plan, videoOut: `${args.out}.video.mp4` };
+      }
     }
     result = await captureIr(ir, {
       framesDir,
@@ -98,11 +116,17 @@ async function main() {
     });
   }
 
-  await encodeMp4(result.framesDir, result.fps, args.out);
+  await encodeMp4(result.framesDir, result.fps, audioJob ? audioJob.videoOut : args.out);
+  if (audioJob) {
+    await buildAudioTrack(audioJob.plan, args.input, audioJob.videoOut, args.out);
+    await rm(audioJob.videoOut, { force: true });
+  }
   if (!args.keepFrames && args.framesDir === undefined) {
     await rm(framesDir, { recursive: true, force: true });
   }
-  console.log(`${args.out} (${result.frameCount} frames @ ${result.fps}fps)`);
+  console.log(
+    `${args.out} (${result.frameCount} frames @ ${result.fps}fps${audioJob ? `, ${audioJob.plan.cues.length} audio cues` : ""})`,
+  );
 }
 
 main().catch((err) => {

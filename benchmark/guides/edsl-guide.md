@@ -90,6 +90,24 @@ bound — e.g. a pulse only during the hold:
 `oscillate("title", "scale", { amplitude: 0.04, frequency: 1.2 }, { from: 1.5, until: 3.5 })`.
 Omit the window to run for the whole scene.
 
+## Audio (optional)
+
+Label-anchored sound design — cues follow retiming and regeneration:
+
+```ts
+audio: {
+  bgm: { synth: "ambient-pad", gain: 0.3, fadeIn: 1, fadeOut: 2, duck: { depth: 0.5 } },
+  cues: [
+    { at: "enter", sfx: "whoosh", gain: 0.8 },          // anchored to a timeline label
+    { at: "enter", offset: 0.2, sfx: "pop" },
+    { at: 5.0, file: "keypress-001.wav", gain: 0.5 },   // absolute seconds; file from assets/sfx/
+  ],
+}
+```
+
+Procedural sfx names: `whoosh` `pop` `tick` `rise` `shimmer` `thud` (deterministic,
+seedable via `params: { seed }`). Exactly one of `sfx`/`file` per cue.
+
 ## Rules
 
 - Everything must be a pure function of time: no `Math.random()` (use `wiggle`

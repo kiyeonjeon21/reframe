@@ -7,6 +7,7 @@ import {
   tween,
   wait,
   oscillate,
+  type AudioCueIR,
   type BehaviorIR,
   type NodeIR,
   type TimelineIR,
@@ -101,7 +102,7 @@ export default scene({
     wait(2.2, "ride"),
     // 3 — shatter
     par(
-      tween("accent", { opacity: 0 }, { duration: 0.3, ease: "easeInQuad" }),
+      tween("accent", { opacity: 0 }, { duration: 0.3, ease: "easeInQuad", label: "shatter" }),
       stagger(0.02, ...P1.map((g, i) => shatter(g, i))),
     ),
     wait(0.2),
@@ -110,7 +111,11 @@ export default scene({
       0.05,
       ...P2.map((g, i) =>
         par(
-          tween(g.id, { x: g.x, y: g.y, rotation: 0, scale: 1 }, { duration: 0.8, ease: "easeOutExpo" }),
+          tween(
+            g.id,
+            { x: g.x, y: g.y, rotation: 0, scale: 1 },
+            { duration: 0.8, ease: "easeOutExpo", ...(i === 0 && { label: "assemble" }) },
+          ),
           tween(g.id, { opacity: 1 }, { duration: 0.4, ease: "easeOutQuad" }),
         ),
       ),
@@ -131,4 +136,35 @@ export default scene({
         oscillate(g.id, "y", { amplitude: 4, frequency: 0.7, phase: i * 0.45 }, { from: 6.3, until: 8.2, ramp: 0.4 }),
     ),
   ],
+
+  // The user's reference, literally: real CC0 mechanical keypresses, one per
+  // glyph, cycling samples and jittering gain so it doesn't sound robotic.
+  audio: {
+    bgm: { synth: "ambient-pad", gain: 0.22, fadeIn: 0.8, fadeOut: 1.2, duck: { depth: 0.3 } },
+    cues: [
+      ...P1.flatMap((g, i): AudioCueIR[] =>
+        g.ch === " "
+          ? []
+          : [{
+              at: 0.3 + i * 0.045, // shares the cascade constants with the timeline
+              file: `keypress-${["001", "004", "007", "010", "014"][i % 5]}.wav`,
+              gain: 0.4 + 0.25 * rand(i, 31),
+            }],
+      ),
+      { at: "accent-in", sfx: "tick", gain: 0.4 },
+      { at: "shatter", sfx: "whoosh", gain: 0.95 },
+      { at: "shatter", offset: 0.18, sfx: "thud", gain: 0.55 },
+      ...P2.flatMap((g, i): AudioCueIR[] =>
+        g.ch === " "
+          ? []
+          : [{
+              at: "assemble" as const,
+              offset: i * 0.05,
+              file: `keypress-${["004", "010", "001", "014", "007"][i % 5]}.wav`,
+              gain: 0.35 + 0.2 * rand(i, 32),
+            }],
+      ),
+      { at: "hold", sfx: "shimmer", gain: 0.55 },
+    ],
+  },
 });

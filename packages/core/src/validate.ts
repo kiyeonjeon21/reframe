@@ -121,5 +121,33 @@ export function validateScene(ir: SceneIR): void {
     problems.push("scene duration must be > 0");
   }
 
+  const SFX_NAMES = ["whoosh", "pop", "tick", "rise", "shimmer", "thud"];
+  for (const [i, cue] of (ir.audio?.cues ?? []).entries()) {
+    if (typeof cue.at === "string" && !labels.has(cue.at)) {
+      problems.push(
+        `audio.cues[${i}]: unknown timeline label "${cue.at}" — known labels: ${[...labels].join(", ") || "(none)"}`,
+      );
+    }
+    if (typeof cue.at === "number" && cue.at < 0) {
+      problems.push(`audio.cues[${i}]: "at" must be >= 0`);
+    }
+    if ((cue.sfx === undefined) === (cue.file === undefined)) {
+      problems.push(`audio.cues[${i}]: exactly one of "sfx" or "file" is required`);
+    }
+    if (cue.sfx !== undefined && !SFX_NAMES.includes(cue.sfx)) {
+      problems.push(`audio.cues[${i}]: unknown sfx "${cue.sfx}" — valid: ${SFX_NAMES.join(", ")}`);
+    }
+    if (cue.gain !== undefined && cue.gain < 0) {
+      problems.push(`audio.cues[${i}]: gain must be >= 0`);
+    }
+  }
+  const duck = ir.audio?.bgm?.duck;
+  if (typeof duck === "object" && duck !== null && duck.depth !== undefined && (duck.depth < 0 || duck.depth > 1)) {
+    problems.push("audio.bgm.duck.depth must be in [0, 1]");
+  }
+  if (ir.audio?.bgm?.file !== undefined && ir.audio.bgm.synth !== undefined) {
+    problems.push('audio.bgm: use either "file" or "synth", not both');
+  }
+
   if (problems.length > 0) throw new SceneValidationError(problems);
 }

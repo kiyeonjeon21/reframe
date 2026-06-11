@@ -31,7 +31,7 @@ const ANALYZE = join(ROOT, "benchmark", "harness", "motion", "analyze.ts");
 const USAGE = `reframe — declarative motion graphics
 
 usage:
-  pnpm reframe render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S]
+  pnpm reframe render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S] [--no-audio]
   pnpm reframe batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
   pnpm reframe preview                 open the scrub/edit UI (scenes from examples/scenes/)
   pnpm reframe new <scene-name>        scaffold examples/scenes/<scene-name>.ts
@@ -199,6 +199,7 @@ async function main() {
         outDir,
         baseOverlays,
         concurrency,
+        scenePath,
         ...(fps !== undefined && { fps }),
         onRow: (r) => {
           if (r.error) console.error(`  ✗ ${r.name}: ${r.error.split("\n")[0]}`);

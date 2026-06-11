@@ -22,6 +22,11 @@ export interface PropertySegment {
   ease?: Ease;
 }
 
+export interface LabelSpan {
+  t0: number;
+  t1: number;
+}
+
 export interface CompiledScene {
   ir: SceneIR;
   duration: number;
@@ -32,6 +37,8 @@ export interface CompiledScene {
   nodeById: Map<string, NodeIR>;
   /** Declaration order — defines stagger order. */
   nodeOrder: string[];
+  /** Absolute [start, end] of every labeled timeline step. */
+  labelTimes: Map<string, LabelSpan>;
 }
 
 const key = (target: string, prop: string) => `${target}.${prop}`;
@@ -85,8 +92,16 @@ export function compileScene(ir: SceneIR): CompiledScene {
     throw new Error(`cannot animate "${prop}" of "${target}": no base value to start from`);
   };
 
+  const labelTimes = new Map<string, LabelSpan>();
+
   /** Walks a timeline node starting at `start`, returns its end time. */
   const walk = (tl: TimelineIR, start: number): number => {
+    const end = walkInner(tl, start);
+    if ("label" in tl && tl.label !== undefined) labelTimes.set(tl.label, { t0: start, t1: end });
+    return end;
+  };
+
+  const walkInner = (tl: TimelineIR, start: number): number => {
     switch (tl.kind) {
       case "seq": {
         let t = start;
@@ -159,5 +174,6 @@ export function compileScene(ir: SceneIR): CompiledScene {
     initialValues,
     nodeById,
     nodeOrder,
+    labelTimes,
   };
 }

@@ -151,6 +151,37 @@ export interface BehaviorIR {
     | { kind: "named"; name: "wiggle"; params: { amplitude: number; frequency: number; seed: number } };
 }
 
+export type SfxName = "whoosh" | "pop" | "tick" | "rise" | "shimmer" | "thud";
+
+export interface AudioCueIR {
+  /** Anchor: a timeline label (the step's start) or absolute seconds. */
+  at: string | number;
+  /** Seconds relative to the anchor (negative allowed; result clamps to 0). */
+  offset?: number;
+  /** Procedural SFX name — exactly one of sfx | file. */
+  sfx?: SfxName;
+  /** Audio file path (absolute, scene-relative, or assets/sfx-relative). */
+  file?: string;
+  /** Linear gain, default 1. */
+  gain?: number;
+  /** Synth parameter overrides (seed, duration, …) — numbers only. */
+  params?: Record<string, number>;
+}
+
+export interface AudioIR {
+  bgm?: {
+    file?: string;
+    /** License-free synthesized bed. */
+    synth?: "ambient-pad";
+    gain?: number;
+    fadeIn?: number;
+    fadeOut?: number;
+    /** Dip the bed under cues. false disables. */
+    duck?: { depth?: number; attack?: number; release?: number } | false;
+  };
+  cues?: AudioCueIR[];
+}
+
 export interface SceneIR {
   version: 1;
   id: string;
@@ -166,6 +197,8 @@ export interface SceneIR {
   initial?: string;
   timeline?: TimelineIR;
   behaviors?: BehaviorIR[];
+  /** Label-anchored sound design — cues survive retiming and regeneration. */
+  audio?: AudioIR;
   /** Reserved for v2 (Madeus-style temporal constraints). */
   constraints?: unknown[];
   /** Editor-only data (Theatre.js state.json pattern). */

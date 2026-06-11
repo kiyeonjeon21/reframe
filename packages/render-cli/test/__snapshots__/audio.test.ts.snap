@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildFilterGraph > emits anchor, bgm chain with duck ramps, per-cue adelay, normalize=0 1`] = `
+"anullsrc=r=44100:cl=stereo,atrim=duration=10.000[anchor];
+[1:a]aformat=sample_rates=44100:channel_layouts=stereo,volume=0.35,afade=t=in:st=0:d=1,afade=t=out:st=8.000:d=2,volume='1-0.5*max(0\\,min(1\\,min((t-1.450)/0.05\\,(2.100-t)/0.25)))':eval=frame,volume='1-0.5*max(0\\,min(1\\,min((t-3.950)/0.05\\,(4.370-t)/0.25)))':eval=frame[bgm];
+[2:a]aformat=sample_rates=44100:channel_layouts=stereo,volume=0.9,adelay=1500:all=1[c0];
+[3:a]aformat=sample_rates=44100:channel_layouts=stereo,volume=0.7,adelay=4000:all=1[c1];
+[anchor][bgm][c0][c1]amix=inputs=4:duration=first:normalize=0,alimiter=limit=0.891,aresample=async=1:first_pts=0[aout]"
+`;

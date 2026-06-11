@@ -4,6 +4,7 @@
  */
 
 import type {
+  AudioIR,
   BehaviorIR,
   Ease,
   EllipseProps,
@@ -32,6 +33,7 @@ export interface SceneInput {
   initial?: string;
   timeline?: TimelineIR;
   behaviors?: BehaviorIR[];
+  audio?: AudioIR;
   meta?: Record<string, unknown>;
 }
 

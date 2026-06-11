@@ -12,13 +12,16 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  compileScene,
   composeScene,
+  resolveAudioPlan,
   type ComposeReport,
   type Ease,
   type OverlayDoc,
   type PropValue,
   type SceneIR,
 } from "@reframe/core";
+import { buildAudioTrack } from "./audio/index.js";
 import { encodeMp4 } from "./encode.js";
 import { captureIr } from "./frameLoop.js";
 
@@ -121,6 +124,9 @@ export interface BatchOptions {
   baseOverlays: OverlayDoc[];
   concurrency: number;
   fps?: number;
+  /** For scene-relative audio file cues. */
+  scenePath?: string;
+  noAudio?: boolean;
   onRow?: (result: BatchRowResult) => void;
 }
 
@@ -147,12 +153,20 @@ export async function runBatch(
         const { ir, report } = composeScene(scene, ...opts.baseOverlays, rowOverlay);
         const framesDir = await mkdtemp(join(tmpdir(), `reframe-batch-${index}-`));
         const output = join(opts.outDir, `${name}.mp4`);
+        const plan = opts.noAudio ? null : resolveAudioPlan(compileScene(ir));
         try {
           const captured = await captureIr(ir, {
             framesDir,
             ...(opts.fps !== undefined && { fps: opts.fps }),
           });
-          await encodeMp4(captured.framesDir, captured.fps, output);
+          if (plan) {
+            const videoTmp = `${output}.video.mp4`;
+            await encodeMp4(captured.framesDir, captured.fps, videoTmp);
+            await buildAudioTrack(plan, opts.scenePath ?? output, videoTmp, output);
+            await rm(videoTmp, { force: true });
+          } else {
+            await encodeMp4(captured.framesDir, captured.fps, output);
+          }
         } finally {
           await rm(framesDir, { recursive: true, force: true });
         }

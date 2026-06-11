@@ -43,5 +43,9 @@ overlay documents hold human edits at those addresses. Full contract:
 - ffmpeg is a system dependency; Playwright chromium needs a one-time
   `pnpm exec playwright install chromium` (postinstall is blocked).
 - Bundled fonts: Inter 400/700/800 only — other families silently fall back.
+- Audio: `scene.audio` cues anchor to timeline labels (they survive retiming);
+  sfx are procedurally synthesized, CC0 samples live in `assets/sfx/`
+  (LICENSE.md records provenance). Determinism contract covers the AudioPlan
+  and WAV bytes, not AAC-encoded mp4 bytes.
 - Golden snapshots in `packages/core/test/__snapshots__` encode the determinism
   contract; if they change unexpectedly, that's a regression, not noise.

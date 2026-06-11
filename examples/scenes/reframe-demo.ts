@@ -11,6 +11,7 @@ import {
   tween,
   wait,
   oscillate,
+  type AudioCueIR,
   type NodeIR,
   type TimelineIR,
 } from "@reframe/core";
@@ -128,7 +129,7 @@ export default scene({
     seq(
       wait(0.2),
       par(
-        tween("disc", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutExpo" }),
+        tween("disc", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutExpo", label: "logo-in" }),
         seq(wait(0.15), tween("mark", { opacity: 1, rotation: 0, scale: 1 }, { duration: 0.7, ease: "easeOutExpo" })),
         seq(wait(0.3), tween("wordmark", { opacity: 1 }, { duration: 0.6, ease: "easeOutCubic" })),
         seq(wait(0.45), tween("tagline", { opacity: 1 }, { duration: 0.6, ease: "easeOutCubic" })),
@@ -147,7 +148,7 @@ export default scene({
       stagger(0.22, ...CODE_LINES.map((_, i) => tween(`code-${i}`, { opacity: 1 }, { duration: 0.3, ease: "easeOutQuad" }))),
       wait(0.3),
       par(
-        tween("card", { opacity: 1, y: 600 }, { duration: 0.7, ease: "easeOutExpo" }),
+        tween("card", { opacity: 1, y: 600 }, { duration: 0.7, ease: "easeOutExpo", label: "card-in" }),
       ),
       wait(CH.ch3 - CH.ch2 - 0.5 - 6 * 0.22 - 0.3 - 0.7 - 0.4),
       tween("g2", { opacity: 0 }, { duration: 0.4, ease: "easeInQuad" }),
@@ -239,4 +240,34 @@ export default scene({
     oscillate("lockup", "y", { amplitude: 5, frequency: 0.4 }, { from: 1.2, until: 3.2 }),
     oscillate("lockup", "y", { amplitude: 5, frequency: 0.4 }, { from: 26.4, until: 29.2 }),
   ],
+
+  // Label-anchored score: retime any step (overlay or regeneration) and the
+  // sound design follows. Code lines get real CC0 keyboard presses.
+  audio: {
+    bgm: { synth: "ambient-pad", gain: 0.3, fadeIn: 1.2, fadeOut: 2.2, duck: { depth: 0.45 } },
+    cues: [
+      { at: "logo-in", sfx: "whoosh", gain: 0.85 },
+      { at: "logo-in", offset: 0.22, sfx: "pop", gain: 0.6 },
+      { at: "ch2-in", sfx: "whoosh", gain: 0.7 },
+      ...CODE_LINES.map((_, i): AudioCueIR => ({
+        at: "ch2-in",
+        offset: 0.5 + i * 0.22, // shares the stagger constant with the timeline
+        file: `keypress-${["001", "004", "007", "010", "014"][i % 5]}.wav`,
+        gain: 0.5,
+      })),
+      { at: "card-in", sfx: "pop", gain: 0.75 },
+      { at: "ch3-in", sfx: "whoosh", gain: 0.7 },
+      { at: "ch3-in", offset: 0.9, sfx: "rise", gain: 0.55 },
+      { at: "ch3-in", offset: 2.2, sfx: "rise", gain: 0.45 },
+      { at: "ch3-in", offset: 3.3, file: "click_003.ogg", gain: 0.6 },
+      { at: "ch4-in", sfx: "whoosh", gain: 0.7 },
+      ...[0, 1, 2].map((i): AudioCueIR => ({ at: "ch4-in", offset: 1.4 + i * 0.45, file: "click_002.ogg", gain: 0.55 })),
+      { at: "ch4-in", offset: 1.4 + 3 * 0.45, sfx: "thud", gain: 0.6 },
+      { at: "ch4-in", offset: 1.4 + 4 * 0.45, file: "confirmation_001.ogg", gain: 0.5 },
+      { at: "ch5-in", sfx: "whoosh", gain: 0.7 },
+      ...MINIS.map((_, i): AudioCueIR => ({ at: "ch5-in", offset: 0.5 + i * 0.18, sfx: "pop", gain: 0.6 })),
+      { at: "close-in", sfx: "shimmer", gain: 0.65 },
+      { at: "close-in", offset: 0.15, sfx: "pop", gain: 0.45 },
+    ],
+  },
 });

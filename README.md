@@ -106,6 +106,24 @@ the project's core claim, reproducible in one command. (Measured with real
 agents: 100% id/state/label retention across 8 regenerations —
 `benchmark/regen/REGEN-ANALYSIS.md`.)
 
+## Sound that follows the motion
+
+Because choreography is data, audio cues anchor to **timeline labels**, not
+to seconds on a waveform:
+
+```ts
+audio: {
+  bgm: { synth: "ambient-pad", gain: 0.3, duck: { depth: 0.5 } },
+  cues: [{ at: "enter", sfx: "whoosh" }, { at: "shatter", offset: 0.18, sfx: "thud" }],
+}
+```
+
+Retime a step with an overlay — or let an AI regenerate the scene — and the
+sound design moves with it (verified: a +1.8s hold patch shifted the anchored
+cues by exactly +1.8s). SFX are procedurally synthesized (deterministic, zero
+assets) with CC0 samples in `assets/sfx/` for organic sounds like real
+mechanical keypresses; the bed auto-ducks under cues. `--no-audio` to skip.
+
 ## Batch rendering: data in, videos out
 
 A scene is a template; every data row becomes an overlay. Row keys are

@@ -7,7 +7,13 @@ export {
   type OverlayDoc,
   type ComposeReport,
 } from "./compose.js";
-export { compileScene, type CompiledScene, type PropertySegment } from "./compile.js";
+export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan } from "./compile.js";
+export {
+  resolveAudioPlan,
+  SFX_DURATION,
+  type AudioPlan,
+  type ResolvedCue,
+} from "./audio.js";
 export {
   evaluate,
   type DisplayList,
