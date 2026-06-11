@@ -154,14 +154,18 @@ export default scene({
       { at: "accent-in", sfx: "tick", gain: 0.4 },
       { at: "shatter", sfx: "whoosh", gain: 0.95 },
       { at: "shatter", offset: 0.18, sfx: "thud", gain: 0.55 },
+      // The assembly is not typing — glyphs glide in and LOCK. One rise
+      // carries the glide; each glyph gets a soft snap at its landing
+      // (~0.35s into its easeOutExpo flight), not at launch.
+      { at: "assemble", sfx: "rise", gain: 0.5 },
       ...P2.flatMap((g, i): AudioCueIR[] =>
         g.ch === " "
           ? []
           : [{
               at: "assemble" as const,
-              offset: i * 0.05,
-              file: `keypress-${["004", "010", "001", "014", "007"][i % 5]}.wav`,
-              gain: 0.35 + 0.2 * rand(i, 32),
+              offset: i * 0.05 + 0.35,
+              file: `click_00${[2, 4, 2, 4, 2][i % 5]}.ogg`,
+              gain: 0.3 + 0.15 * rand(i, 32),
             }],
       ),
       { at: "hold", sfx: "shimmer", gain: 0.55 },
