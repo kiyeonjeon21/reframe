@@ -1,18 +1,18 @@
 import { group, image, par, scene, seq, tween, wait, wiggle } from "@reframe/core";
 
-// World Cup 2026, in the archival glyph-reveal format: the "26" built from
-// footballs, chalk tactics, stadium blueprints, stamps, tickets, pennants,
-// confetti, medals, floodlights — resolving into the tournament lockup.
-// Same grammar as glyph-reveal.ts, different glyph, different materials:
-// that IS the format's promise (recipe fixed, symbol and plates swap).
+// World Cup 2026, in the archival glyph-reveal format: a one-line "2026"
+// built from football materials — balls, chalk tactics, stadium blueprints,
+// stamps, tickets, pennants, jerseys, stud marks, goal nets, fan scarves —
+// resolving into the tournament lockup. Full soundtrack: Kokoro narration,
+// an ACE-Step generated stadium-promo bed, label-anchored SFX.
 //
-// Plates: ./glyph-frames-wc/ (regenerate:
+// Plates + audio: ./glyph-frames-wc/ (regenerate plates:
 // npx tsx packages/render-cli/scripts/gen-worldcup-frames.ts)
 
-const PLATES = 12;
-const CUT = 0.17; // a touch slower than glyph-reveal — these plates are denser
-const CUTS_END = PLATES * CUT;
-const FINALE_HOLD = 2.0;
+const PLATES = 18;
+const CUT = 0.22;
+const CUTS_END = PLATES * CUT; // 3.96
+const FINALE_HOLD = 2.6;
 
 const plates = Array.from({ length: PLATES }, (_, i) => ({
   id: `frame-${i}`,
@@ -21,29 +21,29 @@ const plates = Array.from({ length: PLATES }, (_, i) => ({
 
 export default scene({
   id: "worldcup-glyph",
-  size: { width: 1080, height: 1350 },
+  size: { width: 1920, height: 1080 },
   fps: 30,
   background: "#0A0A0C",
   nodes: [
-    group({ id: "camera", x: 540, y: 675, anchor: "center" }, [
+    group({ id: "camera", x: 960, y: 540, anchor: "center" }, [
       ...plates.map((p, i) =>
         image({
           id: p.id,
           src: p.src,
-          x: -540,
-          y: -675,
-          width: 1080,
-          height: 1350,
+          x: -960,
+          y: -540,
+          width: 1920,
+          height: 1080,
           opacity: i === 0 ? 1 : 0,
         }),
       ),
       image({
         id: "finale",
         src: `glyph-frames-wc/frame-${PLATES}.png`,
-        x: -540,
-        y: -675,
-        width: 1080,
-        height: 1350,
+        x: -960,
+        y: -540,
+        width: 1920,
+        height: 1080,
         opacity: 0,
       }),
     ]),
@@ -62,7 +62,7 @@ export default scene({
       wait(FINALE_HOLD, "hold"),
     ),
     seq(
-      tween("camera", { scale: 1.08 }, { duration: CUTS_END, ease: "linear" }),
+      tween("camera", { scale: 1.07 }, { duration: CUTS_END, ease: "linear" }),
       tween("camera", { scale: 1.0 }, { duration: 0.5, ease: "easeOutCubic" }),
     ),
   ),
@@ -73,12 +73,17 @@ export default scene({
   ],
 
   audio: {
+    // ACE-Step generated stadium-promo bed, ducked under narration and hits
+    bgm: { file: "glyph-frames-wc/crowd-bed.wav", gain: 0.5, fadeIn: 0.3, fadeOut: 1.6, duck: { depth: 0.45 } },
     cues: [
-      ...plates.slice(1).map((_, i) => ({ at: `cut-${i + 1}`, sfx: "tick" as const, gain: 0.5 })),
-      { at: "cut-9", offset: -0.4, sfx: "rise", gain: 0.5 },
-      { at: "finale-in", sfx: "whoosh", gain: 0.75 },
-      { at: "finale-in", offset: 0.12, sfx: "thud", gain: 0.7 },
-      { at: "hold", offset: 0.45, sfx: "shimmer", gain: 0.45 },
+      // Kokoro narration (am_michael): the run, then the title
+      { at: "cut-1", offset: -0.1, file: "glyph-frames-wc/narr-1.wav", gain: 1.0 },
+      { at: "finale-in", offset: 0.25, file: "glyph-frames-wc/narr-2.wav", gain: 1.0 },
+      ...plates.slice(1).map((_, i) => ({ at: `cut-${i + 1}`, sfx: "tick" as const, gain: 0.4 })),
+      { at: "cut-15", sfx: "rise", gain: 0.55 },
+      { at: "finale-in", sfx: "whoosh", gain: 0.8 },
+      { at: "finale-in", offset: 0.12, sfx: "thud", gain: 0.75 },
+      { at: "hold", offset: 0.6, sfx: "shimmer", gain: 0.4 },
     ],
   },
 });

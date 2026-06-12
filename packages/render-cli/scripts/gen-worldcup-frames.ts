@@ -22,7 +22,8 @@ const OUT = join(REPO, "examples", "scenes", "glyph-frames-wc");
 const fract = (x: number) => x - Math.floor(x);
 const rand = (i: number, salt: number) => fract(Math.sin(i * 127.1 + salt * 311.7) * 43758.5453);
 
-const W = 480, H = 600;
+const W = 960, H = 540;
+const CX = W / 2, CY = H / 2;
 
 // "2026" as two stacked rows ("20" over "26"); digit strokes defined in a
 // unit box and placed into the four cells
@@ -41,10 +42,10 @@ const DIGITS: Record<string, Poly[]> = {
   ],
 };
 const CELLS: { d: string; x: number; y: number; w: number; h: number }[] = [
-  { d: "2", x: 44, y: 124, w: 184, h: 196 },
-  { d: "0", x: 254, y: 124, w: 184, h: 196 },
-  { d: "2", x: 44, y: 352, w: 184, h: 196 },
-  { d: "6", x: 254, y: 352, w: 184, h: 196 },
+  { d: "2", x: 50, y: 105, w: 170, h: 330 },
+  { d: "0", x: 283, y: 105, w: 170, h: 330 },
+  { d: "2", x: 516, y: 105, w: 170, h: 330 },
+  { d: "6", x: 749, y: 105, w: 170, h: 330 },
 ];
 const SKELETON: [number, number][][] = CELLS.flatMap((c) =>
   DIGITS[c.d]!.map((poly) => poly.map(([u, v]) => [c.x + u * c.w, c.y + v * c.h] as [number, number])),
@@ -77,9 +78,8 @@ function skeletonPoints(n: number): { x: number; y: number; ang: number }[] {
 }
 
 const GLYPH = (fill: string, extra = "") =>
-  `<g><text x="240" y="318" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252" ${extra} fill="${fill}">20</text>
-   <text x="240" y="546" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252" ${extra} fill="${fill}">26</text></g>`;
-const GLYPH_BARE = `<text x="240" y="318" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252">20</text><text x="240" y="546" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252">26</text>`;
+  `<text x="${CX}" y="392" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="318" letter-spacing="6" ${extra} fill="${fill}">2026</text>`;
+const GLYPH_BARE = `<text x="${CX}" y="392" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="318" letter-spacing="6">2026</text>`;
 const CLIP = `<clipPath id="g">${GLYPH_BARE}</clipPath>`;
 const MASK_OUT = `<mask id="out"><rect width="${W}" height="${H}" fill="#fff"/>${GLYPH("#000")}</mask>`;
 
@@ -107,7 +107,7 @@ function svg(body: string, bg: string, dark = false): string {
 }
 
 const caption = (text: string, color: string, anchor: "start" | "middle" | "end" = "middle") =>
-  `<text x="${anchor === "start" ? 26 : anchor === "end" ? 454 : 240}" y="572" text-anchor="${anchor}" font-family="Georgia" font-size="11" fill="${color}" letter-spacing="3">${text}</text>`;
+  `<text x="${anchor === "start" ? 28 : anchor === "end" ? W - 28 : CX}" y="${H - 22}" text-anchor="${anchor}" font-family="Georgia" font-size="11" fill="${color}" letter-spacing="3">${text}</text>`;
 
 // host trio palette
 const TRIO = ["#006847", "#B22234", "#26619C"]; // MEX green / USA red / CAN-ish blue
@@ -138,7 +138,7 @@ const plates: string[] = [];
     </g>`;
   };
   const spots = skeletonPoints(52);
-  plates.push(svg(`${spots.map((p, i) => ball(p.x, p.y, 11 + rand(i, 13) * 4, i * 3 + 1)).join("")}${speckle(45, 15, "#5B4636")}<text x="24" y="36" font-family="Georgia" font-size="13" fill="#7A6A52" letter-spacing="2">FOOTBALLS OF THE TOURNAMENT · 26</text>`, "#F3EDDC"));
+  plates.push(svg(`${spots.map((p, i) => ball(p.x, p.y, 11 + rand(i, 13) * 4, i * 3 + 1)).join("")}${speckle(45, 15, "#5B4636")}<text x="28" y="40" font-family="Georgia" font-size="13" fill="#7A6A52" letter-spacing="2">FOOTBALLS OF THE TOURNAMENT · 2026</text>`, "#F3EDDC"));
 }
 
 // ── 02 · chalk tactics board ────────────────────────────────────────────────
@@ -157,10 +157,10 @@ const plates: string[] = [];
     }
   });
   const pitch = `<rect x="26" y="26" width="${W - 52}" height="${H - 52}" fill="none" stroke="${chalk}" stroke-width="2" opacity="0.8"/>
-    <line x1="26" y1="300" x2="${W - 26}" y2="300" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>
-    <circle cx="240" cy="300" r="56" fill="none" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>
-    <rect x="150" y="26" width="180" height="62" fill="none" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>
-    <rect x="150" y="${H - 88}" width="180" height="62" fill="none" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>`;
+    <line x1="${CX}" y1="26" x2="${CX}" y2="${H - 26}" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>
+    <circle cx="${CX}" cy="${CY}" r="62" fill="none" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>
+    <rect x="26" y="${CY - 95}" width="74" height="190" fill="none" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>
+    <rect x="${W - 100}" y="${CY - 95}" width="74" height="190" fill="none" stroke="${chalk}" stroke-width="1.4" opacity="0.55"/>`;
   plates.push(svg(`${pitch}${marks}${speckle(90, 25, chalk, 0.18)}${caption("THE GAFFER'S PLAN · FORMATION 26", "#BBD4BB")}`, "#1E4D2B", true));
 }
 
@@ -168,16 +168,16 @@ const plates: string[] = [];
 {
   const ink = "#E8F0FF";
   const stands = Array.from({ length: 4 }, (_, i) =>
-    `<circle cx="240" cy="300" r="${188 + i * 16}" fill="none" stroke="${ink}" stroke-width="${i === 3 ? 1.4 : 0.5}" opacity="${i === 3 ? 0.8 : 0.45}" stroke-dasharray="${i % 2 ? "10 6" : "none"}"/>`,
+    `<ellipse cx="${CX}" cy="${CY}" rx="${398 + i * 16}" ry="${198 + i * 13}" fill="none" stroke="${ink}" stroke-width="${i === 3 ? 1.4 : 0.5}" opacity="${i === 3 ? 0.8 : 0.45}" stroke-dasharray="${i % 2 ? "10 6" : "none"}"/>`,
   ).join("");
   plates.push(svg(`${GLYPH("none", `stroke="${ink}" stroke-width="2.4"`)}${stands}
-    <line x1="240" y1="40" x2="240" y2="560" stroke="${ink}" stroke-width="0.4" opacity="0.5" stroke-dasharray="9 5"/>
-    <line x1="55" y1="490" x2="425" y2="490" stroke="${ink}" stroke-width="0.8"/>
-    <line x1="55" y1="482" x2="55" y2="498" stroke="${ink}" stroke-width="0.8"/>
-    <line x1="425" y1="482" x2="425" y2="498" stroke="${ink}" stroke-width="0.8"/>
-    <text x="240" y="510" text-anchor="middle" font-family="Georgia" font-size="12" fill="${ink}">CAPACITY 80,000</text>
+    <line x1="${CX}" y1="30" x2="${CX}" y2="${H - 30}" stroke="${ink}" stroke-width="0.4" opacity="0.5" stroke-dasharray="9 5"/>
+    <line x1="110" y1="${H - 58}" x2="${W - 110}" y2="${H - 58}" stroke="${ink}" stroke-width="0.8"/>
+    <line x1="110" y1="${H - 66}" x2="110" y2="${H - 50}" stroke="${ink}" stroke-width="0.8"/>
+    <line x1="${W - 110}" y1="${H - 66}" x2="${W - 110}" y2="${H - 50}" stroke="${ink}" stroke-width="0.8"/>
+    <text x="${CX}" y="${H - 38}" text-anchor="middle" font-family="Georgia" font-size="12" fill="${ink}">CAPACITY 80,000</text>
     <rect x="14" y="14" width="${W - 28}" height="${H - 28}" fill="none" stroke="${ink}" stroke-width="1.4"/>
-    <text x="30" y="566" font-family="Georgia" font-size="12" fill="${ink}" letter-spacing="3">STADIUM DWG 26 · FINAL VENUE</text>${speckle(60, 35, "#9FC6E8", 0.16)}`, "#10304E", true));
+    <text x="30" y="${H - 24}" font-family="Georgia" font-size="12" fill="${ink}" letter-spacing="3">STADIUM DWG 2026 · FINAL VENUE</text>${speckle(60, 35, "#9FC6E8", 0.16)}`, "#10304E", true));
 }
 
 // ── 04 · commemorative stamps ───────────────────────────────────────────────
@@ -195,7 +195,7 @@ const plates: string[] = [];
       <text x="0" y="${sh / 2 - 10}" text-anchor="middle" font-family="Georgia" font-size="8" fill="#F6F1E3" letter-spacing="1">CORREOS · 26</text>
     </g>`;
   });
-  plates.push(svg(`${stamps}${speckle(50, 45, "#5B4636")}<text x="24" y="36" font-family="Georgia" font-size="12" fill="#7A6A52" letter-spacing="2">PHILATELIC ISSUE · WORLD CUP 26</text>`, "#E7DCC3"));
+  plates.push(svg(`${stamps}${speckle(50, 45, "#5B4636")}<text x="28" y="40" font-family="Georgia" font-size="12" fill="#7A6A52" letter-spacing="2">PHILATELIC ISSUE · WORLD CUP 2026</text>`, "#E7DCC3"));
 }
 
 // ── 05 · match tickets ──────────────────────────────────────────────────────
@@ -255,11 +255,11 @@ const plates: string[] = [];
 {
   let texty = "";
   const words = ["GOL!", "campeón", "final whistle", "extra time", "golden boot", "¡qué golazo!", "hat-trick", "the beautiful game", "penales", "glory"];
-  for (let i = 0; i < 110; i++) {
-    const x = rand(i, 81) * (W - 60) + 18, y = rand(i, 82) * (H - 50) + 30;
+  for (let i = 0; i < 170; i++) {
+    const x = rand(i, 81) * (W - 60) + 18, y = rand(i, 82) * (H - 70) + 50;
     texty += `<text x="${x.toFixed(0)}" y="${y.toFixed(0)}" font-family="Georgia" font-style="italic" font-size="${(8 + rand(i, 83) * 9).toFixed(0)}" fill="#3B3228" opacity="${(0.25 + rand(i, 84) * 0.4).toFixed(2)}" transform="rotate(${((rand(i, 85) - 0.5) * 10).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)})">${words[i % words.length]}</text>`;
   }
-  plates.push(svg(`${MASK_OUT}<g mask="url(#out)">${texty}</g>${GLYPH("none", 'stroke="#8A3B2E" stroke-width="1.6" opacity="0.9"')}${speckle(60, 87, "#3B3228")}<line x1="30" y1="48" x2="450" y2="48" stroke="#3B3228" stroke-width="0.7" opacity="0.6"/><text x="240" y="40" text-anchor="middle" font-family="Georgia" font-size="13" fill="#7A6A52" letter-spacing="3">THE SPORTING GAZETTE</text>`, "#F1E8D2"));
+  plates.push(svg(`${MASK_OUT}<g mask="url(#out)">${texty}</g>${GLYPH("none", 'stroke="#8A3B2E" stroke-width="1.6" opacity="0.9"')}${speckle(60, 87, "#3B3228")}<line x1="30" y1="48" x2="${W - 30}" y2="48" stroke="#3B3228" stroke-width="0.7" opacity="0.6"/><text x="${CX}" y="40" text-anchor="middle" font-family="Georgia" font-size="13" fill="#7A6A52" letter-spacing="3">THE SPORTING GAZETTE</text>`, "#F1E8D2"));
 }
 
 // ── 09 · ticker-tape confetti ───────────────────────────────────────────────
@@ -310,48 +310,142 @@ const plates: string[] = [];
     const r = 2.0 + rand(i, 117) * 2.4;
     constellation += `<circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="${r.toFixed(1)}" fill="#FFF7DB"/><circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="${(r + 3).toFixed(1)}" fill="none" stroke="#FFF7DB" stroke-width="0.5" opacity="0.5"/>`;
   });
-  plates.push(svg(`${field}<circle cx="240" cy="300" r="235" fill="none" stroke="${ink}" stroke-width="0.5" opacity="0.4"/>${constellation}<text x="350" y="150" font-family="Georgia" font-style="italic" font-size="13" fill="${ink}" opacity="0.8">Estadio Australis</text>${caption("NIGHT MATCH · FLOODLIT SKY 26", "#7E92B5")}`, "#0A1428", true));
+  plates.push(svg(`${field}<ellipse cx="${CX}" cy="${CY}" rx="455" ry="245" fill="none" stroke="${ink}" stroke-width="0.5" opacity="0.4"/>${constellation}<text x="${W - 180}" y="90" font-family="Georgia" font-style="italic" font-size="13" fill="${ink}" opacity="0.8">Estadio Australis</text>${caption("NIGHT MATCH · FLOODLIT SKY 26", "#7E92B5")}`, "#0A1428", true));
 }
 
 // ── 12 · stadium aerial (seat dots) ─────────────────────────────────────────
 {
   let seats = "";
   // seats trace a shrunken 26 inside the bowl
-  const cx = 240, cy = 300, scale = 0.62;
+  const cx = CX, cy = CY, scale = 0.58;
   skeletonPoints(110).forEach((p, i) => {
-    const px = cx + (p.x - 240) * scale, py = cy + (p.y - 336) * scale;
+    const px = cx + (p.x - CX) * scale, py = cy + (p.y - CY) * scale;
     for (let k = 0; k < 4; k++) {
       const ox = (rand(i * 4 + k, 121) - 0.5) * 13, oy = (rand(i * 4 + k, 122) - 0.5) * 13;
       seats += `<circle cx="${(px + ox).toFixed(1)}" cy="${(py + oy).toFixed(1)}" r="${(1.8 + rand(i * 4 + k, 123) * 1.6).toFixed(1)}" fill="${rand(i * 4 + k, 124) > 0.25 ? "#E8590C" : "#F6F1E3"}" opacity="0.95"/>`;
     }
   });
   const rings = Array.from({ length: 3 }, (_, i) =>
-    `<ellipse cx="240" cy="300" rx="${168 + i * 26}" ry="${210 + i * 26}" fill="none" stroke="#8FA396" stroke-width="${i === 2 ? 2.4 : 1}" opacity="${0.55 + i * 0.15}"/>`,
+    `<ellipse cx="${CX}" cy="${CY}" rx="${352 + i * 32}" ry="${188 + i * 22}" fill="none" stroke="#8FA396" stroke-width="${i === 2 ? 2.4 : 1}" opacity="${0.55 + i * 0.15}"/>`,
   ).join("");
-  plates.push(svg(`<ellipse cx="240" cy="300" rx="220" ry="262" fill="#27372E"/>
-    <ellipse cx="240" cy="300" rx="166" ry="208" fill="#1E4D2B"/>
+  plates.push(svg(`<ellipse cx="${CX}" cy="${CY}" rx="445" ry="252" fill="#27372E"/>
+    <ellipse cx="${CX}" cy="${CY}" rx="350" ry="186" fill="#1E4D2B"/>
     ${seats}${rings}
-    <ellipse cx="172" cy="178" rx="78" ry="30" fill="#FFFFFF" opacity="0.06" transform="rotate(-34 172 178)"/>
+    <ellipse cx="300" cy="140" rx="120" ry="36" fill="#FFFFFF" opacity="0.06" transform="rotate(-18 300 140)"/>
     ${caption("AERIAL SURVEY · MATCHDAY 26", "#8FA396")}`, "#E8E4D8"));
 }
 
-// ── 13 · finale lockup ──────────────────────────────────────────────────────
+
+// ── 13 · pinned jerseys ─────────────────────────────────────────────────────
+{
+  const jersey = (x: number, y: number, ang: number, sc: number, s: number) => {
+    const c = TRIO[Math.floor(rand(s, 401) * 3)]!;
+    return `<g transform="translate(${x},${y}) rotate(${ang}) scale(${sc})">
+      <path d="M -10 -14 L -22 -8 L -18 2 L -11 -1 L -11 16 L 11 16 L 11 -1 L 18 2 L 22 -8 L 10 -14 Q 0 -9 -10 -14 Z" fill="${c}" stroke="#3B3228" stroke-width="0.8" opacity="0.92"/>
+      <path d="M -5 -14 Q 0 -10 5 -14" fill="none" stroke="#F6F1E3" stroke-width="1.4"/>
+      <circle cy="-17" r="1" fill="#C9BFA4"/>
+    </g>`;
+  };
+  const spots = skeletonPoints(42);
+  plates.push(svg(`${spots.map((p, i) => jersey(p.x, p.y, (rand(i, 403) - 0.5) * 26, 0.75 + rand(i, 404) * 0.3, i * 3 + 1)).join("")}${speckle(45, 405, "#5B4636")}${caption("KIT ROOM · MATCHDAY ISSUE 2026", "#7A6A52")}`, "#F3EDDC"));
+}
+
+// ── 14 · boot prints on the pitch ───────────────────────────────────────────
+{
+  const mud = "#3E2C1A";
+  const print = (x: number, y: number, ang: number, s: number) => {
+    let studs = "";
+    for (let r = 0; r < 4; r++)
+      for (let c = 0; c < 2; c++)
+        studs += `<ellipse cx="${(c - 0.5) * 9}" cy="${-12 + r * 7}" rx="3.2" ry="4" fill="${mud}" opacity="${(0.6 + rand(r * 2 + c + s, 411) * 0.4).toFixed(2)}"/>`;
+    studs += `<ellipse cx="-4.5" cy="20" rx="3.4" ry="4.4" fill="${mud}" opacity="0.8"/><ellipse cx="4.5" cy="20" rx="3.4" ry="4.4" fill="${mud}" opacity="0.8"/>`;
+    return `<g transform="translate(${x},${y}) rotate(${ang})">${studs}</g>`;
+  };
+  const spots = skeletonPoints(34);
+  const mow = Array.from({ length: 8 }, (_, i) =>
+    `<rect x="${i * 120}" y="0" width="60" height="${H}" fill="#FFFFFF" opacity="0.03"/>`).join("");
+  plates.push(svg(`${mow}${spots.map((p, i) => print(p.x, p.y, p.ang + 90 + (rand(i, 413) - 0.5) * 30, i * 5 + 2)).join("")}${speckle(70, 415, "#1A2E1A", 0.16)}${caption("STUD MARKS · EXTRA TIME 2026", "#BBD4BB")}`, "#2A5734", true));
+}
+
+// ── 15 · trading cards ──────────────────────────────────────────────────────
+{
+  const card = (x: number, y: number, ang: number, s: number) => {
+    const c = TRIO[Math.floor(rand(s, 421) * 3)]!;
+    return `<g transform="translate(${x},${y}) rotate(${ang})">
+      <rect x="-17" y="-23" width="34" height="46" rx="3" fill="#F8F3E2" stroke="#B8A77E" stroke-width="1"/>
+      <rect x="-13" y="-19" width="26" height="26" fill="${c}" opacity="0.28"/>
+      <circle cy="-10" r="6" fill="#8A7A5C"/>
+      <path d="M -9 7 Q 0 -2 9 7 Z" fill="#8A7A5C"/>
+      <rect x="-13" y="11" width="26" height="7" fill="${c}" opacity="0.85"/>
+      <text y="23" text-anchor="middle" font-family="Georgia" font-size="5.5" fill="#8A7A5C">No. ${10 + (s % 16)}</text>
+    </g>`;
+  };
+  const spots = skeletonPoints(36);
+  plates.push(svg(`${spots.map((p, i) => card(p.x, p.y, (rand(i, 423) - 0.5) * 22, i * 7 + 3)).join("")}${speckle(50, 425, "#5B4636")}<text x="28" y="40" font-family="Georgia" font-size="12" fill="#7A6A52" letter-spacing="2">COLLECTOR CARDS · SERIES 2026</text>`, "#EFE6CF"));
+}
+
+// ── 16 · referee's pocket ───────────────────────────────────────────────────
+{
+  const refcard = (x: number, y: number, ang: number, s: number) => {
+    const yellow = rand(s, 431) > 0.32;
+    return `<g transform="translate(${x},${y}) rotate(${ang})">
+      <rect x="-11" y="-15" width="22" height="30" rx="2.5" fill="${yellow ? "#E8B30B" : "#C92A2A"}" stroke="#3B3228" stroke-width="0.8" opacity="0.94"/>
+      <rect x="-11" y="-15" width="22" height="30" rx="2.5" fill="none" stroke="#FFF" stroke-width="0.5" opacity="0.3"/>
+    </g>`;
+  };
+  const spots = skeletonPoints(42);
+  plates.push(svg(`${spots.map((p, i) => refcard(p.x, p.y, (rand(i, 433) - 0.5) * 34, i * 3 + 2)).join("")}${speckle(50, 435, "#5B4636")}${caption("THE REFEREE'S POCKET · DISCIPLINARY RECORD 2026", "#7A6A52")}`, "#F4EEDF"));
+}
+
+// ── 17 · goal net ───────────────────────────────────────────────────────────
+{
+  let net = "";
+  for (let i = -20; i < 60; i++) {
+    net += `<line x1="${i * 24}" y1="0" x2="${i * 24 + 280}" y2="${H}" stroke="#F2F7F2" stroke-width="1.1" opacity="0.85"/>`;
+    net += `<line x1="${i * 24}" y1="0" x2="${i * 24 - 280}" y2="${H}" stroke="#F2F7F2" stroke-width="1.1" opacity="0.85"/>`;
+  }
+  plates.push(svg(`${CLIP}<g clip-path="url(#g)">${net}</g>${GLYPH("none", 'stroke="#F2F7F2" stroke-width="1.2" opacity="0.5"')}
+    <rect x="20" y="14" width="${W - 40}" height="10" fill="#F2F7F2" opacity="0.9"/>
+    <rect x="20" y="14" width="10" height="${H - 28}" fill="#F2F7F2" opacity="0.9"/>
+    <rect x="${W - 30}" y="14" width="10" height="${H - 28}" fill="#F2F7F2" opacity="0.9"/>
+    ${speckle(60, 441, "#F2F7F2", 0.14)}${caption("TOP CORNER · THE NET BULGES", "#9CB89C")}`, "#1B3D24", true));
+}
+
+// ── 18 · fan scarves ────────────────────────────────────────────────────────
+{
+  const scarf = (x: number, y: number, ang: number, len: number, s: number) => {
+    const c = TRIO[Math.floor(rand(s, 451) * 3)]!;
+    let stripes = "";
+    const n = Math.floor(len / 12);
+    for (let j = 0; j < n; j++)
+      stripes += `<rect x="${-len / 2 + j * 12}" y="-10" width="12" height="20" fill="${j % 2 ? c : "#F6F1E3"}"/>`;
+    let fringe = "";
+    for (let f = 0; f < 5; f++) {
+      fringe += `<line x1="${-len / 2 - 1}" y1="${-8 + f * 4}" x2="${-len / 2 - 7}" y2="${-9 + f * 4.4}" stroke="${c}" stroke-width="1.4"/>`;
+      fringe += `<line x1="${len / 2 + 1}" y1="${-8 + f * 4}" x2="${len / 2 + 7}" y2="${-9 + f * 4.4}" stroke="${c}" stroke-width="1.4"/>`;
+    }
+    return `<g transform="translate(${x},${y}) rotate(${ang})">${stripes}<rect x="${-len / 2}" y="-10" width="${len}" height="20" fill="none" stroke="#3B3228" stroke-width="0.7" opacity="0.6"/>${fringe}</g>`;
+  };
+  const spots = skeletonPoints(20);
+  plates.push(svg(`${spots.map((p, i) => scarf(p.x, p.y, p.ang + (rand(i, 453) - 0.5) * 18, 62 + rand(i, 454) * 22, i * 9 + 1)).join("")}${speckle(50, 455, "#5B4636")}${caption("FROM THE TERRACES · SCARVES UP 2026", "#7A6A52")}`, "#F1E9D6"));
+}
+
+// ── finale lockup ───────────────────────────────────────────────────────────
 const inter700 = readFileSync(join(REPO, "assets/fonts/inter-700.woff2")).toString("base64");
 const inter400 = readFileSync(join(REPO, "assets/fonts/inter-400.woff2")).toString("base64");
 const FINALE_HTML = `<style>
   @font-face { font-family: Inter; font-weight: 700; src: url(data:font/woff2;base64,${inter700}) format("woff2"); }
   @font-face { font-family: Inter; font-weight: 400; src: url(data:font/woff2;base64,${inter400}) format("woff2"); }
   body { margin:0; width:${W}px; height:${H}px; background:#0A0A0C; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .bars { display:flex; gap:10px; margin-bottom:30px; }
-  .bars i { width:34px; height:6px; border-radius:3px; display:block; }
-  h1 { font:700 78px Inter; color:#fff; margin:0; letter-spacing:-2px; line-height:1.04; text-align:center; }
-  h2 { font:700 30px Inter; color:#C9A227; margin:14px 0 0; letter-spacing:8px; }
-  p  { font:400 15px Inter; color:#8B93A7; margin:26px 0 0; letter-spacing:3px; }
-  small { font:400 12px Inter; color:#4A5160; margin-top:42px; letter-spacing:1px; }
+  .bars { display:flex; gap:12px; margin-bottom:26px; }
+  .bars i { width:46px; height:7px; border-radius:3.5px; display:block; }
+  h1 { font:700 88px Inter; color:#fff; margin:0; letter-spacing:-2px; line-height:1; }
+  h1 b { color:#C9A227; font-weight:700; }
+  p  { font:400 17px Inter; color:#8B93A7; margin:22px 0 0; letter-spacing:4px; }
+  small { font:400 12px Inter; color:#4A5160; margin-top:34px; letter-spacing:1px; }
 </style><body>
   <div class="bars"><i style="background:#006847"></i><i style="background:#B22234"></i><i style="background:#26619C"></i></div>
-  <h1>WORLD CUP</h1>
-  <h2>2026</h2>
+  <h1>WORLD CUP <b>2026</b></h1>
   <p>JUNE — JULY · NORTH AMERICA</p>
   <small>made with reframe</small>
 </body>`;
