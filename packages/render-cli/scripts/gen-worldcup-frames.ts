@@ -24,13 +24,31 @@ const rand = (i: number, salt: number) => fract(Math.sin(i * 127.1 + salt * 311.
 
 const W = 480, H = 600;
 
-// "26" stroke skeleton: digit 2 (arc + bar), digit 6 (sweep + bowl)
-const SKELETON: [number, number][][] = [
-  [[62, 225], [78, 185], [115, 163], [155, 165], [188, 185], [200, 220], [192, 260], [160, 310], [115, 360], [78, 405], [60, 440]],
-  [[60, 442], [202, 442]],
-  [[412, 175], [370, 160], [325, 172], [295, 210], [280, 265], [276, 330]],
-  [[276, 355], [290, 425], [350, 455], [408, 428], [424, 385], [410, 340], [352, 315], [298, 333], [278, 358]],
+// "2026" as two stacked rows ("20" over "26"); digit strokes defined in a
+// unit box and placed into the four cells
+type Poly = [number, number][];
+const DIGITS: Record<string, Poly[]> = {
+  "2": [
+    [[0.05, 0.22], [0.15, 0.07], [0.38, 0], [0.62, 0.02], [0.86, 0.13], [0.95, 0.3], [0.86, 0.47], [0.58, 0.64], [0.28, 0.8], [0.05, 0.96]],
+    [[0.05, 0.97], [0.95, 0.97]],
+  ],
+  "0": [
+    [[0.5, 0], [0.78, 0.08], [0.94, 0.3], [0.96, 0.55], [0.88, 0.8], [0.68, 0.97], [0.42, 0.99], [0.18, 0.88], [0.05, 0.64], [0.04, 0.38], [0.14, 0.13], [0.34, 0.01], [0.5, 0]],
+  ],
+  "6": [
+    [[0.88, 0.06], [0.6, 0], [0.3, 0.09], [0.1, 0.3], [0.03, 0.55]],
+    [[0.03, 0.58], [0.08, 0.82], [0.3, 0.98], [0.62, 0.99], [0.88, 0.86], [0.96, 0.66], [0.86, 0.5], [0.6, 0.44], [0.3, 0.5], [0.06, 0.62]],
+  ],
+};
+const CELLS: { d: string; x: number; y: number; w: number; h: number }[] = [
+  { d: "2", x: 44, y: 124, w: 184, h: 196 },
+  { d: "0", x: 254, y: 124, w: 184, h: 196 },
+  { d: "2", x: 44, y: 352, w: 184, h: 196 },
+  { d: "6", x: 254, y: 352, w: 184, h: 196 },
 ];
+const SKELETON: [number, number][][] = CELLS.flatMap((c) =>
+  DIGITS[c.d]!.map((poly) => poly.map(([u, v]) => [c.x + u * c.w, c.y + v * c.h] as [number, number])),
+);
 function skeletonPoints(n: number): { x: number; y: number; ang: number }[] {
   const segs: { x1: number; y1: number; x2: number; y2: number; len: number }[] = [];
   for (const line of SKELETON)
@@ -59,8 +77,10 @@ function skeletonPoints(n: number): { x: number; y: number; ang: number }[] {
 }
 
 const GLYPH = (fill: string, extra = "") =>
-  `<text x="240" y="462" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="330" ${extra} fill="${fill}">26</text>`;
-const CLIP = `<clipPath id="g">${GLYPH("#000").replace(/fill="[^"]*"/, "")}</clipPath>`;
+  `<g><text x="240" y="318" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252" ${extra} fill="${fill}">20</text>
+   <text x="240" y="546" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252" ${extra} fill="${fill}">26</text></g>`;
+const GLYPH_BARE = `<text x="240" y="318" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252">20</text><text x="240" y="546" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="252">26</text>`;
+const CLIP = `<clipPath id="g">${GLYPH_BARE}</clipPath>`;
 const MASK_OUT = `<mask id="out"><rect width="${W}" height="${H}" fill="#fff"/>${GLYPH("#000")}</mask>`;
 
 function speckle(n: number, salt: number, color: string, omax = 0.1): string {
@@ -117,15 +137,15 @@ const plates: string[] = [];
       <ellipse cx="${-r * 0.35}" cy="${-r * 0.4}" rx="${r * 0.3}" ry="${r * 0.16}" fill="#FFF" opacity="0.5" transform="rotate(-30)"/>
     </g>`;
   };
-  const spots = skeletonPoints(24);
-  plates.push(svg(`${spots.map((p, i) => ball(p.x, p.y, 17 + rand(i, 13) * 6, i * 3 + 1)).join("")}${speckle(45, 15, "#5B4636")}<text x="24" y="36" font-family="Georgia" font-size="13" fill="#7A6A52" letter-spacing="2">FOOTBALLS OF THE TOURNAMENT · 26</text>`, "#F3EDDC"));
+  const spots = skeletonPoints(52);
+  plates.push(svg(`${spots.map((p, i) => ball(p.x, p.y, 11 + rand(i, 13) * 4, i * 3 + 1)).join("")}${speckle(45, 15, "#5B4636")}<text x="24" y="36" font-family="Georgia" font-size="13" fill="#7A6A52" letter-spacing="2">FOOTBALLS OF THE TOURNAMENT · 26</text>`, "#F3EDDC"));
 }
 
 // ── 02 · chalk tactics board ────────────────────────────────────────────────
 {
   const chalk = "#F2F7F2";
   let marks = "";
-  skeletonPoints(30).forEach((p, i) => {
+  skeletonPoints(46).forEach((p, i) => {
     if (i % 2 === 0)
       marks += `<text x="${p.x.toFixed(0)}" y="${(p.y + 6).toFixed(0)}" text-anchor="middle" font-family="Georgia" font-size="22" fill="${chalk}" opacity="0.92">×</text>`;
     else
@@ -163,10 +183,10 @@ const plates: string[] = [];
 // ── 04 · commemorative stamps ───────────────────────────────────────────────
 {
   let stamps = "";
-  const spots = skeletonPoints(19).map((p, i) => [p.x, p.y, (rand(i, 43) - 0.5) * 16] as [number, number, number]);
+  const spots = skeletonPoints(28).map((p, i) => [p.x, p.y, (rand(i, 43) - 0.5) * 16] as [number, number, number]);
   spots.forEach(([x, y, r], i) => {
     const c = TRIO[i % 3]!;
-    const sw = 52 + rand(i, 41) * 10, sh = 62 + rand(i, 42) * 9;
+    const sw = 42 + rand(i, 41) * 8, sh = 50 + rand(i, 42) * 8;
     stamps += `<g transform="translate(${x},${y}) rotate(${r})">
       <rect x="${-sw / 2}" y="${-sh / 2}" width="${sw}" height="${sh}" fill="#F6F1E3" stroke="#D6CDB4" stroke-width="1" stroke-dasharray="3.5 3"/>
       <rect x="${-sw / 2 + 5}" y="${-sh / 2 + 5}" width="${sw - 10}" height="${sh - 10}" fill="${c}" opacity="0.85"/>
@@ -181,16 +201,16 @@ const plates: string[] = [];
 // ── 05 · match tickets ──────────────────────────────────────────────────────
 {
   let tix = "";
-  const spots = skeletonPoints(14);
+  const spots = skeletonPoints(22);
   spots.forEach((p, i) => {
-    const tw = 96, th = 40;
+    const tw = 74, th = 30;
     const c = ["#F8F3E2", "#F3E9CF"][i % 2]!;
     tix += `<g transform="translate(${p.x},${p.y}) rotate(${(p.ang + (rand(i, 53) - 0.5) * 14).toFixed(0)})">
       <rect x="${-tw / 2}" y="${-th / 2}" width="${tw}" height="${th}" rx="3" fill="${c}" stroke="#B8A77E" stroke-width="1"/>
-      <line x1="${tw / 2 - 22}" y1="${-th / 2}" x2="${tw / 2 - 22}" y2="${th / 2}" stroke="#B8A77E" stroke-width="0.9" stroke-dasharray="3 3"/>
-      <text x="${-tw / 2 + 8}" y="-3" font-family="Georgia" font-size="8.5" fill="#5B4636" letter-spacing="1">ADMIT ONE</text>
-      <text x="${-tw / 2 + 8}" y="9" font-family="Georgia" font-size="7" fill="#8A7A5C">THE FINAL · JULY 19 1926</text>
-      <text x="${tw / 2 - 12}" y="4" text-anchor="middle" font-family="Georgia" font-size="11" fill="#8A3B2E">26</text>
+      <line x1="${tw / 2 - 17}" y1="${-th / 2}" x2="${tw / 2 - 22}" y2="${th / 2}" stroke="#B8A77E" stroke-width="0.9" stroke-dasharray="3 3"/>
+      <text x="${-tw / 2 + 6}" y="-2" font-family="Georgia" font-size="7" fill="#5B4636" letter-spacing="1">ADMIT ONE</text>
+      <text x="${-tw / 2 + 6}" y="8" font-family="Georgia" font-size="5.5" fill="#8A7A5C">THE FINAL · JULY 19 1926</text>
+      <text x="${tw / 2 - 9}" y="4" text-anchor="middle" font-family="Georgia" font-size="9" fill="#8A3B2E">26</text>
     </g>`;
   });
   plates.push(svg(`${tix}${speckle(55, 55, "#5B4636")}${caption("TICKET STUBS OF A CENTURY", "#7A6A52")}`, "#EFE6CF"));
@@ -199,10 +219,10 @@ const plates: string[] = [];
 // ── 06 · pennant flags ──────────────────────────────────────────────────────
 {
   let pens = "";
-  const spots = skeletonPoints(17);
+  const spots = skeletonPoints(34);
   spots.forEach((p, i) => {
     const c = TRIO[i % 3]!;
-    const len = 52 + rand(i, 63) * 18;
+    const len = 32 + rand(i, 63) * 12;
     pens += `<g transform="translate(${p.x},${p.y}) rotate(${(p.ang + (rand(i, 64) - 0.5) * 36).toFixed(0)})">
       <line x1="0" y1="0" x2="0" y2="-14" stroke="#5B4636" stroke-width="1.6"/>
       <polygon points="0,-14 ${len},-7 0,0" fill="${c}" opacity="0.92"/>
@@ -245,7 +265,7 @@ const plates: string[] = [];
 // ── 09 · ticker-tape confetti ───────────────────────────────────────────────
 {
   let confetti = "";
-  for (let i = 0; i < 900; i++) {
+  for (let i = 0; i < 2600; i++) {
     const x = rand(i, 91) * W, y = rand(i, 92) * H;
     const c = TRIO[Math.floor(rand(i, 93) * 3)]!;
     confetti += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(3 + rand(i, 94) * 5).toFixed(1)}" height="${(6 + rand(i, 95) * 8).toFixed(1)}" fill="${c}" opacity="${(0.55 + rand(i, 96) * 0.45).toFixed(2)}" transform="rotate(${(rand(i, 97) * 360).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
@@ -269,8 +289,8 @@ const plates: string[] = [];
       <text y="${r * 0.34}" text-anchor="middle" font-family="Georgia" font-size="${r * 0.95}" fill="${m[1]}">26</text>
     </g>`;
   };
-  const spots = skeletonPoints(18);
-  plates.push(svg(`${spots.map((p, i) => medal(p.x, p.y, 19 + rand(i, 103) * 7, i * 7 + 2)).join("")}${speckle(50, 105, "#5B4636")}${caption("WINNERS' MEDALS · 1930–2026", "#7A6A52")}`, "#F1EADA"));
+  const spots = skeletonPoints(28);
+  plates.push(svg(`${spots.map((p, i) => medal(p.x, p.y, 15 + rand(i, 103) * 6, i * 7 + 2)).join("")}${speckle(50, 105, "#5B4636")}${caption("WINNERS' MEDALS · 1930–2026", "#7A6A52")}`, "#F1EADA"));
 }
 
 // ── 11 · floodlight constellation ───────────────────────────────────────────
@@ -279,15 +299,15 @@ const plates: string[] = [];
   let field = "";
   for (let i = 0; i < 130; i++)
     field += `<circle cx="${(rand(i, 111) * W).toFixed(0)}" cy="${(rand(i, 112) * H).toFixed(0)}" r="${(0.5 + rand(i, 113) * 1.1).toFixed(1)}" fill="${ink}" opacity="${(0.2 + rand(i, 114) * 0.5).toFixed(2)}"/>`;
-  const pts = skeletonPoints(17);
+  const pts = skeletonPoints(38);
   let constellation = "";
   for (let i = 0; i < pts.length - 1; i++) {
     const a = pts[i]!, b = pts[i + 1]!;
-    if (Math.hypot(b.x - a.x, b.y - a.y) < 80)
+    if (Math.hypot(b.x - a.x, b.y - a.y) < 64)
       constellation += `<line x1="${a.x.toFixed(0)}" y1="${a.y.toFixed(0)}" x2="${b.x.toFixed(0)}" y2="${b.y.toFixed(0)}" stroke="${ink}" stroke-width="0.8" opacity="0.65"/>`;
   }
   pts.forEach((p, i) => {
-    const r = 2.4 + rand(i, 117) * 3;
+    const r = 2.0 + rand(i, 117) * 2.4;
     constellation += `<circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="${r.toFixed(1)}" fill="#FFF7DB"/><circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="${(r + 3).toFixed(1)}" fill="none" stroke="#FFF7DB" stroke-width="0.5" opacity="0.5"/>`;
   });
   plates.push(svg(`${field}<circle cx="240" cy="300" r="235" fill="none" stroke="${ink}" stroke-width="0.5" opacity="0.4"/>${constellation}<text x="350" y="150" font-family="Georgia" font-style="italic" font-size="13" fill="${ink}" opacity="0.8">Estadio Australis</text>${caption("NIGHT MATCH · FLOODLIT SKY 26", "#7E92B5")}`, "#0A1428", true));
@@ -298,8 +318,8 @@ const plates: string[] = [];
   let seats = "";
   // seats trace a shrunken 26 inside the bowl
   const cx = 240, cy = 300, scale = 0.62;
-  skeletonPoints(70).forEach((p, i) => {
-    const px = cx + (p.x - 240) * scale, py = cy + (p.y - 310) * scale;
+  skeletonPoints(110).forEach((p, i) => {
+    const px = cx + (p.x - 240) * scale, py = cy + (p.y - 336) * scale;
     for (let k = 0; k < 4; k++) {
       const ox = (rand(i * 4 + k, 121) - 0.5) * 13, oy = (rand(i * 4 + k, 122) - 0.5) * 13;
       seats += `<circle cx="${(px + ox).toFixed(1)}" cy="${(py + oy).toFixed(1)}" r="${(1.8 + rand(i * 4 + k, 123) * 1.6).toFixed(1)}" fill="${rand(i * 4 + k, 124) > 0.25 ? "#E8590C" : "#F6F1E3"}" opacity="0.95"/>`;
