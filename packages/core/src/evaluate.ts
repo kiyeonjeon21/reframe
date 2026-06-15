@@ -5,9 +5,10 @@
  */
 
 import { sampleBehavior } from "./behaviors.js";
-import type { CompiledScene, PropertySegment } from "./compile.js";
+import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
 import type { Anchor, NodeIR, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
+import { pathPoint, pathTangentAngle } from "./path.js";
 
 /** Canvas-style 2D affine matrix [a, b, c, d, e, f]. */
 export type Mat2D = [number, number, number, number, number, number];
@@ -130,6 +131,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
 
   const valueAt = (target: string, prop: string, fallback: PropValue): PropValue => {
     let value = compiled.initialValues.get(`${target}.${prop}`) ?? fallback;
+    let segStart = Number.NEGATIVE_INFINITY; // authored start of the active tween segment
     const segs = compiled.segments.get(`${target}.${prop}`);
     if (segs) {
       let active: PropertySegment | undefined;
@@ -138,11 +140,34 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         else break;
       }
       if (active) {
+        segStart = active.t0;
         if (t >= active.t1) {
           value = active.to;
         } else {
           const u = resolveEase(active.ease)((t - active.t0) / (active.t1 - active.t0));
           value = lerpValue(active.from, active.to, u);
+        }
+      }
+    }
+    // A motion path overrides x/y (and rotation, if autoRotate) within its
+    // window, holding the end after it completes. Whichever driver was authored
+    // LATER wins (compare start times), so a tween placed after the path takes
+    // over in its own window while gaps still hold the path's end. Applied
+    // before behaviors so a wiggle/oscillate can still ride on top.
+    if (prop === "x" || prop === "y" || prop === "rotation") {
+      const drivers = compiled.motionPaths.get(target);
+      if (drivers) {
+        let active: MotionDriver | undefined;
+        for (const d of drivers) {
+          if (d.t0 <= t) active = d;
+          else break;
+        }
+        if (active && active.t0 >= segStart && (prop !== "rotation" || active.autoRotate) && active.points.length > 0) {
+          const span = active.t1 - active.t0;
+          const u = span <= 0 ? 1 : resolveEase(active.ease)(Math.max(0, Math.min(1, (t - active.t0) / span)));
+          if (prop === "x") value = pathPoint(active.points, active.closed, u)[0];
+          else if (prop === "y") value = pathPoint(active.points, active.closed, u)[1];
+          else value = pathTangentAngle(active.points, active.closed, u) + active.rotateOffset;
         }
       }
     }

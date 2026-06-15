@@ -160,6 +160,25 @@ export type TimelineIR =
   | { kind: "wait"; duration: number; label?: string }
   | {
       /**
+       * Drive a node's x/y along a Catmull-Rom spline through `points`
+       * (absolute coords in the node's parent space). With `autoRotate`, the
+       * node's rotation tracks the path tangent (plus `rotateOffset`). The
+       * position HOLDS at the final point after the path completes, so a swoop
+       * is a positioning move, not a one-shot that snaps back.
+       */
+      kind: "motionPath";
+      target: string;
+      points: [number, number][];
+      closed?: boolean;
+      duration?: number;
+      ease?: Ease;
+      autoRotate?: boolean;
+      /** Degrees added to the tangent angle (e.g. 90 if the art faces "up"). */
+      rotateOffset?: number;
+      label?: string;
+    }
+  | {
+      /**
        * A named, retimable, reorderable span wrapping timeline steps — the
        * semantic unit ("brand-reveal", "feature-cascade") humans and AI revise.
        * Lowers to its grouping (seq, or par if `parallel`) before timing, so
@@ -253,4 +272,5 @@ export interface SceneIR {
 
 export const DEFAULT_TO_DURATION = 0.5;
 export const DEFAULT_TWEEN_DURATION = 0.5;
+export const DEFAULT_MOTIONPATH_DURATION = 1;
 export const DEFAULT_FPS = 30;

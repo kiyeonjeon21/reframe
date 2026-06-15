@@ -10,7 +10,8 @@
  */
 
 import type { NodeIR, PropValue, SceneIR, TimelineIR, Ease } from "./ir.js";
-import { DEFAULT_TO_DURATION, DEFAULT_TWEEN_DURATION } from "./ir.js";
+import { DEFAULT_MOTIONPATH_DURATION, DEFAULT_TO_DURATION, DEFAULT_TWEEN_DURATION } from "./ir.js";
+import { pathPoint, pathTangentAngle } from "./path.js";
 
 export interface PropertySegment {
   target: string;
@@ -20,6 +21,17 @@ export interface PropertySegment {
   from: PropValue;
   to: PropValue;
   ease?: Ease;
+}
+
+/** A path driver overrides a node's x/y (and rotation, if autoRotate) over [t0, t1], holding the end. */
+export interface MotionDriver {
+  t0: number;
+  t1: number;
+  ease?: Ease;
+  points: [number, number][];
+  closed: boolean;
+  autoRotate: boolean;
+  rotateOffset: number;
 }
 
 export interface LabelSpan {
@@ -32,6 +44,8 @@ export interface CompiledScene {
   duration: number;
   /** Keyed by `${target}.${prop}`, sorted by t0. */
   segments: Map<string, PropertySegment[]>;
+  /** Path drivers per target node, sorted by t0 — override x/y/rotation. */
+  motionPaths: Map<string, MotionDriver[]>;
   /** Base props merged with the initial state, keyed by `${target}.${prop}`. */
   initialValues: Map<string, PropValue>;
   nodeById: Map<string, NodeIR>;
@@ -58,6 +72,8 @@ function scaleTimeline(tl: TimelineIR, k: number): TimelineIR {
       return { ...tl, duration: tl.duration * k };
     case "tween":
       return { ...tl, duration: (tl.duration ?? DEFAULT_TWEEN_DURATION) * k };
+    case "motionPath":
+      return { ...tl, duration: (tl.duration ?? DEFAULT_MOTIONPATH_DURATION) * k };
     case "to":
       return {
         ...tl,
@@ -111,6 +127,7 @@ export function compileScene(ir: SceneIR): CompiledScene {
   }
 
   const segments = new Map<string, PropertySegment[]>();
+  const motionPaths = new Map<string, MotionDriver[]>();
   const current = new Map(initialValues);
 
   const pushSegment = (seg: PropertySegment) => {
@@ -157,6 +174,8 @@ export function compileScene(ir: SceneIR): CompiledScene {
         return start + tl.duration;
       case "tween":
         return start + (tl.duration ?? DEFAULT_TWEEN_DURATION);
+      case "motionPath":
+        return start + (tl.duration ?? DEFAULT_MOTIONPATH_DURATION);
       case "to": {
         const override = ir.states?.[tl.state] ?? {};
         const duration = tl.duration ?? DEFAULT_TO_DURATION;
@@ -230,6 +249,24 @@ export function compileScene(ir: SceneIR): CompiledScene {
         }
         return start + duration;
       }
+      case "motionPath": {
+        const duration = tl.duration ?? DEFAULT_MOTIONPATH_DURATION;
+        const points = tl.points;
+        const closed = tl.closed ?? false;
+        const autoRotate = tl.autoRotate ?? false;
+        const rotateOffset = tl.rotateOffset ?? 0;
+        let list = motionPaths.get(tl.target);
+        if (!list) motionPaths.set(tl.target, (list = []));
+        list.push({ t0: start, t1: start + duration, points, closed, autoRotate, rotateOffset, ...(tl.ease !== undefined && { ease: tl.ease }) });
+        // bake the end position into `current` so a later tween chains from it
+        if (points.length > 0) {
+          const [ex, ey] = pathPoint(points, closed, 1);
+          current.set(key(tl.target, "x"), ex);
+          current.set(key(tl.target, "y"), ey);
+          if (autoRotate) current.set(key(tl.target, "rotation"), pathTangentAngle(points, closed, 1) + rotateOffset);
+        }
+        return start + duration;
+      }
       case "to": {
         const override = ir.states?.[tl.state] ?? {};
         const duration = tl.duration ?? DEFAULT_TO_DURATION;
@@ -259,11 +296,13 @@ export function compileScene(ir: SceneIR): CompiledScene {
 
   const inferredEnd = ir.timeline ? walk(ir.timeline, 0) : 0;
   for (const list of segments.values()) list.sort((a, b) => a.t0 - b.t0);
+  for (const list of motionPaths.values()) list.sort((a, b) => a.t0 - b.t0);
 
   return {
     ir,
     duration: ir.duration ?? inferredEnd,
     segments,
+    motionPaths,
     initialValues,
     nodeById,
     nodeOrder,

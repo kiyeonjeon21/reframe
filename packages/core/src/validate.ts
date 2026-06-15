@@ -107,6 +107,21 @@ export function validateScene(ir: SceneIR): void {
           problems.push(`${path}: tween duration must be > 0`);
         }
         break;
+      case "motionPath": {
+        const node = nodeById.get(tl.target);
+        if (!node) {
+          problems.push(
+            `${path}: motionPath targets unknown node "${tl.target}" — known ids: ${[...nodeById.keys()].join(", ")}`,
+          );
+        } else if (node.type === "line") {
+          problems.push(`${path}: motionPath cannot target a line (no x/y) — "${tl.target}"`);
+        }
+        if (tl.points.length < 1) problems.push(`${path}: motionPath "${tl.target}" needs at least 1 point`);
+        if (tl.duration !== undefined && tl.duration <= 0) {
+          problems.push(`${path}: motionPath "${tl.target}" duration must be > 0`);
+        }
+        break;
+      }
       case "wait":
         if (tl.duration < 0) problems.push(`${path}: wait duration must be >= 0`);
         break;

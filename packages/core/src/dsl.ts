@@ -127,6 +127,21 @@ export function wait(duration: number, label?: string): TimelineIR {
   return { kind: "wait", duration, ...(label !== undefined && { label }) };
 }
 
+export function motionPath(
+  target: string,
+  points: [number, number][],
+  opts: {
+    duration?: number;
+    ease?: Ease;
+    closed?: boolean;
+    autoRotate?: boolean;
+    rotateOffset?: number;
+    label?: string;
+  } = {},
+): TimelineIR {
+  return { kind: "motionPath", target, points, ...opts };
+}
+
 export interface BehaviorWindow {
   from?: number;
   until?: number;

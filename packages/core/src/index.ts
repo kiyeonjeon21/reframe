@@ -7,7 +7,8 @@ export {
   type OverlayDoc,
   type ComposeReport,
 } from "./compose.js";
-export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan } from "./compile.js";
+export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan, type MotionDriver } from "./compile.js";
+export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
 export {
   resolveAudioPlan,
   SFX_DURATION,
