@@ -61,10 +61,16 @@ reason to build ON this repo rather than start over.
    points (waypoints/timing) that survive a knob-driven regen. Builds on goal-2
    beats and the motionPath/path primitives. Makes motion requestable without
    canning it — the front door to "prompt → motion".
+5. **[goal-5] motion ops library + add-motion in the editor** — a GSAP-style op
+   toolkit (rotate/zoom/ken-burns/slide/fade/draw-on/pulse) for *any* node, plus
+   a new `addTimeline` overlay verb so motion can be **added** in the preview
+   (not just patched), editable and foldable to code. Builds on goal-4's vocab +
+   the preview editing loop.
 
 Order: goal-1 → goal-1.5 → goal-2 (consumes the hardened sketch); goal-3 is
 independent and lower-novelty, parallelizable by a second agent. goal-4 depends
-on goal-2 (beats) + the motionPath/path primitives — both landed.
+on goal-2 (beats) + the motionPath/path primitives — both landed. goal-5 builds
+on goal-4 + the preview editing loop (both landed).
 
 ## The human/agent split (read this before delegating)
 

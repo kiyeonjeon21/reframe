@@ -107,3 +107,24 @@ VERIFIER: Reproducibility — (preset,knobs,seed) byte-identical twice (extend d
 DONE-WHEN: 6 presets each emit a beat; same (name,knobs,seed) byte-identical twice; ≥2 presets' 8-seed pairwise distances all in [D_lo,D_hi]; energy+speed monotonic for ≥2 presets; all goldens byte-identical + beat(name,{},…)≡seq; waypoint + beat-timing overlay edits survive a knob base regen; preview shows draggable handles emitting resolving patches; logo-sting re-authored + generate.mts --motion works on react/figma/vercel; pnpm test + typecheck green.
 
 OUT-OF-SCOPE: NL→preset selection (LLM emits {preset,knobs,seed} — skill layer, not unit-verifiable here; engine designed for it); new easing math; assemble/drift-cinematic; full timeline GUI; per-logo auto tailoring beyond knobs; changing goal-2/non-preset compilation.
+
+---
+
+## goal-5 condition
+
+Motion ops library + add-motion in the editor: a GSAP-style toolkit of everyday motion ops (rotate, zoom, ken-burns, slide, fade, draw-on, pulse) that apply to ANY node (text, logo paths, shapes), authorable in code AND addable/editable in the preview, folding to code. Today the overlay only PATCHES existing labeled motion; there's no named op set for arbitrary nodes and no way to ADD motion in the editor. Builds on motionPreset + the tween/motionPath/behavior primitives + the preview editing loop.
+
+ANCHOR (extend, don't rebuild): packages/core/src/{presets.ts → sibling motionOps.ts: motionOp(name,target,opts) over existing dsl factories, NO new IR; dsl.ts tween/to/motionPath/oscillate/wiggle it composes; compose.ts — NEW `addTimeline` overlay verb + OverlayDoc type}; packages/preview/{main.ts,panel.ts} — "add motion ▸ <op>" on the selected node + per-op knobs + Tier-1 trail preview; examples/{logo-sting,scenes} — ops on a logo + text.
+
+DECISIONS (fixed — do not re-pick):
+1. A motion op is a PARAMETERIZED FRAGMENT over existing primitives, not new IR. motionOp(name,target,opts)→{setup?,timeline} emitting tween/motionPath/behavior wrapped in a labeled beat. Op set: rotate, zoom (scale pop), ken-burns (slow scale+drift), slide-in (from dir), fade, draw-on (path progress), pulse (oscillate). Targets ANY node by id; energy/speed/amount knobs like presets.
+2. Adding motion in the editor = a NEW overlay verb `addTimeline: TimelineIR[]` that APPENDS timeline fragments to the scene (mirroring the existing `addNodes`), composed in `par` with the base under stable beat labels so the added op is then patchable AND foldable. This is the load-bearing change: the overlay goes from "patch existing motion" to "ADD new motion." composeScene appends + validates + reports orphans if the target id is gone.
+3. Additive + determinism-safe: no base scene uses addTimeline, so all goldens stay byte-identical; ops compose on top of a node's existing animation; folding an added op to code = a literal motionOp(...) call (hand-authored scenes) or stays an overlay (preset scenes).
+
+DELIVERABLE: 1) motionOps.ts: motionOp for ~7 ops, each a labeled beat of existing primitives, exported. 2) compose.ts: addTimeline overlay verb (append, validate, report) + type. 3) preview: select node → "add motion ▸ <op>" → writes addTimeline; per-op knobs editable; Tier-1 trail preview; fold to code. 4) ops on a logo (rotate/zoom/ken-burns) + text (fade/slide-in).
+
+VERIFIER: each op byte-identical twice + every golden byte-identical (additive). addTimeline compose — base + overlay adding "ken-burns" on a node renders the drift; bad target id orphans loudly (regen-contract harness). Editor fold — add an op in preview, exportDraft (has addTimeline), fold to a motionOp(...) literal → re-render byte-identical to the overlay render (the loop's fold proof). pnpm test + typecheck green.
+
+DONE-WHEN: ~7 ops each emit a labeled beat; addTimeline overlay verb + validation + orphan report; preview add-motion affordance + per-op knobs + trail preview; ops demonstrated on a logo AND text; an editor-added op folds to code byte-identical to its overlay render; all goldens byte-identical; pnpm test + typecheck green.
+
+OUT-OF-SCOPE: physics/inertia/throw; scroll/observer/draggable (no DOM); parametric easing beyond cubicBezier; full timeline-track GUI; autonomous AI op selection (chat co-pilot / later skill layer).
