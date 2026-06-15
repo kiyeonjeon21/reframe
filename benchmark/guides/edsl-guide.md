@@ -82,13 +82,14 @@ them with normal TS (`Object.fromEntries`, `.map`) for data-driven scenes.
 - `to(stateName, opts)` — transition into a named state (see above).
 - `tween(nodeId, { prop: value, ... }, { duration, ease })` — low-level escape hatch
   for one node. Colors (`"#rrggbb"`) interpolate; numbers interpolate.
-- `motionPath(nodeId, [[x,y], ...], { duration, ease, autoRotate?, rotateOffset?, closed? })`
+- `motionPath(nodeId, [[x,y], ...], { duration, ease, curviness?, autoRotate?, rotateOffset?, closed? })`
   — drive a node's `x`/`y` along a smooth Catmull-Rom curve through the waypoints
   (parent-space coords). `autoRotate: true` banks the node along the path tangent
   (`rotateOffset` degrees if the art faces "up", e.g. `-90`). The node HOLDS at the
   final point after the path finishes (a positioning move, not a one-shot), so a
   later `tween` can chain from there. Use it for swoops/arcs/orbits — straight
   `tween`s on x and y can't curve. `closed: true` loops the waypoints (orbit).
+  `curviness` shapes the path: `1` smooth (default), `0` sharp corners, `>1` loopier.
 - `wait(seconds)` — hold.
 
 Eases: `linear`, `easeIn/Out/InOutQuad`, `easeIn/Out/InOutCubic`,

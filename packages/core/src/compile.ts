@@ -30,6 +30,7 @@ export interface MotionDriver {
   ease?: Ease;
   points: [number, number][];
   closed: boolean;
+  curviness: number;
   autoRotate: boolean;
   rotateOffset: number;
 }
@@ -253,17 +254,18 @@ export function compileScene(ir: SceneIR): CompiledScene {
         const duration = tl.duration ?? DEFAULT_MOTIONPATH_DURATION;
         const points = tl.points;
         const closed = tl.closed ?? false;
+        const curviness = tl.curviness ?? 1;
         const autoRotate = tl.autoRotate ?? false;
         const rotateOffset = tl.rotateOffset ?? 0;
         let list = motionPaths.get(tl.target);
         if (!list) motionPaths.set(tl.target, (list = []));
-        list.push({ t0: start, t1: start + duration, points, closed, autoRotate, rotateOffset, ...(tl.ease !== undefined && { ease: tl.ease }) });
+        list.push({ t0: start, t1: start + duration, points, closed, curviness, autoRotate, rotateOffset, ...(tl.ease !== undefined && { ease: tl.ease }) });
         // bake the end position into `current` so a later tween chains from it
         if (points.length > 0) {
-          const [ex, ey] = pathPoint(points, closed, 1);
+          const [ex, ey] = pathPoint(points, closed, 1, curviness);
           current.set(key(tl.target, "x"), ex);
           current.set(key(tl.target, "y"), ey);
-          if (autoRotate) current.set(key(tl.target, "rotation"), pathTangentAngle(points, closed, 1) + rotateOffset);
+          if (autoRotate) current.set(key(tl.target, "rotation"), pathTangentAngle(points, closed, 1, curviness) + rotateOffset);
         }
         return start + duration;
       }

@@ -140,6 +140,7 @@ export function motionPath(
     duration?: number;
     ease?: Ease;
     closed?: boolean;
+    curviness?: number;
     autoRotate?: boolean;
     rotateOffset?: number;
     label?: string;

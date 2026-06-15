@@ -121,6 +121,9 @@ export function validateScene(ir: SceneIR): void {
         if (tl.duration !== undefined && tl.duration <= 0) {
           problems.push(`${path}: motionPath "${tl.target}" duration must be > 0`);
         }
+        if (tl.curviness !== undefined && tl.curviness < 0) {
+          problems.push(`${path}: motionPath "${tl.target}" curviness must be >= 0`);
+        }
         break;
       }
       case "wait":

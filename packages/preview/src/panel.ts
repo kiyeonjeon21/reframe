@@ -21,6 +21,7 @@ const RANGES: Record<string, [number, number, number]> = {
   progress: [0, 1, 0.01],
   scale: [0, 3, 0.01],
   rotation: [-360, 360, 1],
+  curviness: [0, 2, 0.05],
 };
 const ANCHORS = [
   "top-left", "top-center", "top-right",
@@ -358,6 +359,17 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
         );
         durRow.prepend(el("label", {}, "duration"));
         card.append(durRow);
+        if (step.kind === "motionPath") {
+          const cvRow = makeControl(
+            "curviness",
+            step.curviness ?? 1,
+            store.hasTimelineEdit(label, "curviness"),
+            (v) => store.setTimelineParam(label, "curviness", Number(v)),
+            () => store.unsetTimelineParam(label, "curviness"),
+          );
+          cvRow.prepend(el("label", {}, "curviness"));
+          card.append(cvRow);
+        }
         if (step.kind === "to" || step.kind === "tween") {
           const easeSelect = el("select");
           const current = "ease" in step ? step.ease : undefined;

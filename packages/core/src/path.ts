@@ -37,8 +37,12 @@ function segCountOf(points: Pt[], closed: boolean): number {
   return closed ? n : n - 1;
 }
 
-/** Position on the spline at progress u in [0,1]. */
-export function pathPoint(points: Pt[], closed: boolean, u: number): Pt {
+/**
+ * Position on the spline at progress u in [0,1]. `curviness` scales the
+ * Catmull-Rom tangents (GSAP's idea): 1 = standard smooth (the default and the
+ * byte-exact original), 0 = straight lines / sharp corners, >1 = looser/loopier.
+ */
+export function pathPoint(points: Pt[], closed: boolean, u: number, curviness = 1): Pt {
   const n = points.length;
   if (n === 0) return [0, 0];
   if (n === 1) return [points[0]![0], points[0]![1]];
@@ -47,23 +51,49 @@ export function pathPoint(points: Pt[], closed: boolean, u: number): Pt {
   const [p0, p1, p2, p3] = controls(points, closed, i);
   const t2 = t * t;
   const t3 = t2 * t;
-  const f = (a: number, b: number, c: number, d: number) =>
-    0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
-  return [f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])];
+  if (curviness === 1) {
+    // unchanged Catmull-Rom basis — byte-identical to before
+    const f = (a: number, b: number, c: number, d: number) =>
+      0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+    return [f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])];
+  }
+  // Hermite form with curviness-scaled tangents m = curviness * (next - prev)/2
+  const h00 = 2 * t3 - 3 * t2 + 1;
+  const h10 = t3 - 2 * t2 + t;
+  const h01 = -2 * t3 + 3 * t2;
+  const h11 = t3 - t2;
+  const k = curviness * 0.5;
+  const H = (a: number, b: number, c: number, d: number) =>
+    h00 * b + h10 * k * (c - a) + h01 * c + h11 * k * (d - b);
+  return [H(p0[0], p1[0], p2[0], p3[0]), H(p0[1], p1[1], p2[1], p3[1])];
 }
 
 /** Tangent angle (degrees) at progress u — the direction of travel along the path. */
-export function pathTangentAngle(points: Pt[], closed: boolean, u: number): number {
+export function pathTangentAngle(points: Pt[], closed: boolean, u: number, curviness = 1): number {
   const n = points.length;
   if (n < 2) return 0;
   const segs = segCountOf(points, closed);
   const { i, t } = locate(segs, u);
   const [p0, p1, p2, p3] = controls(points, closed, i);
   const t2 = t * t;
-  const d = (a: number, b: number, c: number, e: number) =>
-    0.5 * (-a + c + 2 * (2 * a - 5 * b + 4 * c - e) * t + 3 * (-a + 3 * b - 3 * c + e) * t2);
-  const dx = d(p0[0], p1[0], p2[0], p3[0]);
-  const dy = d(p0[1], p1[1], p2[1], p3[1]);
+  let dx: number;
+  let dy: number;
+  if (curviness === 1) {
+    const d = (a: number, b: number, c: number, e: number) =>
+      0.5 * (-a + c + 2 * (2 * a - 5 * b + 4 * c - e) * t + 3 * (-a + 3 * b - 3 * c + e) * t2);
+    dx = d(p0[0], p1[0], p2[0], p3[0]);
+    dy = d(p0[1], p1[1], p2[1], p3[1]);
+  } else {
+    const g00 = 6 * t2 - 6 * t;
+    const g10 = 3 * t2 - 4 * t + 1;
+    const g01 = -6 * t2 + 6 * t;
+    const g11 = 3 * t2 - 2 * t;
+    const k = curviness * 0.5;
+    const D = (a: number, b: number, c: number, e: number) =>
+      g00 * b + g10 * k * (c - a) + g01 * c + g11 * k * (e - b);
+    dx = D(p0[0], p1[0], p2[0], p3[0]);
+    dy = D(p0[1], p1[1], p2[1], p3[1]);
+  }
   if (dx === 0 && dy === 0) return 0;
   return (Math.atan2(dy, dx) * 180) / Math.PI;
 }

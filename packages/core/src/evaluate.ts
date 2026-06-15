@@ -175,9 +175,9 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         if (active && active.t0 >= segStart && (prop !== "rotation" || active.autoRotate) && active.points.length > 0) {
           const span = active.t1 - active.t0;
           const u = span <= 0 ? 1 : resolveEase(active.ease)(Math.max(0, Math.min(1, (t - active.t0) / span)));
-          if (prop === "x") value = pathPoint(active.points, active.closed, u)[0];
-          else if (prop === "y") value = pathPoint(active.points, active.closed, u)[1];
-          else value = pathTangentAngle(active.points, active.closed, u) + active.rotateOffset;
+          if (prop === "x") value = pathPoint(active.points, active.closed, u, active.curviness)[0];
+          else if (prop === "y") value = pathPoint(active.points, active.closed, u, active.curviness)[1];
+          else value = pathTangentAngle(active.points, active.closed, u, active.curviness) + active.rotateOffset;
         }
       }
     }

@@ -51,6 +51,7 @@ export interface OverlayDoc {
       scale?: number;
       order?: number;
       points?: [number, number][];
+      curviness?: number;
     }
   >;
 }
@@ -224,7 +225,7 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
       to: ["duration", "ease", "stagger"],
       tween: ["duration", "ease"],
       wait: ["duration"],
-      motionPath: ["points", "duration", "ease"],
+      motionPath: ["points", "duration", "ease", "curviness"],
       beat: ["at", "gap", "scale", "duration", "order"],
     };
 

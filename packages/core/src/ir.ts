@@ -194,6 +194,8 @@ export type TimelineIR =
       closed?: boolean;
       duration?: number;
       ease?: Ease;
+      /** Tangent scale: 1 = smooth (default), 0 = sharp corners, >1 = loopier. */
+      curviness?: number;
       autoRotate?: boolean;
       /** Degrees added to the tangent angle (e.g. 90 if the art faces "up"). */
       rotateOffset?: number;

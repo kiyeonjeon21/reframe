@@ -45,6 +45,16 @@ describe("MotionPath geometry", () => {
     const pts: Pt[] = [[0, 0], [100, 100]]; // heading down-right → +45°
     expect(pathTangentAngle(pts, false, 0.5)).toBeCloseTo(45, 1);
   });
+
+  it("curviness 0 makes straight segments (sharp corners)", () => {
+    const pts: Pt[] = [[0, 0], [100, 0], [100, 100]];
+    expect(pathPoint(pts, false, 0.25, 0)).toEqual([50, 0]); // dead-centre of the straight first segment
+  });
+
+  it("curviness 1 is byte-identical to the default", () => {
+    const pts: Pt[] = [[0, 0], [100, 30], [200, 0], [260, 80]];
+    for (const u of [0.1, 0.37, 0.6, 0.85]) expect(pathPoint(pts, false, u, 1)).toEqual(pathPoint(pts, false, u));
+  });
 });
 
 describe("MotionPath driver", () => {

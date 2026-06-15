@@ -94,7 +94,7 @@ export class EditorStore {
 
   setTimelineParam(
     label: string,
-    key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order",
+    key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order" | "curviness",
     value: number | string,
   ) {
     ((this.draft.timeline ??= {})[label] ??= {})[key] = value as never;
@@ -128,7 +128,7 @@ export class EditorStore {
 
   unsetTimelineParam(
     label: string,
-    key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order",
+    key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order" | "curviness",
   ) {
     delete this.draft.timeline?.[label]?.[key];
     this.prune();
