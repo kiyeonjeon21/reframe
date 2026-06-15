@@ -62,6 +62,7 @@ let compTotal = 0;
 let compStarts: number[] = []; // composition scene start times (play-all + playhead)
 let tracksOpen = false; // node-track dope sheet expanded
 let tkPlayhead: HTMLDivElement | null = null;
+const expandedGroups = new Set<string>(); // which track groups are unfolded
 // play-all: a continuous-playback MODE that draws the whole composition from
 // precompiled scenes (no editor-store swaps), blending crossfades.
 let playAll = false;
@@ -335,15 +336,45 @@ function buildTimeline() {
   }
 }
 
-/** Per-node motion bars from the compiled scene — segments (tweens/`to`) and
- *  motionPath windows, keyed by node id. This IS the timeline graph reframe
- *  already computes; the dope sheet just draws it and links it to the nodes. */
+interface Bar {
+  t0: number;
+  t1: number;
+  prop: string;
+}
+
+/** Merge overlapping/adjacent bars into clean active windows (a group envelope). */
+function mergeWindows(bars: Bar[]): { t0: number; t1: number }[] {
+  const sorted = [...bars].sort((a, b) => a.t0 - b.t0);
+  const out: { t0: number; t1: number }[] = [];
+  for (const b of sorted) {
+    const last = out[out.length - 1];
+    if (last && b.t0 <= last.t1 + 1e-3) last.t1 = Math.max(last.t1, b.t1);
+    else out.push({ t0: b.t0, t1: b.t1 });
+  }
+  return out;
+}
+
+/** Ancestor group ids on the path to `id` (so a selection can auto-unfold). */
+function ancestorGroupIds(nodes: NodeIR[], id: string, path: string[] = []): string[] | null {
+  for (const n of nodes) {
+    if (n.id === id) return path;
+    if (n.type === "group") {
+      const r = ancestorGroupIds(n.children, id, [...path, n.id]);
+      if (r) return r;
+    }
+  }
+  return null;
+}
+
+/** The dope sheet: node motion (from compiled.segments/motionPaths — the graph
+ *  reframe already computes) grouped by the scene graph and collapsible. A group
+ *  row summarizes its subtree's active windows; unfold it for per-node lanes. */
 function buildTracks(container: HTMLElement) {
   if (!store) return;
   const c = store.compiled;
   const dur = c.duration || 1;
-  const bars = new Map<string, { t0: number; t1: number; prop: string }[]>();
-  const push = (id: string, b: { t0: number; t1: number; prop: string }) => {
+  const bars = new Map<string, Bar[]>();
+  const push = (id: string, b: Bar) => {
     const arr = bars.get(id);
     if (arr) arr.push(b);
     else bars.set(id, [b]);
@@ -357,27 +388,68 @@ function buildTracks(container: HTMLElement) {
   for (const [id, drivers] of c.motionPaths) {
     for (const d of drivers) push(id, { t0: d.t0, t1: d.t1, prop: "path" });
   }
-  // rows in declaration order, only nodes that animate
-  for (const id of c.nodeOrder) {
-    const segs = bars.get(id);
-    if (!segs) continue;
-    const row = el("div", { class: `tk-row${store.selectedId === id ? " selected" : ""}` });
-    const label = el("div", { class: "tk-label", title: id }, id);
-    label.addEventListener("click", () => store!.select(id));
+
+  // a selection auto-unfolds the groups on the way to it
+  if (store.selectedId) {
+    for (const anc of ancestorGroupIds(c.ir.nodes, store.selectedId) ?? []) expandedGroups.add(anc);
+  }
+
+  // a node's own animation PLUS its descendants' (a group can be tweened directly
+  // while its children stay static — include both).
+  const subtreeBars = (node: NodeIR): Bar[] => {
+    const own = bars.get(node.id) ?? [];
+    return node.type === "group" ? [...own, ...node.children.flatMap(subtreeBars)] : own;
+  };
+  const childBars = (node: NodeIR): Bar[] =>
+    node.type === "group" ? node.children.flatMap(subtreeBars) : [];
+
+  const left = (t: number) => `${(t / dur) * 100}%`;
+  const width = (t0: number, t1: number) => `${Math.max(0.4, ((t1 - t0) / dur) * 100)}%`;
+
+  const renderNode = (node: NodeIR, depth: number) => {
+    const sub = subtreeBars(node);
+    if (sub.length === 0) return; // nothing in this subtree animates
+    // only groups with animated CHILDREN unfold (a self-animated group is a leaf row)
+    const isGroup = node.type === "group" && childBars(node).length > 0;
+    const expanded = expandedGroups.has(node.id);
+    const row = el("div", { class: `tk-row${store!.selectedId === node.id ? " selected" : ""}` });
+    const caret = isGroup ? (expanded ? "▾ " : "▸ ") : "";
+    const label = el("div", { class: "tk-label", title: node.id, style: `padding-left:${6 + depth * 12}px` }, caret + node.id);
+    label.addEventListener("click", () => {
+      if (isGroup) {
+        if (expanded) expandedGroups.delete(node.id);
+        else expandedGroups.add(node.id);
+        buildTimeline();
+      } else store!.select(node.id);
+    });
     const lane = el("div", { class: "tk-lane" });
-    for (const b of segs) {
-      const bar = el("div", { class: `tk-bar${b.prop === "path" ? " path" : ""}`, title: `${b.prop} ${b.t0.toFixed(2)}–${b.t1.toFixed(2)}s` });
-      bar.style.left = `${(b.t0 / dur) * 100}%`;
-      bar.style.width = `${Math.max(0.4, ((b.t1 - b.t0) / dur) * 100)}%`;
-      bar.addEventListener("click", () => {
-        store!.select(id);
-        setTime(b.t0);
-      });
-      lane.append(bar);
+    if (isGroup) {
+      // group summary: merged active windows of the whole subtree
+      for (const w of mergeWindows(sub)) {
+        const bar = el("div", { class: "tk-bar group", title: `${node.id} ${w.t0.toFixed(2)}–${w.t1.toFixed(2)}s` });
+        bar.style.left = left(w.t0);
+        bar.style.width = width(w.t0, w.t1);
+        bar.addEventListener("click", () => setTime(w.t0));
+        lane.append(bar);
+      }
+    } else {
+      for (const b of sub) {
+        const bar = el("div", { class: `tk-bar${b.prop === "path" ? " path" : ""}`, title: `${b.prop} ${b.t0.toFixed(2)}–${b.t1.toFixed(2)}s` });
+        bar.style.left = left(b.t0);
+        bar.style.width = width(b.t0, b.t1);
+        bar.addEventListener("click", () => {
+          store!.select(node.id);
+          setTime(b.t0);
+        });
+        lane.append(bar);
+      }
     }
     row.append(label, lane);
     container.append(row);
-  }
+    if (isGroup && expanded) for (const ch of node.children) renderNode(ch, depth + 1);
+  };
+  for (const node of c.ir.nodes) renderNode(node, 0);
+
   tkPlayhead = el("div", { id: "tk-playhead" });
   container.append(tkPlayhead);
   updateTkPlayhead();
