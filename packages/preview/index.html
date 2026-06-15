@@ -45,9 +45,24 @@
   #report details { color: #8a8a96; }
   #io { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
   #overlay-name { width: 100%; margin-bottom: 6px; box-sizing: border-box; }
+  .beat-group { margin: 4px 0 2px; border-left: 2px solid #3a4a86; padding-left: 6px; }
+  .beat-lane { padding: 1px 4px; border-radius: 3px; cursor: pointer; color: #b9c2da; font-size: 12px; }
+  .beat-lane:hover { background: #2a2a32; }
+  .beat-lane.selected { background: #31313c; color: #fff; }
+  .beat-lane.missing { color: #ff7b72; cursor: default; }
+  .beat-markers { color: #7d9aff; font-size: 11px; margin-top: 3px; opacity: 0.85; }
+  /* composition navigator */
+  #nav { display: none; gap: 6px; align-items: center; padding: 8px 16px; background: #1f1f25; border-bottom: 1px solid #333; overflow-x: auto; }
+  #nav.on { display: flex; }
+  #nav .nav-title { color: #8a8a96; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; white-space: nowrap; }
+  .nav-scene { background: #2a2a32; border: 1px solid #3a3a44; border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+  .nav-scene:hover { border-color: #7d9aff; }
+  .nav-scene.active { background: #31313c; border-color: #7d9aff; color: #fff; }
+  .nav-scene .range { color: #8a8a96; font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
+  <div id="nav"></div>
   <div id="content">
     <div id="stage-wrap"><canvas id="canvas"></canvas></div>
     <div id="panel"></div>

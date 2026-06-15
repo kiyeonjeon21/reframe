@@ -5,7 +5,7 @@
  * path never uses wall-clock time.
  */
 
-import { collectImageSrcs, evaluate, nodeParentMatrix, type DisplayOp, type NodeIR, type SceneIR } from "@reframe/core";
+import { collectImageSrcs, compileComposition, evaluate, nodeParentMatrix, type CompositionIR, type DisplayOp, type NodeIR, type SceneIR } from "@reframe/core";
 import { renderFrame, drawDisplayList } from "@reframe/renderer-canvas";
 import { userScenes } from "virtual:reframe-user-scenes";
 import { buildPanel } from "./panel.js";
@@ -32,6 +32,17 @@ for (const { name, dir, load } of userScenes) {
   modules[`user:${name}`] ??= { label: `${name} (cwd)`, dir, load };
 }
 
+// compositions (the layer above a scene) — picked from the same dropdown, keyed
+// "comp:<path>"; selecting one opens a scene navigator over its scenes.
+const compositionModules = import.meta.glob<{ default: CompositionIR }>("../../../examples/compositions/*.ts");
+const compositions: Record<string, { label: string; load: () => Promise<{ default: CompositionIR }> }> = {};
+for (const path of Object.keys(compositionModules).sort()) {
+  compositions[`comp:${path}`] = {
+    label: `▤ ${path.split("/").pop()!.replace(".ts", "")} (composition)`,
+    load: compositionModules[path]!,
+  };
+}
+
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 const select = document.getElementById("scene-select") as HTMLSelectElement;
@@ -44,6 +55,7 @@ const markInBtn = document.getElementById("mark-in") as HTMLButtonElement;
 const markOutBtn = document.getElementById("mark-out") as HTMLButtonElement;
 const speedSel = document.getElementById("speed") as HTMLSelectElement;
 const loopBand = document.getElementById("loop-band") as HTMLDivElement;
+const navEl = document.getElementById("nav") as HTMLDivElement;
 
 let store: EditorStore | null = null;
 let panel: ReturnType<typeof buildPanel> | null = null;
@@ -54,8 +66,17 @@ let speed = 1;
 let loopOn = false;
 let tIn = 0;
 let tOut = Infinity;
+// active composition (when a "comp:" entry is selected) + which scene is open
+let activeComposition: CompositionIR | null = null;
+let activeSceneIndex = 0;
 
 for (const [key, entry] of Object.entries(modules)) {
+  const option = document.createElement("option");
+  option.value = key;
+  option.textContent = entry.label;
+  select.appendChild(option);
+}
+for (const [key, entry] of Object.entries(compositions)) {
   const option = document.createElement("option");
   option.value = key;
   option.textContent = entry.label;
@@ -93,10 +114,10 @@ function ensureImages(): Promise<void> {
   return Promise.all(pending).then(() => undefined);
 }
 
-async function loadScene(path: string) {
-  const mod = await modules[path]!.load();
-  store = new EditorStore(mod.default);
-  sceneDir = modules[path]!.dir;
+/** Build the editor over a SceneIR (from a scene file or a composition scene). */
+async function openSceneIR(ir: SceneIR, dir: string, writeUrl = true) {
+  store = new EditorStore(ir);
+  sceneDir = dir;
   images.clear();
   imageLoads.clear();
   (window as unknown as { __store: EditorStore }).__store = store; // debug/testing hook
@@ -115,11 +136,64 @@ async function loadScene(path: string) {
   t = 0;
   panel.rebuild();
   draw();
-  syncUrl();
+  if (writeUrl) syncUrl();
   tIn = 0;
   tOut = store.compiled.duration;
   updateLoopBand();
   (window as unknown as { __reframeReady: boolean }).__reframeReady = true;
+}
+
+async function loadScene(path: string) {
+  activeComposition = null;
+  navEl.classList.remove("on");
+  const mod = await modules[path]!.load();
+  await openSceneIR(mod.default, modules[path]!.dir);
+}
+
+/** Open a composition: build the scene navigator and open its first scene. */
+async function loadComposition(key: string) {
+  const mod = await compositions[key]!.load();
+  activeComposition = mod.default;
+  activeSceneIndex = 0;
+  buildNav();
+  await openScene(0);
+}
+
+/** Open the Nth scene of the active composition into the per-scene editor. */
+async function openScene(index: number) {
+  if (!activeComposition) return;
+  activeSceneIndex = index;
+  buildNav();
+  await openSceneIR(activeComposition.scenes[index]!.scene, __REFRAME_EXAMPLES_DIR__, false);
+}
+
+/** The scene navigator: a filmstrip of the composition's scenes + time ranges. */
+function buildNav() {
+  navEl.replaceChildren();
+  if (!activeComposition) {
+    navEl.classList.remove("on");
+    return;
+  }
+  navEl.classList.add("on");
+  navEl.append(el("span", { class: "nav-title" }, `▤ ${activeComposition.id}`));
+  const cc = compileComposition(activeComposition);
+  cc.scenes.forEach((p, i) => {
+    const chip = el(
+      "div",
+      { class: `nav-scene${i === activeSceneIndex ? " active" : ""}` },
+      p.id,
+      el("span", { class: "range" }, `${p.start.toFixed(1)}–${(p.start + p.duration).toFixed(1)}s${p.transition === "crossfade" ? " ⤫" : ""}`),
+    );
+    chip.addEventListener("click", () => void openScene(i));
+    navEl.append(chip);
+  });
+}
+
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string>, ...kids: (HTMLElement | string)[]): HTMLElementTagNameMap[K] {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? (n.className = v) : n.setAttribute(k, v);
+  n.append(...kids);
+  return n;
 }
 
 function applyMat(m: number[], x: number, y: number): [number, number] {
@@ -509,6 +583,7 @@ function keyForLabel(label: string): string | undefined {
   return Object.keys(modules).find((k) => modules[k]!.label === label);
 }
 function syncUrl() {
+  if (activeComposition) return; // compositions are navigated, not deep-linked
   const label = modules[select.value]?.label ?? select.value;
   history.replaceState(null, "", `?scene=${encodeURIComponent(label)}&t=${t.toFixed(3)}`);
 }
@@ -544,9 +619,10 @@ select.addEventListener("change", () => {
     return;
   }
   currentPath = select.value;
-  void loadScene(select.value);
+  if (currentPath.startsWith("comp:")) void loadComposition(currentPath);
+  else void loadScene(currentPath);
 });
-if (Object.keys(modules).length === 0) {
+if (Object.keys(modules).length === 0 && Object.keys(compositions).length === 0) {
   panelRoot.innerHTML =
     "<p style='padding:12px;color:#aab'>No scenes found. Scaffold one in this directory with <code>reframe new my-scene</code>, then reload.</p>";
 } else {
@@ -555,7 +631,8 @@ if (Object.keys(modules).length === 0) {
   currentPath = (fromUrl && keyForLabel(fromUrl)) || select.value || Object.keys(modules)[0]!;
   select.value = currentPath;
   const tParam = params.get("t");
-  void loadScene(currentPath).then(() => {
+  const initial = currentPath.startsWith("comp:") ? loadComposition(currentPath) : loadScene(currentPath);
+  void initial.then(() => {
     if (tParam !== null) setTime(Number(tParam));
   });
 }

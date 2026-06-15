@@ -533,6 +533,28 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
           () => store.unsetTimelineParam(b.name, "scale"));
         scaleRow.prepend(el("label", {}, "scale"));
         card.append(scaleRow);
+
+        // the intent graph: nodes this beat OWNS (track group) + its member
+        // labels (the motion-graph lanes under it) as markers.
+        if ((b.nodes ?? []).length > 0) {
+          const group = el("div", { class: "beat-group" });
+          for (const id of b.nodes!) {
+            const known = findNode(ir.nodes, id) !== null;
+            const lane = el("div", { class: `beat-lane${known ? "" : " missing"}${store.selectedId === id ? " selected" : ""}` }, `◢ ${id}`);
+            if (known) lane.addEventListener("click", () => store.select(id));
+            group.append(lane);
+          }
+          card.append(group);
+        }
+        const memberLabels: string[] = [];
+        const collectLabels = (tl: TimelineIR) => {
+          if ("label" in tl && tl.label !== undefined) memberLabels.push(tl.label);
+          if ("children" in tl) tl.children.forEach(collectLabels);
+        };
+        b.children.forEach(collectLabels);
+        if (memberLabels.length > 0) {
+          card.append(el("div", { class: "beat-markers" }, memberLabels.map((l) => `▸${l}`).join("  ")));
+        }
         root.append(card);
       }
     }
