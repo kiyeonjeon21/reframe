@@ -12,6 +12,7 @@ import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { analyzePair, DEFAULT_OPTIONS, type PairStats } from "./blockflow.js";
 import { frameStream, resolveSource } from "./frames.js";
+import { cellDiff, DEFAULT_GRID, frameOccupancy, type GridSpec } from "./grid.js";
 
 const ANALYSIS_WIDTH = 480;
 const ANALYSIS_HEIGHT = 270;
@@ -45,6 +46,17 @@ export interface MotionProfile {
     t1: number;
     easing: { class: string; thirdsRatio: number | null; spearman: number | null; reliable: boolean };
   }[];
+  /**
+   * Coarse spatial signals — present only when analyzed with `{ grid: true }`.
+   * Additive: existing callers and golden/calibration outputs are unchanged.
+   */
+  grid?: {
+    spec: GridSpec;
+    /** Per frame-pair: mean |Δ| per cell, row-major length cols*rows. */
+    diff: number[][];
+    /** Per frame: edge-density occupancy per cell. frames = framePairs + 1. */
+    occupancy: number[][];
+  };
 }
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -145,7 +157,7 @@ export function classifyEasing(
 
 export async function analyzeMotion(
   inputPath: string,
-  opts: { fps?: number; segments?: Segment[]; changedThreshold?: number } = {},
+  opts: { fps?: number; segments?: Segment[]; changedThreshold?: number; grid?: boolean | GridSpec } = {},
 ): Promise<MotionProfile> {
   const fps = opts.fps ?? 30;
   const blockOpts = {
@@ -154,6 +166,11 @@ export async function analyzeMotion(
     height: ANALYSIS_HEIGHT,
     ...(opts.changedThreshold !== undefined && { changedThreshold: opts.changedThreshold }),
   };
+  const gridSpec: GridSpec | null = opts.grid
+    ? typeof opts.grid === "object"
+      ? opts.grid
+      : DEFAULT_GRID
+    : null;
 
   const source = await resolveSource(resolve(inputPath));
   const keys = [
@@ -161,14 +178,18 @@ export async function analyzeMotion(
     "changedFraction", "matchResidual", "nonGeometricRatio", "saturatedFraction", "activeBlocks",
   ] as const;
   const series = Object.fromEntries([...keys.map((k) => [k, []]), ["t", []]]) as MotionProfile["series"];
+  const gridDiff: number[][] = [];
+  const gridOcc: number[][] = [];
 
   let prev: Uint8Array | null = null;
   let pair = 0;
   for await (const frame of frameStream(source, blockOpts)) {
+    if (gridSpec) gridOcc.push(frameOccupancy(frame, ANALYSIS_WIDTH, ANALYSIS_HEIGHT, gridSpec));
     if (prev) {
       const stats = analyzePair(prev, frame, blockOpts);
       for (const k of keys) series[k].push(stats[k]);
       series.t.push((pair + 0.5) / fps);
+      if (gridSpec) gridDiff.push(cellDiff(prev, frame, ANALYSIS_WIDTH, ANALYSIS_HEIGHT, gridSpec));
       pair++;
     }
     prev = frame;
@@ -227,6 +248,7 @@ export async function analyzeMotion(
       diffPeriodicityHz: dominantPeriodicity(d, fps),
     },
     segments,
+    ...(gridSpec && { grid: { spec: gridSpec, diff: gridDiff, occupancy: gridOcc } }),
   };
 }
 

@@ -33,6 +33,7 @@ const nodeBundles: [entry: string, out: string][] = [
   ["packages/render-cli/src/reframe.ts", "bin.js"],
   ["packages/render-cli/src/cli.ts", "cli.js"],
   ["benchmark/harness/motion/analyze.ts", "analyze.js"],
+  ["benchmark/harness/motion/trace-cli.ts", "trace-cli.js"],
 ];
 for (const [entry, out] of nodeBundles) {
   await build({

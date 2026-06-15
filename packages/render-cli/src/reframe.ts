@@ -35,6 +35,9 @@ const RENDER_CLI = PACKAGED
 const ANALYZE = PACKAGED
   ? join(ROOT, "dist", "analyze.js")
   : join(ROOT, "benchmark", "harness", "motion", "analyze.ts");
+const TRACE = PACKAGED
+  ? join(ROOT, "dist", "trace-cli.js")
+  : join(ROOT, "benchmark", "harness", "motion", "trace-cli.ts");
 const CMD = PACKAGED ? "reframe" : "pnpm reframe";
 
 const USAGE = `reframe — declarative motion graphics
@@ -45,6 +48,7 @@ usage:
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
+  ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
   ${CMD} guide [--regen]         print the scene-authoring guide (for you or your AI)
   ${CMD} demo                    run the edit-survival demo (3 mp4s into out/)
 `;
@@ -291,6 +295,21 @@ async function main() {
         await (PACKAGED
           ? run(process.execPath, [ANALYZE, userPath(input), ...rest.slice(1)])
           : run("npx", ["tsx", ANALYZE, userPath(input), ...rest.slice(1)])),
+      );
+    }
+
+    case "trace": {
+      const input = rest[0];
+      if (!input || input.startsWith("-")) fail(`usage: ${CMD} trace <ref.mp4> [--apply scene.ts] [-o out.json]`);
+      preflightFfmpeg();
+      // user-relative paths for the input, --apply scene, and -o
+      const args = rest.slice(1).map((a, i) =>
+        rest.slice(1)[i - 1] === "--apply" || rest.slice(1)[i - 1] === "-o" ? userPath(a) : a,
+      );
+      process.exit(
+        await (PACKAGED
+          ? run(process.execPath, [TRACE, userPath(input), ...args])
+          : run("npx", ["tsx", TRACE, userPath(input), ...args])),
       );
     }
 

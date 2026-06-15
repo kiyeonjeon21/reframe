@@ -216,6 +216,7 @@ your scene.
 | `pnpm reframe preview` | scrub/play/edit UI; edits export as overlay JSON |
 | `pnpm reframe new <name>` | scaffold a documented starter scene |
 | `pnpm reframe motion <mp4\|framesDir>` | calibrated motion profile (speeds, easing, discontinuities) |
+| `pnpm reframe trace <ref.mp4> [--apply scene.ts]` | extract a video's motion structure (a `MotionSketch`); `--apply` emits a timeline that re-tells it on your own nodes |
 | `pnpm reframe guide [--regen]` | print the authoring guide / the regeneration contract |
 | `pnpm reframe demo` | the edit-survival demo above |
 
