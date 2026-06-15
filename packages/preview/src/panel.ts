@@ -344,18 +344,20 @@ function renderVariations(root: HTMLElement, store: EditorStore) {
   root.append(btn, grid);
 }
 
-/** "Add motion ▸ <op>" on the selected node + a list of added ops (amount + remove). */
+/** "Add motion ▸ <op>" on the selected node + a list of added ops (amount + remove).
+ *  Single-select only — bulk add-motion for a multi-selection lives in the Multi panel. */
 function renderMotionOps(root: HTMLElement, store: EditorStore) {
-  if (store.selectedId) {
+  const selId = store.selectedIds.length === 1 ? store.selectedIds[0]! : null;
+  if (selId) {
     root.append(el("h3", {}, "Add motion"));
     const sel = el("select");
     for (const op of MOTION_OPS) sel.append(el("option", { value: op }, op));
     const add = el("button", { title: "add this motion to the selected node" }, "+ add");
-    add.addEventListener("click", () => store.addMotionOp(sel.value as MotionOpName, store.selectedId!));
-    root.append(el("div", { class: "prop-row" }, el("label", {}, `▸ ${store.selectedId}`), sel, add));
+    add.addEventListener("click", () => store.addMotionOp(sel.value as MotionOpName, selId));
+    root.append(el("div", { class: "prop-row" }, el("label", {}, `▸ ${selId}`), sel, add));
     // a motionless top-level node can get its FIRST move (a path to a destination)
-    if (!store.hasMotionPath(store.selectedId) && store.isTopLevel(store.selectedId)) {
-      if (store.pendingMove === store.selectedId) {
+    if (!store.hasMotionPath(selId) && store.isTopLevel(selId)) {
+      if (store.pendingMove === selId) {
         const cancel = el("button", { title: "cancel" }, "cancel");
         cancel.addEventListener("click", () => store.disarmMove());
         const armed = el("div", { class: "prop-row" }, el("label", {}, "▸ click a destination on the canvas…"), cancel);
@@ -363,7 +365,7 @@ function renderMotionOps(root: HTMLElement, store: EditorStore) {
         root.append(armed);
       } else {
         const mv = el("button", { title: "give this node a move: then click where it should go" }, "+ move");
-        mv.addEventListener("click", () => store.armMove(store.selectedId!));
+        mv.addEventListener("click", () => store.armMove(selId));
         root.append(el("div", { class: "prop-row" }, el("label", {}, "▸ no motion yet"), mv));
         root.append(el("div", { class: "hint" }, "or double-click the canvas to set a destination"));
       }
@@ -443,6 +445,55 @@ function renderAddNode(root: HTMLElement, store: EditorStore) {
   root.append(row);
 }
 
+/** Multi-selection editor: common props (shared value or "mixed") edited on all
+ *  at once, plus bulk actions. Per-anchor scale/rotation/skew just works (set per id). */
+function renderMultiProps(root: HTMLElement, store: EditorStore, ir: SceneIR) {
+  const sel = store.selectedIds.map((id) => findNode(ir.nodes, id)).filter((n): n is NodeIR => !!n);
+  if (sel.length < 2) return;
+  root.append(el("h3", {}, `Multi · ${sel.length} selected`));
+
+  // bulk actions: add motion to all, hide all, delete the overlay-added ones
+  const actions = el("div", { class: "prop-row" });
+  const opSel = el("select", { title: "motion to add to every selected node" });
+  for (const op of MOTION_OPS) opSel.append(el("option", { value: op }, op));
+  const addMo = el("button", {}, "+ motion");
+  addMo.addEventListener("click", () => {
+    for (const n of sel) store.addMotionOp(opSel.value as MotionOpName, n.id);
+  });
+  const hideAll = el("button", { title: "hide all (opacity 0)" }, "hide");
+  hideAll.addEventListener("click", () => store.setNodeProps(sel.map((n) => ({ id: n.id, prop: "opacity", value: 0 }))));
+  const delAdded = el("button", { title: "delete the overlay-added ones" }, "delete added");
+  delAdded.addEventListener("click", () => {
+    for (const id of sel.map((n) => n.id)) store.removeNode(id);
+  });
+  actions.append(opSel, addMo, hideAll, delAdded);
+  root.append(actions);
+
+  // common props = present in EVERY selected node's type (ordered by the first)
+  const lists = sel.map((n) => PROPS_BY_TYPE[n.type]);
+  const common = PROPS_BY_TYPE[sel[0]!.type].filter((p) => p !== "anchor" && lists.every((l) => l.includes(p)));
+  for (const prop of common) {
+    const vals = sel.map((n) => {
+      const props = n.props as unknown as Record<string, PropValue | undefined>;
+      return props[prop] ?? (prop in NUMERIC_DEFAULTS ? NUMERIC_DEFAULTS[prop] : undefined);
+    });
+    const firstVal = vals[0];
+    if (firstVal === undefined) continue; // optional prop unset on all
+    const mixed = vals.some((v) => v !== firstVal);
+    const row = makeControl(
+      prop,
+      firstVal, // show the primary's value; the label flags when they differ
+      false,
+      (v) => store.setNodeProps(sel.map((n) => ({ id: n.id, prop, value: v }))),
+      () => undefined,
+    );
+    const label = el("label", {}, prop);
+    if (mixed) label.append(el("span", { class: "scope" }, " (mixed)"));
+    row.prepend(label);
+    root.append(row);
+  }
+}
+
 export function buildPanel(store: EditorStore, root: HTMLElement) {
   let reportBox: HTMLElement | null = null;
 
@@ -483,20 +534,25 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
         const edits = store.nodeEditCount(node.id);
         const item = el(
           "div",
-          { class: `tree-item${store.selectedId === node.id ? " selected" : ""}` },
+          { class: `tree-item${store.selectedIds.includes(node.id) ? " selected" : ""}` },
           el("span", { style: `padding-left:${depth * 14}px` }, `${node.id} `),
           el("span", { class: "badge" }, edits > 0 ? `●${edits}` : ""),
         );
-        item.addEventListener("click", () => store.select(node.id));
+        item.addEventListener("click", (ev) => store.select(node.id, ev.shiftKey || ev.metaKey || ev.ctrlKey));
         root.append(item);
         if (node.type === "group") renderTree(node.children, depth + 1);
       }
     };
     renderTree(ir.nodes, 0);
 
-    // --- selected node props with scope expansion ---
-    if (store.selectedId) {
-      const node = findNode(ir.nodes, store.selectedId);
+    // --- multi-selection: common props edited on all at once ---
+    if (store.selectedIds.length > 1) {
+      renderMultiProps(root, store, ir);
+    }
+
+    // --- selected node props with scope expansion (single selection) ---
+    if (store.selectedIds.length === 1) {
+      const node = findNode(ir.nodes, store.selectedIds[0]!);
       if (node) {
         const id = node.id;
         root.append(el("h3", {}, `Props: ${id} (${node.type})`));

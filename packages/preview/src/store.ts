@@ -39,7 +39,12 @@ export class EditorStore {
   report: ComposeReport | null = null;
   /** Set when the last recompose threw (overlay defect); compiled stays last-good. */
   composeError: string | null = null;
-  selectedId: string | null = null;
+  /** The selection (ordered; the last is the "primary"). Source of truth. */
+  selectedIds: string[] = [];
+  /** Primary selection (last selected), or null — keeps single-select reads working. */
+  get selectedId(): string | null {
+    return this.selectedIds[this.selectedIds.length - 1] ?? null;
+  }
   overlayName: string;
   /** Motion ops added in the editor, keyed by their beat label (the source of
    *  truth that regenerates draft.addTimeline + the ops' setup base props). */
@@ -79,6 +84,12 @@ export class EditorStore {
 
   setNodeProp(id: string, prop: string, value: PropValue) {
     ((this.draft.nodes ??= {})[id] ??= {})[prop] = value;
+    this.recompose("value");
+  }
+
+  /** Apply many node-prop patches in one recompose (multi-drag / bulk edit). */
+  setNodeProps(patches: { id: string; prop: string; value: PropValue }[]) {
+    for (const p of patches) ((this.draft.nodes ??= {})[p.id] ??= {})[p.prop] = p.value;
     this.recompose("value");
   }
 
@@ -338,7 +349,7 @@ export class EditorStore {
         node = { type: "group", id, props: { x, y }, children: [] };
     }
     (this.draft.addNodes ??= []).push(node);
-    this.selectedId = id;
+    this.selectedIds = [id];
     this.recompose("structure");
     return id;
   }
@@ -359,7 +370,7 @@ export class EditorStore {
       (clone.props as { x: number; y: number }).y += 24;
     }
     (this.draft.addNodes ??= []).push(clone);
-    this.selectedId = clone.id;
+    this.selectedIds = [clone.id];
     this.recompose("structure");
     return clone.id;
   }
@@ -374,7 +385,7 @@ export class EditorStore {
     if (list.length === 0) delete this.draft.addNodes;
     delete this.draft.nodes?.[id];
     for (const [label, op] of this.addedOps) if (op.target === id) this.addedOps.delete(label);
-    if (this.selectedId === id) this.selectedId = null;
+    this.selectedIds = this.selectedIds.filter((s) => s !== id);
     this.prune();
     this.regenerateOps(); // rebuilds addTimeline + recomposes
     return true;
@@ -430,9 +441,30 @@ export class EditorStore {
     this.recompose("structure");
   }
 
-  select(id: string | null) {
-    this.selectedId = id;
-    if (id !== this.pendingMove) this.pendingMove = null; // selecting elsewhere cancels arming
+  /** Select a node: replace the selection, or (additive) toggle it in/out. null clears. */
+  select(id: string | null, additive = false) {
+    if (id === null) {
+      this.selectedIds = [];
+    } else if (additive) {
+      const i = this.selectedIds.indexOf(id);
+      if (i >= 0) this.selectedIds.splice(i, 1);
+      else this.selectedIds.push(id);
+    } else {
+      this.selectedIds = [id];
+    }
+    if (this.pendingMove !== null && !this.selectedIds.includes(this.pendingMove)) this.pendingMove = null;
+    this.notify("structure");
+  }
+
+  /** Set/merge a whole list of ids as the selection (marquee, select-all). */
+  selectMany(ids: string[], additive = false) {
+    if (additive) {
+      const set = new Set(this.selectedIds);
+      for (const id of ids) set.add(id);
+      this.selectedIds = [...set];
+    } else {
+      this.selectedIds = [...new Set(ids)];
+    }
     this.notify("structure");
   }
 
@@ -514,6 +546,13 @@ export class EditorStore {
       // Keep last-good compiled; the user is mid-edit (e.g. typing a duration).
       this.composeError =
         err instanceof SceneValidationError ? err.message : String(err);
+    }
+    // drop any selected ids that no longer exist (a delete/import removed them)
+    if (this.selectedIds.length > 0) {
+      const live = this.allNodeIds();
+      if (this.selectedIds.some((id) => !live.has(id))) {
+        this.selectedIds = this.selectedIds.filter((id) => live.has(id));
+      }
     }
     this.notify(kind);
   }

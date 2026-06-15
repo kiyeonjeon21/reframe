@@ -650,51 +650,66 @@ function draw() {
   renderFrame(ctx, store.compiled, t, images);
   drawMotionPreview();
 
-  if (store.selectedId) {
-    const selNode = findNodeById(store.compiled.ir.nodes, store.selectedId);
+  if (store.selectedIds.length > 0) {
     const allOps = evaluate(store.compiled, t);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.strokeStyle = "#7d9aff";
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
-    if (selNode && selNode.type === "group") {
-      // a group has no op of its own — box the union of its descendant ops
-      const ids = new Set(descendantLeafIds(selNode));
-      const pts = allOps.filter((op) => ids.has(op.id)).flatMap(opCorners);
-      if (pts.length > 0) {
-        const xs = pts.map((p) => p[0]);
-        const ys = pts.map((p) => p[1]);
-        const [x0, y0, x1, y1] = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
-        ctx.strokeRect(x0 - 6, y0 - 6, x1 - x0 + 12, y1 - y0 + 12);
-      }
-    } else {
-      for (const op of allOps.filter((op) => op.id === store!.selectedId)) {
-        const corners = opCorners(op);
-        ctx.beginPath();
-        corners.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
-        if (corners.length > 2) ctx.closePath();
-        ctx.stroke();
-      }
-      // transform gizmo: corner squares (scale) + a handle above (rotate)
-      const g = selectedGizmo();
-      if (g) {
-        ctx.setLineDash([]);
-        ctx.fillStyle = "#7d9aff";
-        const topMid: [number, number] = [(g.corners[0]![0] + g.corners[1]![0]) / 2, (g.corners[0]![1] + g.corners[1]![1]) / 2];
-        ctx.beginPath();
-        ctx.moveTo(topMid[0], topMid[1]);
-        ctx.lineTo(g.rot[0], g.rot[1]);
-        ctx.stroke();
-        for (const [hx, hy] of g.corners) ctx.fillRect(hx - 4, hy - 4, 8, 8);
-        ctx.beginPath();
-        ctx.arc(g.rot[0], g.rot[1], 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#0b0b12";
-        ctx.lineWidth = 2;
-        ctx.stroke();
+    // a box per selected node (a group is boxed by the union of its descendants)
+    for (const selId of store.selectedIds) {
+      const selNode = findNodeById(store.compiled.ir.nodes, selId);
+      if (selNode && selNode.type === "group") {
+        const ids = new Set(descendantLeafIds(selNode));
+        const pts = allOps.filter((op) => ids.has(op.id)).flatMap(opCorners);
+        if (pts.length > 0) {
+          const xs = pts.map((p) => p[0]);
+          const ys = pts.map((p) => p[1]);
+          ctx.strokeRect(Math.min(...xs) - 6, Math.min(...ys) - 6, Math.max(...xs) - Math.min(...xs) + 12, Math.max(...ys) - Math.min(...ys) + 12);
+        }
+      } else {
+        for (const op of allOps.filter((op) => op.id === selId)) {
+          const corners = opCorners(op);
+          ctx.beginPath();
+          corners.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+          if (corners.length > 2) ctx.closePath();
+          ctx.stroke();
+        }
       }
     }
+    // transform gizmo (single-select only): corner squares + a rotate handle
+    const g = selectedGizmo();
+    if (g) {
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#7d9aff";
+      const topMid: [number, number] = [(g.corners[0]![0] + g.corners[1]![0]) / 2, (g.corners[0]![1] + g.corners[1]![1]) / 2];
+      ctx.beginPath();
+      ctx.moveTo(topMid[0], topMid[1]);
+      ctx.lineTo(g.rot[0], g.rot[1]);
+      ctx.stroke();
+      for (const [hx, hy] of g.corners) ctx.fillRect(hx - 4, hy - 4, 8, 8);
+      ctx.beginPath();
+      ctx.arc(g.rot[0], g.rot[1], 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#0b0b12";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // marquee rubber-band
+  if (drag?.kind === "marquee") {
+    const r = normRect(drag);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "rgba(125,154,255,0.12)";
+    ctx.strokeStyle = "#7d9aff";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.fillRect(r.minX, r.minY, r.maxX - r.minX, r.maxY - r.minY);
+    ctx.strokeRect(r.minX, r.minY, r.maxX - r.minX, r.maxY - r.minY);
     ctx.restore();
   }
 
@@ -763,13 +778,17 @@ type DragState =
   // parent transform cancels in the distance/angle ratios, so this is correct
   // for nested nodes too.
   | { kind: "scale"; id: string; pivot: [number, number]; origScale: number; origDist: number }
-  | { kind: "rotate"; id: string; pivot: [number, number]; origRot: number; startAngle: number };
+  | { kind: "rotate"; id: string; pivot: [number, number]; origRot: number; startAngle: number }
+  // multi-drag: move every selected node by one scene delta (each via its own inv)
+  | { kind: "nodes"; items: { id: string; startX: number; startY: number; inv: [number, number, number, number] }[]; px: number; py: number }
+  // marquee: rubber-band box select (additive with shift)
+  | { kind: "marquee"; x0: number; y0: number; x1: number; y1: number; additive: boolean };
 let drag: DragState | null = null;
 
 /** The selected node's box op + gizmo geometry (anchor pivot, rotation handle),
- *  or null if it isn't a box-shaped leaf (rect/ellipse/text/image). */
+ *  or null if it isn't a box-shaped leaf, or more than one node is selected. */
 function selectedGizmo(): { op: DisplayOp; corners: [number, number][]; pivot: [number, number]; rot: [number, number] } | null {
-  if (!store || !store.selectedId) return null;
+  if (!store || store.selectedIds.length !== 1) return null;
   const op = evaluate(store.compiled, t).find((o) => o.id === store!.selectedId);
   if (!op) return null;
   const corners = opCorners(op);
@@ -817,6 +836,59 @@ function startNodeDrag(id: string, x: number, y: number) {
   playBtn.textContent = "play";
 }
 
+/** Leaf ids covered by the current selection (selected groups expand to leaves). */
+function selectedLeafIds(): Set<string> {
+  const out = new Set<string>();
+  if (!store) return out;
+  for (const id of store.selectedIds) {
+    const n = findNodeById(store.compiled.ir.nodes, id);
+    if (n) for (const lid of descendantLeafIds(n)) out.add(lid);
+    else out.add(id);
+  }
+  return out;
+}
+
+/** Begin moving ALL selected nodes together (each by its own parent-space delta).
+ *  Descendants of a selected group are dropped so they don't double-move. */
+function startNodesDrag(x: number, y: number) {
+  if (!store) return;
+  const groupDesc = new Set<string>();
+  for (const id of store.selectedIds) {
+    const n = findNodeById(store.compiled.ir.nodes, id);
+    if (n?.type === "group") for (const d of descendantLeafIds(n)) groupDesc.add(d);
+  }
+  const items: { id: string; startX: number; startY: number; inv: [number, number, number, number] }[] = [];
+  for (const id of store.selectedIds) {
+    if (groupDesc.has(id)) continue;
+    const node = findNodeById(store.compiled.ir.nodes, id);
+    if (!node || !("x" in node.props)) continue;
+    const props = node.props as { x: number; y: number };
+    const p = nodeParentMatrix(store.compiled, id, t) ?? [1, 0, 0, 1, 0, 0];
+    const [a, b, c, d] = p;
+    const det = a * d - b * c || 1;
+    items.push({ id, startX: props.x, startY: props.y, inv: [d / det, -b / det, -c / det, a / det] });
+  }
+  drag = { kind: "nodes", items, px: x, py: y };
+  playing = false;
+  playBtn.textContent = "play";
+}
+
+const normRect = (m: { x0: number; y0: number; x1: number; y1: number }) => ({
+  minX: Math.min(m.x0, m.x1),
+  minY: Math.min(m.y0, m.y1),
+  maxX: Math.max(m.x0, m.x1),
+  maxY: Math.max(m.y0, m.y1),
+});
+
+/** AABB-overlap test of an op's bounding box against a marquee rect. */
+function rectIntersectsOp(op: DisplayOp, r: { minX: number; minY: number; maxX: number; maxY: number }): boolean {
+  const c = opCorners(op);
+  if (c.length === 0) return false;
+  const xs = c.map((p) => p[0]);
+  const ys = c.map((p) => p[1]);
+  return Math.min(...xs) <= r.maxX && Math.max(...xs) >= r.minX && Math.min(...ys) <= r.maxY && Math.max(...ys) >= r.minY;
+}
+
 canvas.addEventListener("mousedown", (ev) => {
   if (!store) return;
   const [x, y] = clientToScene(ev);
@@ -840,7 +912,7 @@ canvas.addEventListener("mousedown", (ev) => {
       return;
     }
   }
-  // 1.5) transform gizmo handles on the selected node (scale corners, rotate handle)
+  // 1.5) transform gizmo handles on the selected node (single-select only)
   const g = selectedGizmo();
   if (g && store.selectedId) {
     const id = store.selectedId;
@@ -865,9 +937,8 @@ canvas.addEventListener("mousedown", (ev) => {
     }
   }
   const ops = evaluate(store.compiled, t);
-  // 2) a SELECTED group moves as a whole when you press inside its content.
-  //    (To grab a child instead, double-click it — enters the group.)
-  const sel = store.selectedId ? findNodeById(store.compiled.ir.nodes, store.selectedId) : null;
+  // 2) a single SELECTED group moves as a whole when you press inside its content.
+  const sel = store.selectedIds.length === 1 ? findNodeById(store.compiled.ir.nodes, store.selectedIds[0]!) : null;
   if (sel && sel.type === "group") {
     const ids = new Set(descendantLeafIds(sel));
     if (ops.some((op) => ids.has(op.id) && hitOp(op, x, y))) {
@@ -876,17 +947,31 @@ canvas.addEventListener("mousedown", (ev) => {
       return;
     }
   }
-  // 3) drag the top-most leaf under the cursor (nested or top-level). The
-  //    overlay address stays nodes.<id>.x/y; nested deltas are parent-corrected.
-  //    Lines (x1/y1/x2/y2) are a separate gesture.
+  // 3) the top-most leaf under the cursor: shift toggles; an already-selected node
+  //    starts a multi-drag of all selected; otherwise replace + drag just it.
+  let hit: DisplayOp | null = null;
   for (let i = ops.length - 1; i >= 0; i--) {
     const op = ops[i]!;
     if (op.type === "line" || !hitOp(op, x, y)) continue;
-    store.select(op.id);
-    startNodeDrag(op.id, x, y);
+    hit = op;
+    break;
+  }
+  if (hit) {
+    if (ev.shiftKey) {
+      store.select(hit.id, true); // toggle, no drag
+    } else if (selectedLeafIds().has(hit.id)) {
+      startNodesDrag(x, y); // drag the whole selection, keep it
+    } else {
+      store.select(hit.id);
+      startNodeDrag(hit.id, x, y);
+    }
     ev.preventDefault();
     return;
   }
+  // 4) empty canvas → marquee box-select (clears first unless shift-adding)
+  if (!ev.shiftKey) store.select(null);
+  drag = { kind: "marquee", x0: x, y0: y, x1: x, y1: y, additive: ev.shiftKey };
+  ev.preventDefault();
 });
 
 window.addEventListener("mousemove", (ev) => {
@@ -901,6 +986,21 @@ window.addEventListener("mousemove", (ev) => {
   } else if (drag.kind === "rotate") {
     const deg = round3(drag.origRot + ((Math.atan2(y - drag.pivot[1], x - drag.pivot[0]) - drag.startAngle) * 180) / Math.PI);
     store.setNodeProp(drag.id, "rotation", deg);
+  } else if (drag.kind === "marquee") {
+    drag.x1 = x;
+    drag.y1 = y;
+  } else if (drag.kind === "nodes") {
+    const dx = x - drag.px;
+    const dy = y - drag.py;
+    store.setNodeProps(
+      drag.items.flatMap((it) => {
+        const [ia, ib, ic, id] = it.inv;
+        return [
+          { id: it.id, prop: "x", value: Math.round(it.startX + ia * dx + ic * dy) },
+          { id: it.id, prop: "y", value: Math.round(it.startY + ib * dx + id * dy) },
+        ];
+      }),
+    );
   } else {
     const dx = x - drag.px;
     const dy = y - drag.py;
@@ -911,7 +1011,45 @@ window.addEventListener("mousemove", (ev) => {
   draw();
 });
 window.addEventListener("mouseup", () => {
+  if (drag?.kind === "marquee" && store) {
+    const r = normRect(drag);
+    const ids = evaluate(store.compiled, t)
+      .filter((op) => op.type !== "line" && rectIntersectsOp(op, r))
+      .map((op) => op.id);
+    if (drag.additive) store.selectMany(ids, true);
+    else store.selectMany(ids);
+    draw();
+  }
   drag = null;
+});
+
+/** Every selectable leaf id (drawable, non-line), for Cmd/Ctrl-A. */
+function allSelectableIds(): string[] {
+  if (!store) return [];
+  const out: string[] = [];
+  const walk = (nodes: NodeIR[]) => {
+    for (const n of nodes) {
+      if (n.type === "group") walk(n.children);
+      else if (n.type !== "line") out.push(n.id);
+    }
+  };
+  walk(store.compiled.ir.nodes);
+  return out;
+}
+
+window.addEventListener("keydown", (ev) => {
+  if (!store) return;
+  const tag = (ev.target as HTMLElement | null)?.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return; // don't hijack form fields
+  if (ev.key === "Escape") {
+    drag = null;
+    store.select(null);
+    draw();
+  } else if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "a") {
+    ev.preventDefault();
+    store.selectMany(allSelectableIds());
+    draw();
+  }
 });
 
 // drag-and-drop an image file onto the canvas → an image node at the drop point,
