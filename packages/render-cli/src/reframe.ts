@@ -290,6 +290,10 @@ async function main() {
 
     case "preview": {
       // the editor lists examples/scenes/ (repo) plus scenes found in the invoking dir
+      console.log(
+        "preview: drag motionPath waypoints, drag a top-level node, or hit ✎ to reshape an ease curve.\n" +
+          "deep-link a scene + time:  http://localhost:5173/?scene=<scene-name>&t=<seconds>",
+      );
       if (PACKAGED) {
         const { createRequire } = await import("node:module");
         // vite's exports map blocks resolving bin/vite.js directly — locate it

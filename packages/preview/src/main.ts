@@ -106,6 +106,8 @@ async function loadScene(path: string) {
   t = 0;
   panel.rebuild();
   draw();
+  syncUrl();
+  (window as unknown as { __reframeReady: boolean }).__reframeReady = true;
 }
 
 function applyMat(m: number[], x: number, y: number): [number, number] {
@@ -199,26 +201,70 @@ function clientToScene(ev: MouseEvent): [number, number] {
   return [((ev.clientX - r.left) * canvas.width) / r.width, ((ev.clientY - r.top) * canvas.height) / r.height];
 }
 
-let drag: { label: string; index: number; points: [number, number][] } | null = null;
+/** Is (x,y) inside the op's outline? Polygon for shaped nodes, radius for a path origin. */
+function hitOp(op: DisplayOp, x: number, y: number): boolean {
+  const c = opCorners(op);
+  if (c.length >= 3) {
+    let inside = false;
+    for (let i = 0, j = c.length - 1; i < c.length; j = i++) {
+      const [xi, yi] = c[i]!;
+      const [xj, yj] = c[j]!;
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  return c.some(([px, py]) => Math.hypot(px - x, py - y) <= 16);
+}
+
+type DragState =
+  | { kind: "waypoint"; label: string; index: number; points: [number, number][] }
+  | { kind: "node"; id: string; startX: number; startY: number; px: number; py: number };
+let drag: DragState | null = null;
+
 canvas.addEventListener("mousedown", (ev) => {
   if (!store) return;
   const [x, y] = clientToScene(ev);
+  // 1) motionPath waypoint handles take priority
   for (const mp of store.motionPaths()) {
     const i = mp.points.findIndex(([px, py]) => Math.hypot(px - x, py - y) <= HANDLE_R + 4);
     if (i >= 0) {
-      drag = { label: mp.label, index: i, points: mp.points.map((p) => [...p] as [number, number]) };
+      drag = { kind: "waypoint", label: mp.label, index: i, points: mp.points.map((p) => [...p] as [number, number]) };
       playing = false;
       playBtn.textContent = "play";
       ev.preventDefault();
       return;
     }
   }
+  // 2) drag a TOP-LEVEL leaf node to reposition (sets its base x/y; scene-space delta).
+  //    Lines (x1/y1/x2/y2) and groups (no own op) are excluded for v1.
+  const topLevel = new Set(
+    store.compiled.ir.nodes.filter((n) => n.type !== "group" && n.type !== "line").map((n) => n.id),
+  );
+  const ops = evaluate(store.compiled, t);
+  for (let i = ops.length - 1; i >= 0; i--) {
+    const op = ops[i]!;
+    if (!topLevel.has(op.id) || !hitOp(op, x, y)) continue;
+    const node = store.compiled.ir.nodes.find((n) => n.id === op.id)!;
+    const props = node.props as { x: number; y: number };
+    drag = { kind: "node", id: op.id, startX: props.x, startY: props.y, px: x, py: y };
+    store.select(op.id);
+    playing = false;
+    playBtn.textContent = "play";
+    ev.preventDefault();
+    return;
+  }
 });
+
 window.addEventListener("mousemove", (ev) => {
   if (!drag || !store) return;
   const [x, y] = clientToScene(ev);
-  drag.points[drag.index] = [Math.round(x), Math.round(y)];
-  store.setMotionPathPoints(drag.label, drag.points);
+  if (drag.kind === "waypoint") {
+    drag.points[drag.index] = [Math.round(x), Math.round(y)];
+    store.setMotionPathPoints(drag.label, drag.points);
+  } else {
+    store.setNodeProp(drag.id, "x", Math.round(drag.startX + (x - drag.px)));
+    store.setNodeProp(drag.id, "y", Math.round(drag.startY + (y - drag.py)));
+  }
   draw();
 });
 window.addEventListener("mouseup", () => {
@@ -236,6 +282,25 @@ function tick(now: number) {
 }
 requestAnimationFrame(tick);
 
+// --- deep-linking: ?scene=<label>&t=<sec> lets a driver open an exact frame ---
+function keyForLabel(label: string): string | undefined {
+  return Object.keys(modules).find((k) => modules[k]!.label === label);
+}
+function syncUrl() {
+  const label = modules[select.value]?.label ?? select.value;
+  history.replaceState(null, "", `?scene=${encodeURIComponent(label)}&t=${t.toFixed(3)}`);
+}
+/** Set the scrub time (also exposed as window.__setTime for automation). */
+function setTime(sec: number) {
+  if (!store) return;
+  t = Math.max(0, Math.min(sec, store.compiled.duration));
+  playing = false;
+  playBtn.textContent = "play";
+  draw();
+  syncUrl();
+}
+(window as unknown as { __setTime: (s: number) => void }).__setTime = setTime;
+
 playBtn.addEventListener("click", () => {
   playing = !playing;
   playBtn.textContent = playing ? "pause" : "play";
@@ -247,6 +312,7 @@ scrub.addEventListener("input", () => {
   playBtn.textContent = "play";
   t = Number(scrub.value) * store.compiled.duration;
   draw();
+  syncUrl();
 });
 
 let currentPath = "";
@@ -262,6 +328,12 @@ if (Object.keys(modules).length === 0) {
   panelRoot.innerHTML =
     "<p style='padding:12px;color:#aab'>No scenes found. Scaffold one in this directory with <code>reframe new my-scene</code>, then reload.</p>";
 } else {
-  currentPath = select.value || Object.keys(modules)[0]!;
-  void loadScene(currentPath);
+  const params = new URLSearchParams(location.search);
+  const fromUrl = params.get("scene");
+  currentPath = (fromUrl && keyForLabel(fromUrl)) || select.value || Object.keys(modules)[0]!;
+  select.value = currentPath;
+  const tParam = params.get("t");
+  void loadScene(currentPath).then(() => {
+    if (tParam !== null) setTime(Number(tParam));
+  });
 }

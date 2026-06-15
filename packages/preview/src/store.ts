@@ -119,6 +119,13 @@ export class EditorStore {
     this.recompose("value");
   }
 
+  /** A reshaped ease curve writes a cubic-bezier ease on a timeline step.
+   *  (setTimelineParam only takes number|string, so eases need their own setter.) */
+  setTimelineEase(label: string, bezier: [number, number, number, number]) {
+    ((this.draft.timeline ??= {})[label] ??= {}).ease = { cubicBezier: bezier };
+    this.recompose("value");
+  }
+
   unsetTimelineParam(
     label: string,
     key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order",

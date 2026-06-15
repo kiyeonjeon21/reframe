@@ -53,6 +53,107 @@ function findNode(nodes: NodeIR[], id: string): NodeIR | null {
   return null;
 }
 
+type Bz = [number, number, number, number];
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
+const cubic = (t: number, a: number, b: number, c: number, d: number) => {
+  const u = 1 - t;
+  return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d;
+};
+
+/** A draggable cubic-bezier ease editor (GSAP CustomEase pattern). Dragging a
+ *  control point writes {cubicBezier:[x1,y1,x2,y2]} via store.setTimelineEase. */
+function buildEaseEditor(label: string, current: unknown, store: EditorStore): HTMLCanvasElement {
+  const S = 150;
+  const PAD = 22;
+  const Y0 = -0.45;
+  const Y1 = 1.45;
+  const SPAN = Y1 - Y0;
+  const bz: Bz =
+    current && typeof current === "object" && "cubicBezier" in current
+      ? ([...(current as { cubicBezier: number[] }).cubicBezier] as Bz)
+      : [0.33, 0, 0.67, 1];
+  const c = el("canvas", { style: "background:#0e0f15;border-radius:8px;cursor:grab;touch-action:none;display:block" });
+  c.width = S;
+  c.height = S;
+  const cx = c.getContext("2d")!;
+  const toPx = (ex: number, ey: number): [number, number] => [
+    PAD + ex * (S - 2 * PAD),
+    S - PAD - ((ey - Y0) / SPAN) * (S - 2 * PAD),
+  ];
+  const toEase = (px: number, py: number): [number, number] => [
+    (px - PAD) / (S - 2 * PAD),
+    Y0 + ((S - PAD - py) / (S - 2 * PAD)) * SPAN,
+  ];
+  function render() {
+    cx.clearRect(0, 0, S, S);
+    const [gx0, gy0] = toPx(0, 0);
+    const [gx1, gy1] = toPx(1, 1);
+    cx.strokeStyle = "#23252f";
+    cx.lineWidth = 1;
+    cx.strokeRect(Math.min(gx0, gx1), Math.min(gy0, gy1), Math.abs(gx1 - gx0), Math.abs(gy1 - gy0));
+    const P1 = toPx(bz[0], bz[1]);
+    const P2 = toPx(bz[2], bz[3]);
+    cx.strokeStyle = "#3a3f55";
+    cx.beginPath();
+    cx.moveTo(gx0, gy0);
+    cx.lineTo(P1[0], P1[1]);
+    cx.moveTo(gx1, gy1);
+    cx.lineTo(P2[0], P2[1]);
+    cx.stroke();
+    cx.strokeStyle = "#7d9aff";
+    cx.lineWidth = 2;
+    cx.beginPath();
+    for (let i = 0; i <= 48; i++) {
+      const t = i / 48;
+      const [px, py] = toPx(cubic(t, 0, bz[0], bz[2], 1), cubic(t, 0, bz[1], bz[3], 1));
+      if (i) cx.lineTo(px, py);
+      else cx.moveTo(px, py);
+    }
+    cx.stroke();
+    for (const [hx, hy] of [P1, P2]) {
+      cx.beginPath();
+      cx.arc(hx, hy, 5, 0, Math.PI * 2);
+      cx.fillStyle = "#fff";
+      cx.fill();
+      cx.strokeStyle = "#7d9aff";
+      cx.lineWidth = 2;
+      cx.stroke();
+    }
+  }
+  let dragIdx = -1;
+  const localPos = (ev: PointerEvent): [number, number] => {
+    const r = c.getBoundingClientRect();
+    return [((ev.clientX - r.left) * S) / r.width, ((ev.clientY - r.top) * S) / r.height];
+  };
+  c.addEventListener("pointerdown", (ev) => {
+    const [mx, my] = localPos(ev);
+    const P1 = toPx(bz[0], bz[1]);
+    const P2 = toPx(bz[2], bz[3]);
+    dragIdx = Math.hypot(P1[0] - mx, P1[1] - my) <= 11 ? 0 : Math.hypot(P2[0] - mx, P2[1] - my) <= 11 ? 1 : -1;
+    if (dragIdx >= 0) c.setPointerCapture(ev.pointerId);
+  });
+  c.addEventListener("pointermove", (ev) => {
+    if (dragIdx < 0) return;
+    let [ex, ey] = toEase(...localPos(ev));
+    ex = Math.max(0, Math.min(1, ex));
+    ey = Math.max(Y0, Math.min(Y1, ey));
+    if (dragIdx === 0) {
+      bz[0] = ex;
+      bz[1] = ey;
+    } else {
+      bz[2] = ex;
+      bz[3] = ey;
+    }
+    render();
+    store.setTimelineEase(label, [round3(bz[0]), round3(bz[1]), round3(bz[2]), round3(bz[3])]);
+  });
+  c.addEventListener("pointerup", () => {
+    dragIdx = -1;
+  });
+  render();
+  return c;
+}
+
 /** Value editor for one PropValue; numbers get ranges where it makes sense. */
 function makeControl(
   prop: string,
@@ -266,8 +367,20 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
           easeSelect.addEventListener("change", () => {
             if (easeSelect.value !== "__custom") store.setTimelineParam(label, "ease", easeSelect.value);
           });
-          const easeRow = el("div", { class: `prop-row${store.hasTimelineEdit(label, "ease") ? " edited" : ""}` }, el("label", {}, "ease"), easeSelect);
-          card.append(easeRow);
+          // ✎ toggles an inline draggable cubic-bezier curve editor for this step
+          const curveBtn = el("button", { class: "mini", title: "edit ease curve" }, "✎");
+          const editorBox = el("div", { style: "display:none;margin-top:6px" });
+          curveBtn.addEventListener("click", () => {
+            if (editorBox.style.display === "none") {
+              editorBox.replaceChildren(buildEaseEditor(label, "ease" in step ? step.ease : undefined, store));
+              editorBox.style.display = "block";
+            } else {
+              editorBox.replaceChildren();
+              editorBox.style.display = "none";
+            }
+          });
+          const easeRow = el("div", { class: `prop-row${store.hasTimelineEdit(label, "ease") ? " edited" : ""}` }, el("label", {}, "ease"), easeSelect, curveBtn);
+          card.append(easeRow, editorBox);
         }
         if (step.kind === "to") {
           const stRow = makeControl(
