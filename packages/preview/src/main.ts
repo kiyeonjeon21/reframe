@@ -6,7 +6,7 @@
  */
 
 import { collectImageSrcs, evaluate, type DisplayOp, type SceneIR } from "@reframe/core";
-import { renderFrame } from "@reframe/renderer-canvas";
+import { renderFrame, drawDisplayList } from "@reframe/renderer-canvas";
 import { userScenes } from "virtual:reframe-user-scenes";
 import { buildPanel } from "./panel.js";
 import { EditorStore } from "./store.js";
@@ -142,9 +142,80 @@ function opCorners(op: DisplayOp): [number, number][] {
   }
 }
 
+function centroid(corners: [number, number][]): [number, number] {
+  let sx = 0;
+  let sy = 0;
+  for (const [x, y] of corners) {
+    sx += x;
+    sy += y;
+  }
+  return [sx / corners.length, sy / corners.length];
+}
+
+/** Onion-skin the SELECTED node across time: faint ghosts of its shape + a
+ *  trail line + dots at uniform time samples (so the spacing reveals the ease —
+ *  closer dots = slower). Makes the motion visible while editing one frame. */
+function drawMotionPreview() {
+  if (!store || !store.selectedId) return;
+  const id = store.selectedId;
+  const D = store.compiled.duration;
+  if (!(D > 0)) return;
+  const N = 22;
+  const pts: ([number, number] | null)[] = [];
+  for (let i = 0; i <= N; i++) {
+    const op = evaluate(store.compiled, (i / N) * D).find((o) => o.id === id);
+    pts.push(op ? centroid(opCorners(op)) : null);
+  }
+  const real = pts.filter((p): p is [number, number] => !!p);
+  if (real.length < 2) return;
+  const xs = real.map((p) => p[0]);
+  const ys = real.map((p) => p[1]);
+  const spread = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  if (spread < 8) return; // a static node has no motion to preview
+
+  // faint ghosts of the node's shape at a few sampled times
+  for (let i = 0; i <= N; i += 4) {
+    const ops = evaluate(store.compiled, (i / N) * D)
+      .filter((o) => o.id === id)
+      .map((o) => ({ ...o, opacity: o.opacity * 0.12 }));
+    if (ops.length) drawDisplayList(ctx, ops, images);
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.strokeStyle = "rgba(125,154,255,0.3)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  let started = false;
+  for (const p of pts) {
+    if (!p) continue;
+    if (!started) {
+      ctx.moveTo(p[0], p[1]);
+      started = true;
+    } else ctx.lineTo(p[0], p[1]);
+  }
+  ctx.stroke();
+  for (const p of real) {
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], 2.6, 0, Math.PI * 2);
+    ctx.fillStyle = "#9db4ff";
+    ctx.fill();
+  }
+  const curOp = evaluate(store.compiled, t).find((o) => o.id === id);
+  if (curOp) {
+    const [cx, cy] = centroid(opCorners(curOp));
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function draw() {
   if (!store) return;
   renderFrame(ctx, store.compiled, t, images);
+  drawMotionPreview();
 
   if (store.selectedId) {
     const ops = evaluate(store.compiled, t).filter((op) => op.id === store!.selectedId);
