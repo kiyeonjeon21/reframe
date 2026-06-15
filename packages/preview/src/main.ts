@@ -39,12 +39,21 @@ const playBtn = document.getElementById("play") as HTMLButtonElement;
 const scrub = document.getElementById("scrub") as HTMLInputElement;
 const timeLabel = document.getElementById("time") as HTMLSpanElement;
 const panelRoot = document.getElementById("panel") as HTMLDivElement;
+const loopBtn = document.getElementById("loop") as HTMLButtonElement;
+const markInBtn = document.getElementById("mark-in") as HTMLButtonElement;
+const markOutBtn = document.getElementById("mark-out") as HTMLButtonElement;
+const speedSel = document.getElementById("speed") as HTMLSelectElement;
+const loopBand = document.getElementById("loop-band") as HTMLDivElement;
 
 let store: EditorStore | null = null;
 let panel: ReturnType<typeof buildPanel> | null = null;
 let t = 0;
 let playing = false;
 let lastTick = 0;
+let speed = 1;
+let loopOn = false;
+let tIn = 0;
+let tOut = Infinity;
 
 for (const [key, entry] of Object.entries(modules)) {
   const option = document.createElement("option");
@@ -107,6 +116,9 @@ async function loadScene(path: string) {
   panel.rebuild();
   draw();
   syncUrl();
+  tIn = 0;
+  tOut = store.compiled.duration;
+  updateLoopBand();
   (window as unknown as { __reframeReady: boolean }).__reframeReady = true;
 }
 
@@ -344,14 +356,49 @@ window.addEventListener("mouseup", () => {
 
 function tick(now: number) {
   if (playing && store) {
-    t += (now - lastTick) / 1000;
-    if (t > store.compiled.duration) t = 0; // loop
+    t += ((now - lastTick) / 1000) * speed;
+    const lo = loopOn ? tIn : 0;
+    const hi = loopOn ? Math.min(tOut, store.compiled.duration) : store.compiled.duration;
+    if (t > hi || t < lo) t = lo; // loop the [in, out] range (or the whole clip)
     draw();
   }
   lastTick = now;
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+
+/** Position the loop-range band over the scrubber. */
+function updateLoopBand() {
+  if (!store || !loopOn || !(store.compiled.duration > 0)) {
+    loopBand.style.display = "none";
+    return;
+  }
+  const D = store.compiled.duration;
+  const a = Math.max(0, Math.min(1, tIn / D));
+  const b = Math.max(a, Math.min(1, Math.min(tOut, D) / D));
+  loopBand.style.display = "block";
+  loopBand.style.left = `${a * 100}%`;
+  loopBand.style.width = `${(b - a) * 100}%`;
+}
+markInBtn.addEventListener("click", () => {
+  tIn = t;
+  if (tOut <= tIn) tOut = store?.compiled.duration ?? Infinity;
+  updateLoopBand();
+});
+markOutBtn.addEventListener("click", () => {
+  tOut = t;
+  if (tIn >= tOut) tIn = 0;
+  updateLoopBand();
+});
+loopBtn.addEventListener("click", () => {
+  loopOn = !loopOn;
+  loopBtn.classList.toggle("on", loopOn);
+  if (loopOn && tOut === Infinity) tOut = store?.compiled.duration ?? Infinity;
+  updateLoopBand();
+});
+speedSel.addEventListener("change", () => {
+  speed = Number(speedSel.value);
+});
 
 // --- deep-linking: ?scene=<label>&t=<sec> lets a driver open an exact frame ---
 function keyForLabel(label: string): string | undefined {

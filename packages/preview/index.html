@@ -11,8 +11,11 @@
   #content { flex: 1; display: flex; min-height: 0; }
   #stage-wrap { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; padding: 16px; }
   canvas { max-width: 100%; max-height: 100%; box-shadow: 0 4px 32px rgba(0,0,0,.5); }
-  #bar { display: flex; gap: 12px; align-items: center; padding: 12px 16px; background: #232329; }
-  #scrub { flex: 1; }
+  #bar { display: flex; gap: 8px; align-items: center; padding: 12px 16px; background: #232329; }
+  #scrub-wrap { flex: 1; position: relative; display: flex; align-items: center; }
+  #scrub { width: 100%; }
+  #loop-band { position: absolute; top: 50%; transform: translateY(-50%); height: 6px; background: rgba(125,154,255,.35); border-radius: 3px; pointer-events: none; display: none; }
+  button.on { background: #3a4a86; border-color: #7d9aff; color: #fff; }
   select, button, input[type=text], input[type=number] { background: #2e2e36; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 3px 8px; font: 12px system-ui; }
   input[type=number] { width: 64px; }
   input[type=color] { width: 40px; height: 22px; padding: 0; border: 1px solid #444; background: none; }
@@ -52,7 +55,19 @@
   <div id="bar">
     <select id="scene-select"></select>
     <button id="play">play</button>
-    <input id="scrub" type="range" min="0" max="1" step="0.001" value="0" />
+    <button id="mark-in" title="set loop start to current time">[</button>
+    <button id="loop" title="loop the in/out range">loop</button>
+    <button id="mark-out" title="set loop end to current time">]</button>
+    <select id="speed" title="playback speed">
+      <option value="0.25">0.25×</option>
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="2">2×</option>
+    </select>
+    <div id="scrub-wrap">
+      <div id="loop-band"></div>
+      <input id="scrub" type="range" min="0" max="1" step="0.001" value="0" />
+    </div>
     <span id="time">0.000 / 0.000</span>
   </div>
   <script type="module" src="/src/main.ts"></script>
