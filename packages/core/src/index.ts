@@ -1,6 +1,11 @@
 export * from "./ir.js";
 export * from "./dsl.js";
-export { validateScene, SceneValidationError, PROPS_BY_TYPE } from "./validate.js";
+export { validateScene, validateComposition, SceneValidationError, PROPS_BY_TYPE } from "./validate.js";
+export {
+  compileComposition,
+  type CompiledComposition,
+  type ScenePlacement,
+} from "./composeComposition.js";
 export {
   composeScene,
   formatComposeReport,
@@ -13,6 +18,7 @@ export { motionPreset, PRESET_NAMES, type PresetName, type PresetRig, type Prese
 export { motionOp, motionOpLabel, MOTION_OPS, type MotionOpName, type MotionOpOpts, type MotionOpResult } from "./motionOps.js";
 export {
   resolveAudioPlan,
+  resolveCompositionAudioPlan,
   SFX_DURATION,
   type AudioPlan,
   type ResolvedCue,

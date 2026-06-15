@@ -15,9 +15,10 @@ import {
   resolveAudioPlan,
 } from "@reframe/core";
 import { buildAudioTrack } from "./audio/index.js";
+import { renderComposition } from "./composition.js";
 import { encodeMp4 } from "./encode.js";
 import { captureHtml, captureIr } from "./frameLoop.js";
-import { loadScene } from "./loadScene.js";
+import { loadModule } from "./loadScene.js";
 
 interface Args {
   mode: "ir" | "html";
@@ -29,6 +30,8 @@ interface Args {
   framesDir?: string;
   overlays: string[];
   noAudio: boolean;
+  /** Composition: render only this scene id, standalone. */
+  scene?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -57,6 +60,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--frames-dir") args.framesDir = resolve(rest[++i]!);
     else if (a === "--overlay") args.overlays.push(resolve(rest[++i]!));
     else if (a === "--no-audio") args.noAudio = true;
+    else if (a === "--scene") args.scene = rest[++i]!;
     else {
       console.error(`unknown flag ${a}`);
       process.exit(2);
@@ -67,12 +71,35 @@ function parseArgs(argv: string[]): Args {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+
+  // ir mode loads a scene OR a composition; a composition renders each scene +
+  // concatenates (its own frame/temp handling), so branch before the per-scene path.
+  const loaded = args.mode === "ir" ? await loadModule(args.input) : null;
+  if (loaded?.kind === "composition") {
+    if (args.overlays.length > 0) {
+      console.error("note: overlays apply per-scene, not to a composition — ignored here");
+    }
+    const { duration, sceneCount } = await renderComposition(loaded.ir, {
+      compositionPath: args.input,
+      out: args.out,
+      noAudio: args.noAudio,
+      ...(args.fps !== undefined && { fps: args.fps }),
+      ...(args.scene !== undefined && { onlyScene: args.scene }),
+    });
+    console.log(
+      args.scene !== undefined
+        ? `${args.out} (scene "${args.scene}", ${duration.toFixed(2)}s)`
+        : `${args.out} (composition: ${sceneCount} scene${sceneCount > 1 ? "s" : ""}, ${duration.toFixed(2)}s)`,
+    );
+    return;
+  }
+
   const framesDir = args.framesDir ?? (await mkdtemp(join(tmpdir(), "reframe-frames-")));
 
   let result;
   let audioJob: { plan: import("@reframe/core").AudioPlan; videoOut: string } | null = null;
   if (args.mode === "ir") {
-    let ir = await loadScene(args.input);
+    let ir = loaded!.ir;
     if (args.overlays.length > 0) {
       const docs = await Promise.all(
         args.overlays.map(async (p) => JSON.parse(await readFile(p, "utf8")) as OverlayDoc),

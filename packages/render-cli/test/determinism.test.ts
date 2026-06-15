@@ -9,7 +9,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
+import { composition, scene, rect, tween } from "@reframe/core";
 import { captureHtml, captureIr } from "../src/frameLoop.js";
+import { renderComposition } from "../src/composition.js";
 import lowerThird from "../../../examples/scenes/lower-third.js";
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "gsap-box.html");
@@ -56,4 +58,24 @@ describe("deterministic capture", () => {
     expect(hashesA).toEqual(await frameHashes(b.framesDir));
     expect(new Set(hashesA).size).toBeGreaterThan(1);
   }, 60_000);
+
+  it("composition: a 2-scene cut composition renders byte-identically twice", async () => {
+    const mk = (id: string, fill: string) =>
+      scene({
+        id,
+        size: { width: 256, height: 144 },
+        fps: 5,
+        nodes: [rect({ id: "b", x: 0, y: 0, width: 40, height: 40, fill })],
+        timeline: tween("b", { x: 80 }, { duration: 0.4 }),
+      });
+    const comp = composition({ id: "c", scenes: [{ scene: mk("s1", "#ff0000") }, { scene: mk("s2", "#00ff00") }] });
+    const dir = await tempDir();
+    const compositionPath = join(dir, "comp.ts"); // only its dirname is used (sceneDir)
+    const outA = join(dir, "a.mp4");
+    const outB = join(dir, "b.mp4");
+    await renderComposition(comp, { compositionPath, out: outA, noAudio: true });
+    await renderComposition(comp, { compositionPath, out: outB, noAudio: true });
+    const hash = async (f: string) => createHash("sha256").update(await readFile(f)).digest("hex");
+    expect(await hash(outA)).toBe(await hash(outB));
+  }, 120_000);
 });

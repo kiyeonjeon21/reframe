@@ -6,6 +6,8 @@
 import type {
   AudioIR,
   BehaviorIR,
+  CompositionIR,
+  CompositionSceneEntry,
   Ease,
   EllipseProps,
   GroupProps,
@@ -22,7 +24,7 @@ import type {
   TimelineIR,
 } from "./ir.js";
 import { compileScene } from "./compile.js";
-import { validateScene } from "./validate.js";
+import { validateComposition, validateScene } from "./validate.js";
 
 export interface SceneInput {
   id: string;
@@ -45,6 +47,20 @@ export function scene(input: SceneInput): SceneIR {
   if (ir.duration === undefined && ir.timeline) {
     ir.duration = compileScene(ir).duration;
   }
+  return ir;
+}
+
+export interface CompositionInput {
+  id: string;
+  scenes: CompositionSceneEntry[];
+  audio?: AudioIR;
+  meta?: Record<string, unknown>;
+}
+
+/** Build a composition: an ordered list of independent scenes + transitions. */
+export function composition(input: CompositionInput): CompositionIR {
+  const ir: CompositionIR = { version: 1, ...input };
+  validateComposition(ir);
   return ir;
 }
 
@@ -96,6 +112,8 @@ export function stagger(interval: number, ...children: TimelineIR[]): TimelineIR
 }
 
 export interface BeatOpts {
+  /** Node ids this beat owns (the intent graph) — additive metadata only. */
+  nodes?: string[];
   /** Group children in parallel instead of sequence. */
   parallel?: boolean;
   /** Absolute start (rigid placement). */

@@ -4,7 +4,7 @@
  * and suggest what valid input looks like.
  */
 
-import type { NodeIR, SceneIR, TimelineIR } from "./ir.js";
+import type { CompositionIR, NodeIR, SceneIR, TimelineIR } from "./ir.js";
 
 const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "anchor"];
 export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
@@ -142,6 +142,13 @@ export function validateScene(ir: SceneIR): void {
         if (tl.scale !== undefined && tl.scale <= 0) {
           problems.push(`${path}: beat "${tl.name}" scale must be > 0`);
         }
+        for (const id of tl.nodes ?? []) {
+          if (!nodeById.has(id)) {
+            problems.push(
+              `${path}: beat "${tl.name}" owns unknown node "${id}" — known ids: ${[...nodeById.keys()].join(", ")}`,
+            );
+          }
+        }
         tl.children.forEach((c, i) => checkTimeline(c, `${path}.beat(${tl.name})[${i}]`));
         break;
     }
@@ -184,5 +191,39 @@ export function validateScene(ir: SceneIR): void {
     problems.push('audio.bgm: use either "file" or "synth", not both');
   }
 
+  if (problems.length > 0) throw new SceneValidationError(problems);
+}
+
+const TRANSITIONS = ["cut", "crossfade"];
+
+/** Validate a composition: each scene is valid, scene ids are unique, transitions
+ *  are known, and `at` strings parse. Throws SceneValidationError on any problem. */
+export function validateComposition(comp: CompositionIR): void {
+  const problems: string[] = [];
+  if (comp.scenes.length === 0) problems.push("composition has no scenes");
+  const seen = new Set<string>();
+  for (const [i, entry] of comp.scenes.entries()) {
+    const where = `scenes[${i}]`;
+    try {
+      validateScene(entry.scene);
+    } catch (err) {
+      if (err instanceof SceneValidationError) {
+        for (const p of err.problems) problems.push(`${where} (scene "${entry.scene.id}"): ${p}`);
+      } else throw err;
+    }
+    if (seen.has(entry.scene.id)) {
+      problems.push(`${where}: duplicate scene id "${entry.scene.id}" — scene ids must be unique in a composition`);
+    }
+    seen.add(entry.scene.id);
+    if (entry.transition !== undefined && !TRANSITIONS.includes(entry.transition)) {
+      problems.push(`${where}: unknown transition "${entry.transition}" — valid: ${TRANSITIONS.join(", ")}`);
+    }
+    if (typeof entry.at === "string" && Number.isNaN(Number(entry.at))) {
+      problems.push(`${where}: "at" string "${entry.at}" is not a number (use "-0.5"/"+0.5" or a number)`);
+    }
+    if (typeof entry.at === "number" && entry.at < 0) {
+      problems.push(`${where}: absolute "at" must be >= 0`);
+    }
+  }
   if (problems.length > 0) throw new SceneValidationError(problems);
 }

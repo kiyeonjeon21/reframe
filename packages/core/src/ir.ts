@@ -212,6 +212,13 @@ export type TimelineIR =
        */
       kind: "beat";
       name: string;
+      /**
+       * Node ids this beat semantically OWNS (the intent graph). Purely additive
+       * metadata — compile/evaluate ignore it, so `beat(name, { nodes }, …)` is
+       * byte-identical to `beat(name, {}, …)`. The preview groups these nodes'
+       * lanes under the beat; overlay/regen address the beat by its stable name.
+       */
+      nodes?: string[];
       parallel?: boolean;
       /** Absolute start (rigid placement). Overrides sequential flow. */
       at?: number;
@@ -293,6 +300,42 @@ export interface SceneIR {
   /** Editor-only data (Theatre.js state.json pattern). */
   meta?: Record<string, unknown>;
 }
+
+/**
+ * Composition — the layer ABOVE a scene: an ordered list of independent scenes
+ * with transitions, rendered to one deterministic mp4. Each `scene` stays a
+ * normal SceneIR (renders/previews/overlays standalone, unchanged); the
+ * composition only lays out their start times and concatenates. No single-scene
+ * compile/evaluate path is touched.
+ */
+export type SceneTransition = "cut" | "crossfade";
+
+export interface CompositionSceneEntry {
+  scene: SceneIR;
+  /** How this scene enters from the previous one. Default "cut". A crossfade
+   *  overlaps the previous scene by `at` (or a default) and blends. */
+  transition?: SceneTransition;
+  /**
+   * Placement relative to the sequential append point (the previous scene's
+   * end): a number is an ABSOLUTE start (seconds); a string "-0.5"/"+0.5" shifts
+   * the sequential point (overlap / gap). Omitted = sequential (or, for a
+   * crossfade, overlap by the default crossfade duration).
+   */
+  at?: number | string;
+}
+
+export interface CompositionIR {
+  version: 1;
+  id: string;
+  scenes: CompositionSceneEntry[];
+  /** Composition-level sound: a bed spanning scenes (e.g. kokoro narration) +
+   *  absolute-time cues, layered over each scene's own offset cues. */
+  audio?: AudioIR;
+  meta?: Record<string, unknown>;
+}
+
+/** Default crossfade/overlap length (s) when a crossfade gives no explicit `at`. */
+export const DEFAULT_CROSSFADE = 0.5;
 
 export const DEFAULT_TO_DURATION = 0.5;
 export const DEFAULT_TWEEN_DURATION = 0.5;

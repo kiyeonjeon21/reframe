@@ -8,6 +8,7 @@
  */
 
 import type { CompiledScene } from "./compile.js";
+import type { CompiledComposition } from "./composeComposition.js";
 import type { SfxName } from "./ir.js";
 
 /** Nominal cue lengths (s) for duck-window math; file cues use a default. */
@@ -87,7 +88,17 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
   }
   cues.sort((a, b) => a.t - b.t);
 
-  // merge cue windows for ducking
+  return {
+    duration,
+    bgm: resolveBgm(audio.bgm),
+    cues,
+    duckWindows: mergeDuckWindows(cues, duration),
+    warnings,
+  };
+}
+
+/** Merge overlapping cue windows the bed should duck under. */
+function mergeDuckWindows(cues: ResolvedCue[], duration: number): { t0: number; t1: number }[] {
   const duckWindows: { t0: number; t1: number }[] = [];
   for (const cue of cues) {
     const window = { t0: cue.t, t1: Math.min(duration, cue.t + cue.duration) };
@@ -95,26 +106,85 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
     if (last && window.t0 <= last.t1 + 0.1) last.t1 = Math.max(last.t1, window.t1);
     else duckWindows.push(window);
   }
+  return duckWindows;
+}
 
-  let bgm: AudioPlan["bgm"] = null;
-  if (audio.bgm) {
-    const b = audio.bgm;
-    const duck =
-      b.duck === false
-        ? null
-        : {
-            depth: b.duck?.depth ?? 0.5,
-            attack: b.duck?.attack ?? 0.05,
-            release: b.duck?.release ?? 0.25,
-          };
-    bgm = {
-      source: b.file ? { kind: "file", path: b.file } : { kind: "synth", name: b.synth ?? "ambient-pad" },
-      gain: b.gain ?? 0.5,
-      fadeIn: b.fadeIn ?? 0,
-      fadeOut: b.fadeOut ?? 0,
-      duck,
-    };
+/** Resolve a bgm spec into the plan's bgm shape (shared by scene + composition). */
+function resolveBgm(b: NonNullable<import("./ir.js").AudioIR["bgm"]> | undefined): AudioPlan["bgm"] {
+  if (!b) return null;
+  const duck =
+    b.duck === false
+      ? null
+      : {
+          depth: b.duck?.depth ?? 0.5,
+          attack: b.duck?.attack ?? 0.05,
+          release: b.duck?.release ?? 0.25,
+        };
+  return {
+    source: b.file ? { kind: "file", path: b.file } : { kind: "synth", name: b.synth ?? "ambient-pad" },
+    gain: b.gain ?? 0.5,
+    fadeIn: b.fadeIn ?? 0,
+    fadeOut: b.fadeOut ?? 0,
+    duck,
+  };
+}
+
+/**
+ * Composition-level AudioPlan: each scene's cues offset by that scene's start,
+ * plus composition-level absolute-time cues, under a composition bed (e.g.
+ * kokoro narration) that spans all scenes. Per-scene bgm is ignored (warned) —
+ * the bed lives at the composition level. Same determinism boundary as
+ * resolveAudioPlan (plan + WAV bytes, not AAC-in-mp4).
+ */
+export function resolveCompositionAudioPlan(comp: CompiledComposition): AudioPlan | null {
+  const audio = comp.ir.audio;
+  const duration = comp.duration;
+  const warnings: string[] = [];
+  const cues: ResolvedCue[] = [];
+
+  for (const placement of comp.scenes) {
+    const plan = resolveAudioPlan(placement.compiled);
+    if (!plan) continue;
+    if (plan.bgm) {
+      warnings.push(`scene "${placement.id}": per-scene bgm ignored — set bgm at the composition level`);
+    }
+    for (const w of plan.warnings) warnings.push(`scene "${placement.id}": ${w}`);
+    for (const cue of plan.cues) {
+      const t = cue.t + placement.start;
+      if (t >= duration) continue;
+      cues.push({ ...cue, t });
+    }
   }
 
-  return { duration, bgm, cues, duckWindows, warnings };
+  for (const [index, cue] of (audio?.cues ?? []).entries()) {
+    if (typeof cue.at !== "number") {
+      warnings.push(`composition cue[${index}]: "at" must be an absolute number (no composition labels) — dropped`);
+      continue;
+    }
+    const t = Math.max(0, cue.at + (cue.offset ?? 0));
+    const cueDuration = cue.sfx ? SFX_DURATION[cue.sfx] : FILE_CUE_DURATION;
+    if (t >= duration) {
+      warnings.push(`composition cue[${index}] at ${t.toFixed(2)}s past the composition end — dropped`);
+      continue;
+    }
+    cues.push({
+      t,
+      gain: cue.gain ?? 1,
+      duration: cueDuration,
+      source: cue.sfx
+        ? { kind: "sfx", name: cue.sfx, params: cue.params ?? {} }
+        : { kind: "file", path: cue.file! },
+    });
+  }
+
+  if (!audio?.bgm && cues.length === 0) return null;
+  cues.sort((a, b) => a.t - b.t);
+
+  return {
+    duration,
+    bgm: resolveBgm(audio?.bgm),
+    cues,
+    duckWindows: mergeDuckWindows(cues, duration),
+    warnings,
+  };
 }
