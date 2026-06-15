@@ -675,6 +675,24 @@ function draw() {
         if (corners.length > 2) ctx.closePath();
         ctx.stroke();
       }
+      // transform gizmo: corner squares (scale) + a handle above (rotate)
+      const g = selectedGizmo();
+      if (g) {
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#7d9aff";
+        const topMid: [number, number] = [(g.corners[0]![0] + g.corners[1]![0]) / 2, (g.corners[0]![1] + g.corners[1]![1]) / 2];
+        ctx.beginPath();
+        ctx.moveTo(topMid[0], topMid[1]);
+        ctx.lineTo(g.rot[0], g.rot[1]);
+        ctx.stroke();
+        for (const [hx, hy] of g.corners) ctx.fillRect(hx - 4, hy - 4, 8, 8);
+        ctx.beginPath();
+        ctx.arc(g.rot[0], g.rot[1], 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#0b0b12";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }
@@ -739,8 +757,33 @@ type DragState =
   // `inv` is the inverse of the node's parent-matrix linear part, mapping a
   // scene-space drag delta into the node's parent space (identity for a
   // top-level node, so the delta is 1:1; non-trivial for nested children).
-  | { kind: "node"; id: string; startX: number; startY: number; px: number; py: number; inv: [number, number, number, number] };
+  | { kind: "node"; id: string; startX: number; startY: number; px: number; py: number; inv: [number, number, number, number] }
+  // transform gizmo: scale/rotate the node around its anchor (`pivot`). The
+  // parent transform cancels in the distance/angle ratios, so this is correct
+  // for nested nodes too.
+  | { kind: "scale"; id: string; pivot: [number, number]; origScale: number; origDist: number }
+  | { kind: "rotate"; id: string; pivot: [number, number]; origRot: number; startAngle: number };
 let drag: DragState | null = null;
+
+/** The selected node's box op + gizmo geometry (anchor pivot, rotation handle),
+ *  or null if it isn't a box-shaped leaf (rect/ellipse/text/image). */
+function selectedGizmo(): { op: DisplayOp; corners: [number, number][]; pivot: [number, number]; rot: [number, number] } | null {
+  if (!store || !store.selectedId) return null;
+  const op = evaluate(store.compiled, t).find((o) => o.id === store!.selectedId);
+  if (!op) return null;
+  const corners = opCorners(op);
+  if (corners.length < 4) return null;
+  const pivot: [number, number] = [op.transform[4], op.transform[5]]; // anchor (local origin) in scene coords
+  const c = centroid(corners);
+  const topMid: [number, number] = [(corners[0]![0] + corners[1]![0]) / 2, (corners[0]![1] + corners[1]![1]) / 2];
+  let dx = topMid[0] - c[0];
+  let dy = topMid[1] - c[1];
+  const len = Math.hypot(dx, dy) || 1;
+  dx /= len;
+  dy /= len;
+  const rot: [number, number] = [topMid[0] + dx * 28, topMid[1] + dy * 28];
+  return { op, corners, pivot, rot };
+}
 
 function findNodeById(nodes: NodeIR[], id: string): NodeIR | null {
   for (const node of nodes) {
@@ -796,6 +839,30 @@ canvas.addEventListener("mousedown", (ev) => {
       return;
     }
   }
+  // 1.5) transform gizmo handles on the selected node (scale corners, rotate handle)
+  const g = selectedGizmo();
+  if (g && store.selectedId) {
+    const id = store.selectedId;
+    const node = findNodeById(store.compiled.ir.nodes, id)!;
+    const p = node.props as { scale?: number; rotation?: number };
+    if (Math.hypot(g.rot[0] - x, g.rot[1] - y) <= HANDLE_R) {
+      drag = { kind: "rotate", id, pivot: g.pivot, origRot: p.rotation ?? 0, startAngle: Math.atan2(y - g.pivot[1], x - g.pivot[0]) };
+      playing = false;
+      playBtn.textContent = "play";
+      ev.preventDefault();
+      return;
+    }
+    for (const cor of g.corners) {
+      if (Math.hypot(cor[0] - x, cor[1] - y) <= HANDLE_R) {
+        const origDist = Math.hypot(cor[0] - g.pivot[0], cor[1] - g.pivot[1]) || 1;
+        drag = { kind: "scale", id, pivot: g.pivot, origScale: p.scale ?? 1, origDist };
+        playing = false;
+        playBtn.textContent = "play";
+        ev.preventDefault();
+        return;
+      }
+    }
+  }
   const ops = evaluate(store.compiled, t);
   // 2) a SELECTED group moves as a whole when you press inside its content.
   //    (To grab a child instead, double-click it — enters the group.)
@@ -827,6 +894,12 @@ window.addEventListener("mousemove", (ev) => {
   if (drag.kind === "waypoint") {
     drag.points[drag.index] = [Math.round(x), Math.round(y)];
     store.setMotionPathPoints(drag.label, drag.points);
+  } else if (drag.kind === "scale") {
+    const dist = Math.hypot(x - drag.pivot[0], y - drag.pivot[1]);
+    store.setNodeProp(drag.id, "scale", Math.max(0.02, round3((drag.origScale * dist) / drag.origDist)));
+  } else if (drag.kind === "rotate") {
+    const deg = round3(drag.origRot + ((Math.atan2(y - drag.pivot[1], x - drag.pivot[0]) - drag.startAngle) * 180) / Math.PI);
+    store.setNodeProp(drag.id, "rotation", deg);
   } else {
     const dx = x - drag.px;
     const dy = y - drag.py;
@@ -1062,6 +1135,7 @@ function setTime(sec: number) {
   syncUrl();
 }
 (window as unknown as { __setTime: (s: number) => void }).__setTime = setTime;
+(window as unknown as { __gizmo: typeof selectedGizmo }).__gizmo = selectedGizmo; // debug/testing hook
 
 playBtn.addEventListener("click", () => {
   playing = !playing;
