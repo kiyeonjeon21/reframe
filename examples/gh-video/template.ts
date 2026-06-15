@@ -51,8 +51,8 @@ export function buildGhScene(d: GhData): SceneIR {
     ]);
 
   const nodes: NodeIR[] = [
-    image({ id: "avatar", src: d.avatarSrc, x: 540, y: 250, width: 220, height: 220, anchor: "center", opacity: 0, scale: 0.4 }),
-    rect({ id: "ring", x: 540, y: 250, width: 240, height: 240, anchor: "center", stroke: ACCENT, strokeWidth: 4, radius: 120, opacity: 0, scale: 0.4 }),
+    image({ id: "avatar", src: d.avatarSrc, x: 540, y: 250, width: 220, height: 220, anchor: "center", opacity: 0, scale: 0.2, rotation: -360 }),
+    rect({ id: "ring", x: 540, y: 250, width: 240, height: 240, anchor: "center", stroke: ACCENT, strokeWidth: 4, radius: 120, opacity: 0, scale: 1.5 }),
     text({ id: "name", x: 540, y: 420, anchor: "center", content: truncate(d.name || d.login, 22), fontFamily: "Inter", fontSize: 58, fontWeight: 800, fill: FG, opacity: 0 }),
     text({ id: "handle", x: 540, y: 478, anchor: "center", content: `@${d.login}`, fontFamily: "Inter", fontSize: 30, fill: ACCENT, opacity: 0 }),
     text({ id: "bio", x: 540, y: 528, anchor: "center", content: truncate(d.bio, 52), fontFamily: "Inter", fontSize: 24, fill: MUTED, opacity: 0 }),
@@ -87,18 +87,20 @@ export function buildGhScene(d: GhData): SceneIR {
     size: { width: 1080, height: 1350 },
     fps: 30,
     background: BG,
-    nodes: [group({ id: "stage", ...cam(1.06) }, nodes)],
+    nodes: [group({ id: "stage", ...cam(1.18) }, nodes)],
     timeline: par(
-      // camera: a quick push-in to settle, then a slow cinematic drift (Ken Burns).
+      // camera: a punchy push-in to settle, then a slow cinematic Ken Burns zoom.
       seq(
-        tween("stage", cam(1), { duration: 1.0, ease: "easeOutExpo", label: "zoom-in" }),
-        tween("stage", cam(1.035), { duration: 4.6, ease: "linear", label: "drift" }),
+        tween("stage", cam(1), { duration: 1.1, ease: "easeOutExpo", label: "zoom-in" }),
+        tween("stage", cam(1.10), { duration: 4.5, ease: "easeInOutQuad", label: "drift" }),
       ),
       seq(
       wait(0.2),
       par(
-        tween("avatar", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutBack", label: "avatar-in" }),
-        tween("ring", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutBack" }),
+        // avatar SPINS in (rotation -360→0) while scaling up with overshoot momentum
+        tween("avatar", { opacity: 1, scale: 1, rotation: 0 }, { duration: 0.9, ease: "easeOutBack", label: "avatar-in" }),
+        // ring snaps inward (1.5→1) and locks onto the avatar — fast, then settle
+        tween("ring", { opacity: 1, scale: 1 }, { duration: 0.6, ease: "easeOutExpo" }),
       ),
       par(
         tween("name", { opacity: 1 }, { duration: 0.4, ease: "easeOutQuad", label: "name-in" }),
