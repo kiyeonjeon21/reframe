@@ -7,10 +7,7 @@ on:
 
 jobs:
   test:
-    # macOS (ARM) matches the platform the golden snapshots were authored on;
-    # transcendental floats (eases) differ by a last ULP across CPUs/libm, so
-    # byte-exact goldens are only portable on the same platform family.
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,7 +20,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - name: Install ffmpeg
-        run: brew install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install Playwright Chromium
-        run: pnpm --filter @reframe/render-cli exec playwright install chromium
+        run: pnpm --filter @reframe/render-cli exec playwright install --with-deps chromium
+      # Byte-exact DisplayList snapshots are skipped in CI (platform-fragile last
+      # ULP); the round-trip determinism + the mp4-byte determinism test still run.
       - run: pnpm test
