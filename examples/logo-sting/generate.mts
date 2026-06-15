@@ -2,13 +2,16 @@
 /**
  * Logo → sting: one command, your logo as a share-worthy animated reveal.
  *
- *   npx tsx examples/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"]
+ *   npx tsx examples/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"] \
+ *       [--motion <preset>] [--energy 0..1] [--speed n] [--intensity 0..1] \
+ *       [--from left|right|top|bottom] [--seed n]
  *
  * Pass a local SVG file, or a brand slug to pull from simple-icons
- * (e.g. `react`, `figma`, `vercel`). The outline draws itself on, the fill
- * blooms, the mark swoops along a MotionPath while it zooms, then settles under
- * a wordmark. Output: out/logo-<slug>.mp4. Orchestrator only — no @reframe/core
- * import (the render step resolves it).
+ * (e.g. `react`, `figma`, `vercel`). The motion is chosen from the vocabulary
+ * (--motion: draw-bloom | punch-in | rise-settle | slide-bank | reveal-orbit |
+ * spin-forge; default reveal-orbit). A different --seed varies it within the
+ * preset family. Output: out/logo-<slug>.mp4. Orchestrator only — no
+ * @reframe/core import (the render step resolves it).
  *
  * v1 parses <path> elements (the common case). Transforms, <polygon>/<circle>
  * and CSS styling are not yet applied.
@@ -89,11 +92,29 @@ function parseSvg(svg: string): Parsed {
   return { paths, viewBox };
 }
 
+const MOTIONS = ["draw-bloom", "punch-in", "rise-settle", "slide-bank", "reveal-orbit", "spin-forge"];
+
+/** Split argv into positionals and --key value flags. */
+function parseArgs(argv: string[]): { positional: string[]; flags: Record<string, string> } {
+  const positional: string[] = [];
+  const flags: Record<string, string> = {};
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a.startsWith("--")) flags[a.slice(2)] = argv[++i] ?? "";
+    else positional.push(a);
+  }
+  return { positional, flags };
+}
+
 async function main() {
-  const arg = process.argv[2];
+  const { positional, flags } = parseArgs(process.argv.slice(2));
+  const arg = positional[0];
   if (!arg) {
-    console.error('usage: npx tsx examples/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"]');
+    console.error('usage: npx tsx examples/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"] [--motion <preset>] [--energy 0..1] [--speed n] [--intensity 0..1] [--from left|right|top|bottom] [--seed n]');
     process.exit(2);
+  }
+  if (flags.motion && !MOTIONS.includes(flags.motion)) {
+    throw new Error(`unknown --motion "${flags.motion}". options: ${MOTIONS.join(", ")}`);
   }
   console.log(`loading logo: ${arg} …`);
   const { svg, name } = await loadSvg(arg);
@@ -101,7 +122,18 @@ async function main() {
   if (paths.length === 0) {
     throw new Error("no <path> elements found — v1 supports path-based SVG logos");
   }
-  const data = { name: process.argv[3] ?? titleCase(name), paths, viewBox };
+  const num = (k: string) => (flags[k] !== undefined ? Number(flags[k]) : undefined);
+  const data = {
+    name: positional[1] ?? titleCase(name),
+    paths,
+    viewBox,
+    ...(flags.motion && { motion: flags.motion }),
+    ...(num("energy") !== undefined && { energy: num("energy") }),
+    ...(num("speed") !== undefined && { speed: num("speed") }),
+    ...(num("intensity") !== undefined && { intensity: num("intensity") }),
+    ...(flags.from && { from: flags.from }),
+    ...(num("seed") !== undefined && { seed: num("seed") }),
+  };
 
   const genPath = join(HERE, "_gen.ts");
   await writeFile(
@@ -110,7 +142,7 @@ async function main() {
   );
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const out = join(ROOT, "out", `logo-${slug}.mp4`);
-  console.log(`rendering → out/logo-${slug}.mp4  (${paths.length} path${paths.length > 1 ? "s" : ""})`);
+  console.log(`rendering → out/logo-${slug}.mp4  (${paths.length} path${paths.length > 1 ? "s" : ""}, motion: ${flags.motion ?? "reveal-orbit"})`);
   await exec("npx", ["tsx", join(ROOT, "packages", "render-cli", "src", "reframe.ts"), "render", genPath, "-o", out, "--no-audio"]);
   console.log(`\n✓ out/logo-${slug}.mp4 — post it, tag @reframe`);
 }
