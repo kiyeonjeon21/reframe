@@ -1,5 +1,9 @@
 # reframe
 
+[![npm](https://img.shields.io/npm/v/reframe-video.svg)](https://www.npmjs.com/package/reframe-video)
+[![CI](https://github.com/kiyeonjeon21/reframe/actions/workflows/ci.yml/badge.svg)](https://github.com/kiyeonjeon21/reframe/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/npm/l/reframe-video.svg)](LICENSE)
+
 **Declarative motion graphics that AI can write, humans can tweak — and the
 human's edits survive an AI regeneration.**
 

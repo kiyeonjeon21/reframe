@@ -1,8 +1,11 @@
 name: Publish
 
-# Tag a release to publish: bump packages/reframe-video/package.json, commit,
-# then `git tag v0.1.2 && git push origin v0.1.2`. Uses the NPM_TOKEN repo secret.
+# Publish runs ONLY on request, never on a normal push (CI handles those).
+# Two ways to request a release, both using the NPM_TOKEN repo secret:
+#   - Actions tab -> "Publish" -> Run workflow (manual), or
+#   - push a version tag: `git tag v0.1.2 && git push origin v0.1.2`.
 on:
+  workflow_dispatch:
   push:
     tags: ["v*"]
 
@@ -25,6 +28,7 @@ jobs:
       - name: Build the publishable package
         run: pnpm --filter reframe-video build
       - name: Guard — tag must match package version
+        if: github.ref_type == 'tag'
         run: |
           PKG_VERSION="v$(node -p "require('./packages/reframe-video/package.json').version")"
           TAG="${GITHUB_REF_NAME}"
