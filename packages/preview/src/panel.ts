@@ -349,6 +349,9 @@ function renderMotionOps(root: HTMLElement, store: EditorStore) {
     const add = el("button", { title: "add this motion to the selected node" }, "+ add");
     add.addEventListener("click", () => store.addMotionOp(sel.value as MotionOpName, store.selectedId!));
     root.append(el("div", { class: "prop-row" }, el("label", {}, `▸ ${store.selectedId}`), sel, add));
+    if (!store.hasMotionPath(store.selectedId)) {
+      root.append(el("div", { class: "hint" }, "double-click the canvas to set a move target (then double-click the path to bend it)"));
+    }
   }
   if (store.addedOps.size > 0) {
     root.append(el("h3", {}, "Added motion"));

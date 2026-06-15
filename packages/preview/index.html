@@ -51,18 +51,19 @@
   .beat-lane.selected { background: #31313c; color: #fff; }
   .beat-lane.missing { color: #ff7b72; cursor: default; }
   .beat-markers { color: #7d9aff; font-size: 11px; margin-top: 3px; opacity: 0.85; }
-  /* composition navigator */
-  #nav { display: none; gap: 6px; align-items: center; padding: 8px 16px; background: #1f1f25; border-bottom: 1px solid #333; overflow-x: auto; }
-  #nav.on { display: flex; }
-  #nav .nav-title { color: #8a8a96; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; white-space: nowrap; }
-  .nav-scene { background: #2a2a32; border: 1px solid #3a3a44; border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
-  .nav-scene:hover { border-color: #7d9aff; }
-  .nav-scene.active { background: #31313c; border-color: #7d9aff; color: #fff; }
-  .nav-scene .range { color: #8a8a96; font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  /* composition timeline (scene bands across the whole composition, at the bottom) */
+  #comp-timeline { display: none; align-items: stretch; gap: 0; padding: 8px 16px 10px; background: #1f1f25; border-top: 1px solid #333; }
+  #comp-timeline.on { display: block; }
+  #comp-timeline .ct-title { color: #8a8a96; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  #comp-track { position: relative; height: 34px; background: #16161b; border-radius: 6px; }
+  .ct-scene { position: absolute; top: 0; bottom: 0; background: #2a2a32; border: 1px solid #3a3a44; border-radius: 5px; cursor: pointer; overflow: hidden; box-sizing: border-box; padding: 4px 8px; white-space: nowrap; }
+  .ct-scene:hover { border-color: #7d9aff; }
+  .ct-scene.active { background: #31313c; border-color: #7d9aff; color: #fff; }
+  .ct-scene .ct-range { color: #8a8a96; font-size: 10px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  #ct-playhead { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #ff4d00; pointer-events: none; }
 </style>
 </head>
 <body>
-  <div id="nav"></div>
   <div id="content">
     <div id="stage-wrap"><canvas id="canvas"></canvas></div>
     <div id="panel"></div>
@@ -85,6 +86,7 @@
     </div>
     <span id="time">0.000 / 0.000</span>
   </div>
+  <div id="comp-timeline"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

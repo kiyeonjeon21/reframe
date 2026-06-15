@@ -44,6 +44,9 @@ export class EditorStore {
   /** Motion ops added in the editor, keyed by their beat label (the source of
    *  truth that regenerates draft.addTimeline + the ops' setup base props). */
   addedOps = new Map<string, AddedOp>();
+  /** Editor-authored motionPaths (a node with no motion gets one via "add move"),
+   *  keyed by label — the source of truth for their draggable waypoints. */
+  addedPaths = new Map<string, { target: string; points: [number, number][]; duration: number }>();
   private opSetupKeys = new Set<string>();
 
   private listeners = new Set<Listener>();
@@ -128,10 +131,42 @@ export class EditorStore {
     return out;
   }
 
-  /** A dragged waypoint writes the whole points array as a timeline patch. */
+  /** A dragged/added waypoint writes the whole points array. For an editor-added
+   *  path the points live in addedPaths (its source of truth); for a base
+   *  motionPath it's an overlay timeline patch on the stable label. */
   setMotionPathPoints(label: string, points: [number, number][]) {
+    const added = this.addedPaths.get(label);
+    if (added) {
+      added.points = points;
+      this.regenerateOps();
+      return;
+    }
     ((this.draft.timeline ??= {})[label] ??= {}).points = points;
     this.recompose("value");
+  }
+
+  /** Give a motionless node its first move: a 2-point path from where it sits
+   *  now to `to`. Further bends come from double-clicking the path (as usual). */
+  addMove(target: string, to: [number, number], duration = 1) {
+    const node = this.findNode(this.compiled.ir.nodes, target);
+    if (!node || !("x" in node.props)) return;
+    const from: [number, number] = [
+      Math.round((node.props as { x: number }).x),
+      Math.round((node.props as { y: number }).y),
+    ];
+    this.addedPaths.set(`move-${target}`, { target, points: [from, [Math.round(to[0]), Math.round(to[1])]], duration });
+    this.regenerateOps();
+  }
+
+  /** True if the node already has a motionPath (base or editor-added). */
+  hasMotionPath(target: string): boolean {
+    let found = false;
+    const walk = (tl: TimelineIR) => {
+      if (tl.kind === "motionPath" && tl.target === target) found = true;
+      if ("children" in tl) tl.children.forEach(walk);
+    };
+    if (this.compiled.ir.timeline) walk(this.compiled.ir.timeline);
+    return found;
   }
 
   /** A reshaped ease curve writes a cubic-bezier ease on a timeline step.
@@ -194,6 +229,9 @@ export class EditorStore {
           this.opSetupKeys.add(`${id}.${prop}`);
         }
       }
+    }
+    for (const [label, p] of this.addedPaths) {
+      frags.push({ kind: "motionPath", target: p.target, points: p.points, duration: p.duration, label });
     }
     if (frags.length > 0) this.draft.addTimeline = frags;
     else delete this.draft.addTimeline;

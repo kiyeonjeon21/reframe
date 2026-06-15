@@ -55,7 +55,10 @@ const markInBtn = document.getElementById("mark-in") as HTMLButtonElement;
 const markOutBtn = document.getElementById("mark-out") as HTMLButtonElement;
 const speedSel = document.getElementById("speed") as HTMLSelectElement;
 const loopBand = document.getElementById("loop-band") as HTMLDivElement;
-const navEl = document.getElementById("nav") as HTMLDivElement;
+const compTimelineEl = document.getElementById("comp-timeline") as HTMLDivElement;
+let compPlayhead: HTMLDivElement | null = null;
+let compTotal = 0;
+let compStarts: number[] = [];
 
 let store: EditorStore | null = null;
 let panel: ReturnType<typeof buildPanel> | null = null;
@@ -145,17 +148,17 @@ async function openSceneIR(ir: SceneIR, dir: string, writeUrl = true) {
 
 async function loadScene(path: string) {
   activeComposition = null;
-  navEl.classList.remove("on");
+  compTimelineEl.classList.remove("on");
   const mod = await modules[path]!.load();
   await openSceneIR(mod.default, modules[path]!.dir);
 }
 
-/** Open a composition: build the scene navigator and open its first scene. */
+/** Open a composition: build the bottom scene timeline and open its first scene. */
 async function loadComposition(key: string) {
   const mod = await compositions[key]!.load();
   activeComposition = mod.default;
   activeSceneIndex = 0;
-  buildNav();
+  buildCompTimeline();
   await openScene(0);
 }
 
@@ -163,30 +166,48 @@ async function loadComposition(key: string) {
 async function openScene(index: number) {
   if (!activeComposition) return;
   activeSceneIndex = index;
-  buildNav();
+  buildCompTimeline();
   await openSceneIR(activeComposition.scenes[index]!.scene, __REFRAME_EXAMPLES_DIR__, false);
 }
 
-/** The scene navigator: a filmstrip of the composition's scenes + time ranges. */
-function buildNav() {
-  navEl.replaceChildren();
+/** The composition timeline (bottom): scene bands laid out proportionally over
+ *  the whole duration, with a playhead. Click a band → open that scene. */
+function buildCompTimeline() {
+  compTimelineEl.replaceChildren();
+  compPlayhead = null;
   if (!activeComposition) {
-    navEl.classList.remove("on");
+    compTimelineEl.classList.remove("on");
     return;
   }
-  navEl.classList.add("on");
-  navEl.append(el("span", { class: "nav-title" }, `▤ ${activeComposition.id}`));
+  compTimelineEl.classList.add("on");
   const cc = compileComposition(activeComposition);
+  compTotal = cc.duration || 1;
+  compStarts = cc.scenes.map((p) => p.start);
+  compTimelineEl.append(el("div", { class: "ct-title" }, `▤ ${activeComposition.id} — ${cc.scenes.length} scenes · ${cc.duration.toFixed(1)}s`));
+  const track = el("div", { id: "comp-track" });
   cc.scenes.forEach((p, i) => {
-    const chip = el(
+    const band = el(
       "div",
-      { class: `nav-scene${i === activeSceneIndex ? " active" : ""}` },
+      { class: `ct-scene${i === activeSceneIndex ? " active" : ""}`, title: `open ${p.id}` },
       p.id,
-      el("span", { class: "range" }, `${p.start.toFixed(1)}–${(p.start + p.duration).toFixed(1)}s${p.transition === "crossfade" ? " ⤫" : ""}`),
+      el("span", { class: "ct-range" }, `${p.start.toFixed(1)}–${(p.start + p.duration).toFixed(1)}s${p.transition === "crossfade" ? " ⤫" : ""}`),
     );
-    chip.addEventListener("click", () => void openScene(i));
-    navEl.append(chip);
+    band.style.left = `${(p.start / compTotal) * 100}%`;
+    band.style.width = `${(p.duration / compTotal) * 100}%`;
+    band.addEventListener("click", () => void openScene(i));
+    track.append(band);
   });
+  compPlayhead = el("div", { id: "ct-playhead" });
+  track.append(compPlayhead);
+  compTimelineEl.append(track);
+  updateCompPlayhead();
+}
+
+/** Position the composition playhead at the open scene's start + local time. */
+function updateCompPlayhead() {
+  if (!compPlayhead) return;
+  const start = compStarts[activeSceneIndex] ?? 0;
+  compPlayhead.style.left = `${((start + t) / compTotal) * 100}%`;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string>, ...kids: (HTMLElement | string)[]): HTMLElementTagNameMap[K] {
@@ -361,6 +382,7 @@ function draw() {
   const duration = store.compiled.duration;
   scrub.value = String(duration ? t / duration : 0);
   timeLabel.textContent = `${t.toFixed(3)} / ${duration.toFixed(3)}`;
+  updateCompPlayhead();
 }
 
 const HANDLE_R = 9;
@@ -529,6 +551,18 @@ canvas.addEventListener("dblclick", (ev) => {
     draw();
     ev.preventDefault();
     return;
+  }
+  // empty space + a selected, motionless, top-level node → give it its FIRST
+  // move: a path from where it sits to here (then double-click the path to bend).
+  const sel = store.selectedId;
+  if (sel && !store.hasMotionPath(sel)) {
+    const node = findNodeById(store.compiled.ir.nodes, sel);
+    const topLevel = store.compiled.ir.nodes.some((n) => n.id === sel);
+    if (node && topLevel && node.type !== "line") {
+      store.addMove(sel, [x, y]);
+      draw();
+      ev.preventDefault();
+    }
   }
 });
 
