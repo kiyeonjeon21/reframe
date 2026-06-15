@@ -15,6 +15,7 @@ import {
   type OverlayDoc,
   type PropValue,
   type SceneIR,
+  type TimelineIR,
 } from "@reframe/core";
 
 export type ChangeKind = "value" | "structure";
@@ -97,6 +98,24 @@ export class EditorStore {
     value: number | string,
   ) {
     ((this.draft.timeline ??= {})[label] ??= {})[key] = value as never;
+    this.recompose("value");
+  }
+
+  /** Labeled motionPath steps with their (possibly overlay-edited) waypoints —
+   *  drives the preview's draggable handles and is exposed on window.__store. */
+  motionPaths(): { label: string; points: [number, number][] }[] {
+    const out: { label: string; points: [number, number][] }[] = [];
+    const walk = (tl: TimelineIR) => {
+      if (tl.kind === "motionPath" && tl.label) out.push({ label: tl.label, points: tl.points });
+      if ("children" in tl) tl.children.forEach(walk);
+    };
+    if (this.compiled.ir.timeline) walk(this.compiled.ir.timeline);
+    return out;
+  }
+
+  /** A dragged waypoint writes the whole points array as a timeline patch. */
+  setMotionPathPoints(label: string, points: [number, number][]) {
+    ((this.draft.timeline ??= {})[label] ??= {}).points = points;
     this.recompose("value");
   }
 

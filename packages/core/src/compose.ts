@@ -34,13 +34,24 @@ export interface OverlayDoc {
   /**
    * Parameter patches on labeled timeline steps (or beats by name). Patchable
    * per kind: to -> duration/ease/stagger, tween -> duration/ease,
-   * wait -> duration, beat -> at/gap/scale/duration/order. A beat move is
-   * rigid, so child labels inside it keep their relative timing and any
-   * overlay edits on those children survive.
+   * wait -> duration, motionPath -> points/duration/ease, beat ->
+   * at/gap/scale/duration/order. A beat move is rigid, so child labels inside
+   * it keep their relative timing and any overlay edits on those children
+   * survive. A dragged motionPath waypoint is a `points` patch — it survives a
+   * knob-driven base regen because the step label is stable.
    */
   timeline?: Record<
     string,
-    { duration?: number; ease?: Ease; stagger?: number; at?: number; gap?: number; scale?: number; order?: number }
+    {
+      duration?: number;
+      ease?: Ease;
+      stagger?: number;
+      at?: number;
+      gap?: number;
+      scale?: number;
+      order?: number;
+      points?: [number, number][];
+    }
   >;
 }
 
@@ -213,6 +224,7 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
       to: ["duration", "ease", "stagger"],
       tween: ["duration", "ease"],
       wait: ["duration"],
+      motionPath: ["points", "duration", "ease"],
       beat: ["at", "gap", "scale", "duration", "order"],
     };
 

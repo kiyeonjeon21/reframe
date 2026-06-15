@@ -161,10 +161,69 @@ function draw() {
     ctx.restore();
   }
 
+  // motionPath waypoint handles — drag to reshape the curve (writes a
+  // timeline.<label>.points overlay patch that survives base regeneration).
+  // Points are in the target's parent space; correct for top-level targets.
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  for (const mp of store.motionPaths()) {
+    ctx.strokeStyle = "rgba(125,154,255,0.4)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    mp.points.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    for (const [x, y] of mp.points) {
+      ctx.beginPath();
+      ctx.arc(x, y, HANDLE_R, 0, Math.PI * 2);
+      ctx.fillStyle = "#7d9aff";
+      ctx.fill();
+      ctx.strokeStyle = "#0b0b12";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
   const duration = store.compiled.duration;
   scrub.value = String(duration ? t / duration : 0);
   timeLabel.textContent = `${t.toFixed(3)} / ${duration.toFixed(3)}`;
 }
+
+const HANDLE_R = 9;
+
+/** Map a mouse event to scene coordinates (canvas is rendered at scene size, displayed scaled). */
+function clientToScene(ev: MouseEvent): [number, number] {
+  const r = canvas.getBoundingClientRect();
+  return [((ev.clientX - r.left) * canvas.width) / r.width, ((ev.clientY - r.top) * canvas.height) / r.height];
+}
+
+let drag: { label: string; index: number; points: [number, number][] } | null = null;
+canvas.addEventListener("mousedown", (ev) => {
+  if (!store) return;
+  const [x, y] = clientToScene(ev);
+  for (const mp of store.motionPaths()) {
+    const i = mp.points.findIndex(([px, py]) => Math.hypot(px - x, py - y) <= HANDLE_R + 4);
+    if (i >= 0) {
+      drag = { label: mp.label, index: i, points: mp.points.map((p) => [...p] as [number, number]) };
+      playing = false;
+      playBtn.textContent = "play";
+      ev.preventDefault();
+      return;
+    }
+  }
+});
+window.addEventListener("mousemove", (ev) => {
+  if (!drag || !store) return;
+  const [x, y] = clientToScene(ev);
+  drag.points[drag.index] = [Math.round(x), Math.round(y)];
+  store.setMotionPathPoints(drag.label, drag.points);
+  draw();
+});
+window.addEventListener("mouseup", () => {
+  drag = null;
+});
 
 function tick(now: number) {
   if (playing && store) {

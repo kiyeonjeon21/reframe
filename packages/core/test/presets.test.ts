@@ -1,30 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { scene, rect, path, group } from "../src/dsl.js";
+import { scene, rect, path, group, seq, wait } from "../src/dsl.js";
 import { motionPreset, PRESET_NAMES, type PresetName, type PresetRig } from "../src/presets.js";
 import { compileScene } from "../src/compile.js";
+import { composeScene, type OverlayDoc } from "../src/compose.js";
 import { evaluate } from "../src/evaluate.js";
+import type { SceneIR, TimelineIR } from "../src/ir.js";
 
 const W = 1080;
 const H = 1080;
 const DIAG = Math.hypot(W, H);
 const RIG: PresetRig = { group: "logo", center: [540, 500], baseScale: 4, fills: ["fill-0"], inks: ["ink-0"] };
 
+function sceneOf(name: PresetName, opts: Partial<Parameters<typeof motionPreset>[1]> = {}): SceneIR {
+  return scene({
+    id: "preset",
+    size: { width: W, height: H },
+    fps: 30,
+    nodes: [
+      group({ id: "logo", x: 540, y: 500, scale: 4 }, [
+        rect({ id: "probe", x: 0, y: 0, width: 10, height: 10, fill: "#fff", opacity: 1 }),
+        path({ id: "fill-0", d: "M0 0 L10 0 L5 10 Z", originX: 5, originY: 5, x: 0, y: 0, fill: "#58A6FF", opacity: 0 }),
+        path({ id: "ink-0", d: "M0 0 L10 0 L5 10 Z", originX: 5, originY: 5, x: 0, y: 0, stroke: "#fff", strokeWidth: 0.5, progress: 0 }),
+      ]),
+    ],
+    timeline: seq(motionPreset(name, { target: RIG, ...opts }), wait(0.5, "tail")),
+  });
+}
+
 function build(name: PresetName, opts: Partial<Parameters<typeof motionPreset>[1]> = {}) {
-  return compileScene(
-    scene({
-      id: "preset",
-      size: { width: W, height: H },
-      fps: 30,
-      nodes: [
-        group({ id: "logo", x: 540, y: 500, scale: 4 }, [
-          rect({ id: "probe", x: 0, y: 0, width: 10, height: 10, fill: "#fff", opacity: 1 }),
-          path({ id: "fill-0", d: "M0 0 L10 0 L5 10 Z", originX: 5, originY: 5, x: 0, y: 0, fill: "#58A6FF", opacity: 0 }),
-          path({ id: "ink-0", d: "M0 0 L10 0 L5 10 Z", originX: 5, originY: 5, x: 0, y: 0, stroke: "#fff", strokeWidth: 0.5, progress: 0 }),
-        ]),
-      ],
-      timeline: motionPreset(name, { target: RIG, ...opts }),
-    }),
-  );
+  return compileScene(sceneOf(name, opts));
+}
+
+/** Find a labeled step (or beat by name) in a timeline tree. */
+function findStep(tl: TimelineIR, key: string): TimelineIR | undefined {
+  if (("label" in tl && tl.label === key) || (tl.kind === "beat" && tl.name === key)) return tl;
+  if ("children" in tl) {
+    for (const c of tl.children) {
+      const hit = findStep(c, key);
+      if (hit) return hit;
+    }
+  }
+  return undefined;
 }
 
 /** Sample the group's motion via the always-visible probe child. */
@@ -112,5 +128,46 @@ describe("motionPreset — seeded generator", () => {
       const fast = build(name, { speed: 2 }).duration;
       expect(fast).toBeLessThan(slow);
     }
+  });
+});
+
+describe("motionPreset — hand edits survive a knob-driven regen", () => {
+  const dragged: [number, number][] = [
+    [540, 500],
+    [120, 120],
+    [960, 120],
+    [540, 500],
+  ];
+  const overlay: OverlayDoc = {
+    reframeOverlay: 1,
+    name: "hand-edits",
+    timeline: {
+      orbit: { points: dragged }, // a dragged waypoint on the motionPath
+      "reveal-orbit": { gap: 0.4 }, // nudged beat timing
+    },
+  };
+
+  it("the waypoint + beat-timing edits apply to the authored base", () => {
+    const { ir, report } = composeScene(sceneOf("reveal-orbit", { energy: 0.3, seed: 1 }), overlay);
+    expect(report.orphans).toEqual([]);
+    const mp = findStep(ir.timeline!, "orbit") as Extract<TimelineIR, { kind: "motionPath" }>;
+    expect(mp.points).toEqual(dragged);
+  });
+
+  it("the SAME edits still apply after the base is regenerated with different knobs", () => {
+    // change energy + seed = a different base motion, but the labels are stable
+    const regenerated = sceneOf("reveal-orbit", { energy: 0.9, seed: 7 });
+    const { ir, report } = composeScene(regenerated, overlay);
+    expect(report.orphans).toEqual([]); // edits are NOT orphaned by the regen
+    const mp = findStep(ir.timeline!, "orbit") as Extract<TimelineIR, { kind: "motionPath" }>;
+    expect(mp.points).toEqual(dragged); // the hand-dragged path wins over the regenerated one
+    const beat = findStep(ir.timeline!, "reveal-orbit") as Extract<TimelineIR, { kind: "beat" }>;
+    expect(beat.gap).toBe(0.4);
+  });
+
+  it("a points patch on a non-motionPath step is rejected loudly (not silent)", () => {
+    const bad: OverlayDoc = { reframeOverlay: 1, timeline: { tail: { points: dragged } } };
+    const { report } = composeScene(sceneOf("reveal-orbit"), bad);
+    expect(report.orphans.some((o) => o.address === "timeline.tail.points")).toBe(true);
   });
 });
