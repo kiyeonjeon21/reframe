@@ -50,12 +50,9 @@ tweak in the preview.**
 
 | | |
 |---|---|
-| <img alt="Bloom" src="docs/assets/bloom.gif" width="400" /> | <img alt="Wavefield" src="docs/assets/wavefield.gif" width="400" /> |
-| [`bloom.ts`](examples/scenes/bloom.ts) — 300 dots on a golden-angle spiral: radial bloom, traveling breath wave, chromatic ripple, vortex collapse | [`wavefield.ts`](examples/scenes/wavefield.ts) — physical interference: 1,152 phase-shifted oscillators on a 32×18 grid, second ripple source joins mid-scene |
-| <img alt="Orbit" src="docs/assets/orbit.gif" width="400" /> | <img alt="Typewave" src="docs/assets/typewave.gif" width="400" /> |
-| [`orbit.ts`](examples/scenes/orbit.ts) — nested transform composition: moons orbit planets orbit a sun, the whole system tilts — three nested groups, three linear tweens | [`typewave.ts`](examples/scenes/typewave.ts) — character-level kinetic type: cascade, standing wave, shatter with spin, and a second phrase assembling from the debris |
-| <img alt="Glyph reveal" src="docs/assets/glyph-reveal.gif" width="400" /> | |
-| [`glyph-reveal.ts`](examples/scenes/glyph-reveal.ts) — the archival stop-motion format: AI-generated plates as `image` nodes, ~7fps hard cuts, push-in, camera shake, a tick per cut. Swap any plate from an overlay or batch row: `nodes.frame-3.src` | |
+| <img alt="Bloom" src="docs/assets/bloom.gif" width="400" /><br/>[`bloom.ts`](examples/scenes/bloom.ts) — 300 dots on a golden-angle spiral: radial bloom, traveling breath wave, chromatic ripple, vortex collapse | <img alt="Wavefield" src="docs/assets/wavefield.gif" width="400" /><br/>[`wavefield.ts`](examples/scenes/wavefield.ts) — physical interference: 1,152 phase-shifted oscillators on a 32×18 grid, second ripple source joins mid-scene |
+| <img alt="Orbit" src="docs/assets/orbit.gif" width="400" /><br/>[`orbit.ts`](examples/scenes/orbit.ts) — nested transform composition: moons orbit planets orbit a sun, the whole system tilts — three nested groups, three linear tweens | <img alt="Typewave" src="docs/assets/typewave.gif" width="400" /><br/>[`typewave.ts`](examples/scenes/typewave.ts) — character-level kinetic type: cascade, standing wave, shatter with spin, and a second phrase assembling from the debris |
+| <img alt="Glyph reveal" src="docs/assets/glyph-reveal.gif" width="400" /><br/>[`glyph-reveal.ts`](examples/scenes/glyph-reveal.ts) — the archival stop-motion format: AI-generated plates as `image` nodes, ~7fps hard cuts, push-in, camera shake, a tick per cut. Swap any plate from an overlay or batch row: `nodes.frame-3.src` | |
 
 ## Motion vocabulary: name a motion, don't keyframe it
 
@@ -86,6 +83,11 @@ animated sting in one command (a local file, or any of simple-icons' brands):
 ```bash
 npx tsx examples/logo-sting/generate.mts react --motion spin-forge
 ```
+
+<img alt="Six real brand logos, six motions" src="docs/assets/logo-sting.gif" width="720" />
+
+*Six real logos (React, Figma, Vercel, GitHub, Notion, Stripe), each a different
+preset, one command each. Pulled from simple-icons by slug, or drop in your own `.svg`.*
 
 ## Why not just Hyperframes / Remotion?
 
