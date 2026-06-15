@@ -128,3 +128,27 @@ VERIFIER: each op byte-identical twice + every golden byte-identical (additive).
 DONE-WHEN: ~7 ops each emit a labeled beat; addTimeline overlay verb + validation + orphan report; preview add-motion affordance + per-op knobs + trail preview; ops demonstrated on a logo AND text; an editor-added op folds to code byte-identical to its overlay render; all goldens byte-identical; pnpm test + typecheck green.
 
 OUT-OF-SCOPE: physics/inertia/throw; scroll/observer/draggable (no DOM); parametric easing beyond cubicBezier; full timeline-track GUI; autonomous AI op selection (chat co-pilot / later skill layer).
+
+---
+
+---
+
+## goal-6 condition
+
+Universal canvas editability: make ANY scene editable in the preview. Today canvas drag only grabs top-level non-group/non-line nodes, so every group-based scene (reframe-demo, the stings, the showcases) has nothing to drag — the visible text/shapes are nested children. Add: drag groups, drag nested children, add/duplicate/delete nodes — all stable-address overlay edits surviving a base regen. Unblocks "detailed work in the UI"; the floor goal-7's agent↔UI round-trip stands on. Builds on goal-5 addTimeline + the overlay/regen loop.
+
+ANCHOR (extend, don't rebuild): packages/preview/src/main.ts — mousedown drag + topLevel set: extend hit-test to (a) top-level GROUPS (x/y are scene coords → 1:1 delta) and (b) NESTED leaf children (invert the parent-accumulated matrix to map the scene delta into the child's parent space); canvas click selects under the cursor. packages/core/src/evaluate.ts — matrix stack already exists; expose nodeWorldMatrix(compiled,id,t) (pure, NO new IR). packages/preview/src/{store.ts — setNodeProp already patches any id; add addNode/duplicateNode/removeNode on the addNodes/draft.addNodes path; panel.ts — "add node ▸ text/rect/ellipse" + duplicate/delete}. packages/core/src/compose.ts — addNodes verb exists; NEW removeNodes:string[] verb (overlay-added only) + type.
+
+DECISIONS (fixed — locked by the human):
+1. The editable unit is ANY node by stable id, nested or not — NO new addressing scheme. A nested-child drag writes nodes.<childId>.x/y in the child's PARENT space (editor inverts the node's parent-accumulated matrix at the current time to convert the scene-space delta). A group drag writes nodes.<groupId>.x/y and moves the whole subtree. Same overlay verbs; more nodes become grabbable.
+2. Add-node = the existing addNodes overlay verb (complete nodes appended at root, owned by the overlay). UI offers text/rect/ellipse with sensible defaults at canvas center; the added node is then immediately draggable AND motion-addable (composes with goal-5 addTimeline).
+3. Delete is non-destructive by default. removeNodes removes only OVERLAY-ADDED nodes (the overlay owns them). Removing a BASE node is refused + reported loudly — base nodes are hidden via opacity:0, never deleted, so the overlay never silently drops the regenerated design.
+4. Additive + determinism-safe. No base scene uses addNodes/removeNodes; nodeWorldMatrix is pure math over transforms evaluate already computes. All goldens byte-identical; no render change.
+
+DELIVERABLE: 1) evaluate.ts nodeWorldMatrix(compiled,id,t), exported+tested. 2) main.ts drag for groups AND nested children (matrix inversion); click selects under cursor. 3) store.ts+panel.ts add-node (text/rect/ellipse)+duplicate+delete (overlay-added only). 4) compose.ts removeNodes verb+type. 5) reframe-demo editable end-to-end.
+
+VERIFIER: Matrix — nodeWorldMatrix on a known nested scene matches evaluate's rendered op transform for that id; inverting it lands a dragged op under the cursor within ε. Survival — a nested-child x/y edit survives a base regen by stable id (regen-contract harness). Add/delete — addNode then removeNode round-trips to an empty overlay diff; base-node removal refused+reported (not silent); goldens byte-identical. pnpm test + typecheck green.
+
+DONE-WHEN: canvas drag moves (a) a top-level group and (b) a nested leaf child, both writing stable nodes.<id> patches that survive regen; nodeWorldMatrix tested against evaluate; add-node+duplicate+delete (overlay-added only) in the panel, base-node delete refused+reported; reframe-demo editable end-to-end (nested drag + group drag + add/delete); all goldens byte-identical; pnpm test + typecheck green.
+
+OUT-OF-SCOPE: rotation/scale handles on canvas (x/y drag only); multi-select/marquee; snapping/guides/alignment; the agent↔UI file round-trip (goal-7); NL→scene .ts sketch (goal-8); editing motionPreset knobs in-preview; nested drag for line (separate gesture).

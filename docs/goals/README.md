@@ -61,16 +61,41 @@ reason to build ON this repo rather than start over.
    points (waypoints/timing) that survive a knob-driven regen. Builds on goal-2
    beats and the motionPath/path primitives. Makes motion requestable without
    canning it — the front door to "prompt → motion".
-5. **[goal-5] motion ops library + add-motion in the editor** — a GSAP-style op
-   toolkit (rotate/zoom/ken-burns/slide/fade/draw-on/pulse) for *any* node, plus
-   a new `addTimeline` overlay verb so motion can be **added** in the preview
-   (not just patched), editable and foldable to code. Builds on goal-4's vocab +
-   the preview editing loop.
+5. **[goal-5] motion ops library + add-motion in the editor** — DONE. A
+   GSAP-style op toolkit (rotate/zoom/ken-burns/slide/fade/draw-on/pulse) for
+   *any* node, plus a new `addTimeline` overlay verb so motion can be **added**
+   in the preview (not just patched), editable and foldable to code. Builds on
+   goal-4's vocab + the preview editing loop.
+6. **[goal-6] universal canvas editability** — make *any* scene editable, not
+   just leaf scenes: drag groups, drag nested children (parent-matrix
+   inversion), add/duplicate/delete nodes — all stable-address overlay edits
+   surviving regen. Today the canvas only grabs top-level leaf nodes, so every
+   group-based scene (reframe-demo, the stings) is undraggable. The floor under
+   "do detailed work easily in the UI". Builds on goal-5 + the overlay/regen
+   loop.
+
+### Planned (the "copilot" workflow — design decisions already locked)
+
+The product loop is: **NL sketch → easy UI detailing → coding-agent ↔ UI
+round-trip**. goal-6 is the UI-detailing floor. The next two are scoped but not
+yet written as full conditions; their load-bearing representations are locked
+(human-approved) so they become pure implementation when picked up:
+
+- **[goal-7] agent↔UI file round-trip** — the "copilot" usability layer.
+  *Locked decision:* **file-based autosave, no copy-paste** — the preview
+  autosaves the overlay draft to a known path; the coding agent watches it,
+  folds edits into the scene `.ts`, and the preview hot-reloads. Closes the
+  observe/fold loop without a clipboard step. Depends on goal-6.
+- **[goal-8] NL sketch → scene** — the front door. *Locked decision:*
+  **code-first** — the agent generates a scene `.ts` (deterministic, foldable
+  literals), not an overlay-only or new sketch-IR representation. A skill-layer
+  goal (LLM emits the scene), so its verifier differs from the engine goals.
 
 Order: goal-1 → goal-1.5 → goal-2 (consumes the hardened sketch); goal-3 is
 independent and lower-novelty, parallelizable by a second agent. goal-4 depends
 on goal-2 (beats) + the motionPath/path primitives — both landed. goal-5 builds
-on goal-4 + the preview editing loop (both landed).
+on goal-4 + the preview editing loop (both landed). goal-6 builds on goal-5;
+goal-7 builds on goal-6; goal-8 is the skill-layer front door (parallelizable).
 
 ## The human/agent split (read this before delegating)
 
