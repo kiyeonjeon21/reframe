@@ -83,3 +83,27 @@ VERIFIER:
 DONE-WHEN: worldcup-glyph w/ gen recipes renders identically to the hand-wired version (image plate bytes match, audio plan unchanged); two warm-cache renders byte-identical; generators-disabled uses cache, miss fails w/ hash; pnpm test + typecheck green; determinism doc updated w/ generated-asset boundary.
 
 OUT-OF-SCOPE: making model output reproducible across machines; video-clip/scene sequencing; shipping model weights.
+
+
+
+---
+
+## goal-4 condition
+
+Motion vocabulary: make motion requestable without canning it. Replace the one hard-coded sting motion with named presets that are SEEDED GENERATORS (same name → a family of distinct motions, never a clone), plus preview edit points that survive regen. Resolves two-determinisms: reproducibility kept; canned sameness killed by seeded variation, proven by the profiler. Builds on goal-2 + motionPath/path (landed).
+
+ANCHOR (extend, don't rebuild): packages/core/src/{dsl.ts — presets compose existing motionPath/beat/path/tween/stagger + back/elastic/bounce eases, NO new IR; presets.ts NEW = motionPreset(name,opts); behaviors.ts — reuse wiggle's seeded value-noise as the PRNG, never Math.random}; benchmark/harness/motion/ — profiler IS the verifier (different / same-family / energy→overshoot); packages/preview/ + compose.ts — overlay already patches node props + beat at/gap/scale/order, ADD patching a motionPath step's `points` by label + draggable waypoint handles; examples/logo-sting/ — re-author onto a preset, generate.mts --motion <name> [--energy h] [--seed n].
+
+DECISIONS (fixed — do not re-pick):
+1. A preset is a SEEDED GENERATOR, not a template. motionPreset(name,{target,energy,speed,intensity,from,seed})→TimelineIR(a beat). seed drives a deterministic PRNG perturbing waypoints/micro-timing/accents WITHIN BOUNDED RANGES. Same (name,knobs,seed)→identical IR; different seed→measurably different motion still in the same family. Load-bearing (this is what makes presets not-canned); the verifier checks it directly.
+2. Universal 2-knob + signature-1-knob. Every preset: energy(0..1 settle↔springy) + speed(duration ×) universal, + ≤2 signature knobs + seed. Fixed knob→IR map: energy→ease+overshoot; speed→beat time-scale (goal-2 scale); signature→amplitude (orbitSize/distance/spins) normalized 0..1→fixed range.
+3. A preset emits a BEAT (goal-2): steps wrap in beat(name,…) so the motion is one addressable retimable unit and the overlay/regen moat applies. beat(name,{},…)≡seq keeps it additive.
+4. Edit points = two layers on stable addresses. KNOBS are base-regeneration inputs (changing a knob re-runs the generator → new base IR), NOT overlay patches. HAND NUDGES are overlay patches surviving that regen: dragged waypoint writes timeline.<label>.points[i]; beat timing writes timeline.<beat>.{at,gap,scale}. Both address stable labels → knob regen doesn't discard them.
+
+v1 PRESET SET (6): draw-bloom, punch-in, rise-settle, slide-bank, reveal-orbit, spin-forge. (assemble needs a multi-path rig; drift-cinematic is a hold-layer — phase 2.) Each emits a seeded beat.
+
+VERIFIER: Reproducibility — (preset,knobs,seed) byte-identical twice (extend determinism.test.ts). Anti-canning (headline) — per preset render seeds 1..8 → profile each → pairwise distance in approved band [D_lo,D_hi]: >D_lo (different, not clone) AND <D_hi (same family). Knob monotonicity — energy↑→overshoot↑; speed↑→duration↓ (calibration-gate vs profiler). Additivity — goldens byte-identical; beat(name,{},…)≡seq. Edit survival — apply preset, overlay-edit a waypoint + nudge beat timing, change a knob (base regen) → both edits still apply (regen-contract harness). Preview — window.__store exposes waypoints+timing; overlay addresses resolve.
+
+DONE-WHEN: 6 presets each emit a beat; same (name,knobs,seed) byte-identical twice; ≥2 presets' 8-seed pairwise distances all in [D_lo,D_hi]; energy+speed monotonic for ≥2 presets; all goldens byte-identical + beat(name,{},…)≡seq; waypoint + beat-timing overlay edits survive a knob base regen; preview shows draggable handles emitting resolving patches; logo-sting re-authored + generate.mts --motion works on react/figma/vercel; pnpm test + typecheck green.
+
+OUT-OF-SCOPE: NL→preset selection (LLM emits {preset,knobs,seed} — skill layer, not unit-verifiable here; engine designed for it); new easing math; assemble/drift-cinematic; full timeline GUI; per-logo auto tailoring beyond knobs; changing goal-2/non-preset compilation.

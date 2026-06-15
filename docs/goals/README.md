@@ -56,9 +56,15 @@ reason to build ON this repo rather than start over.
 3. **[goal-3] asset orchestration** — turns the manual ACE-Step/Kokoro/image
    wiring (done by hand for worldcup-glyph) into declared, deterministic scene
    data.
+4. **[goal-4] motion vocabulary** — named motion presets as *seeded generators*
+   (same name → a family, never a clone; the profiler proves it) + preview edit
+   points (waypoints/timing) that survive a knob-driven regen. Builds on goal-2
+   beats and the motionPath/path primitives. Makes motion requestable without
+   canning it — the front door to "prompt → motion".
 
 Order: goal-1 → goal-1.5 → goal-2 (consumes the hardened sketch); goal-3 is
-independent and lower-novelty, parallelizable by a second agent.
+independent and lower-novelty, parallelizable by a second agent. goal-4 depends
+on goal-2 (beats) + the motionPath/path primitives — both landed.
 
 ## The human/agent split (read this before delegating)
 
