@@ -74,15 +74,22 @@ reason to build ON this repo rather than start over.
    "do detailed work easily in the UI". Builds on goal-5 + the overlay/regen
    loop.
 
-9. **[goal-9] composition — the three-graph model made real** — reframe is
-   single-scene, so "scene 간 구분" has no representation. Add a **composition**
-   layer ABOVE `SceneIR` (ordered independent scenes + transitions + cross-scene
-   audio → one deterministic mp4, each scene still renders/previews standalone),
-   extend `beat` to **own a node subset** (the intent graph; additive metadata),
-   and **surface all three graphs** in the preview (scene navigator + per-scene
-   timeline grouped by beat). The keystone that makes scene/motion/intent graphs
-   real. *Foundational — in practice sequences ahead of goal-7/8, which then
-   compose across scenes.* Builds on goals 2/3/5/6.
+9. **[goal-9] composition — the three-graph model made real** — DONE (commits
+   `53f11fc` engine+render, `efcf886` preview three-graphs, refined by
+   `8284661`/`4369309`). A **composition** layer ABOVE `SceneIR`: ordered
+   independent scenes + transitions + cross-scene audio → one deterministic mp4,
+   each scene still renders/previews/overlays standalone; `beat` **owns a node
+   subset** (the intent graph; additive metadata, `beat(name,{nodes},…)` byte-
+   identical to `beat(name,{},…)`); the preview **surfaces all three graphs**
+   (scene navigator + per-scene timeline grouped by beat). Verifier green:
+   `compileComposition` lays out scene times with transitions; `composition.test`
+   (scene independence, beat additivity, audio offset+byte-stable, survival,
+   `validateComposition`); `determinism.test` renders a 2-scene composition
+   byte-identically twice; `reframe render <composition.ts>` → one deterministic
+   mp4 + `--scene <id>` standalone. No change to single-scene evaluate/compile;
+   all goldens byte-identical. Files: `core/composeComposition.ts`,
+   `render-cli/composition.ts`, `core/test/composition.test.ts`,
+   `examples/compositions/promo.ts`.
 
 ### Planned (the "copilot" workflow — design decisions already locked)
 
