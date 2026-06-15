@@ -354,6 +354,44 @@ window.addEventListener("mouseup", () => {
   drag = null;
 });
 
+/** Distance from point p to segment a→b. */
+function distToSeg(p: [number, number], a: [number, number], b: [number, number]): number {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len2 = dx * dx + dy * dy;
+  let u = len2 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2 : 0;
+  u = Math.max(0, Math.min(1, u));
+  return Math.hypot(p[0] - (a[0] + u * dx), p[1] - (a[1] + u * dy));
+}
+
+// double-click: on a waypoint handle → remove it (keep ≥2); near a path
+// segment → insert a new waypoint there (more bends). MotionPathHelper pattern.
+canvas.addEventListener("dblclick", (ev) => {
+  if (!store) return;
+  const [x, y] = clientToScene(ev);
+  for (const mp of store.motionPaths()) {
+    const onHandle = mp.points.findIndex(([px, py]) => Math.hypot(px - x, py - y) <= HANDLE_R + 4);
+    if (onHandle >= 0) {
+      if (mp.points.length > 2) {
+        store.setMotionPathPoints(mp.label, mp.points.filter((_, i) => i !== onHandle));
+        draw();
+      }
+      ev.preventDefault();
+      return;
+    }
+    for (let i = 0; i < mp.points.length - 1; i++) {
+      if (distToSeg([x, y], mp.points[i]!, mp.points[i + 1]!) <= 14) {
+        const next = mp.points.map((p) => [...p] as [number, number]);
+        next.splice(i + 1, 0, [Math.round(x), Math.round(y)]);
+        store.setMotionPathPoints(mp.label, next);
+        draw();
+        ev.preventDefault();
+        return;
+      }
+    }
+  }
+});
+
 function tick(now: number) {
   if (playing && store) {
     t += ((now - lastTick) / 1000) * speed;

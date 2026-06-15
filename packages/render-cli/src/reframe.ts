@@ -291,7 +291,8 @@ async function main() {
     case "preview": {
       // the editor lists examples/scenes/ (repo) plus scenes found in the invoking dir
       console.log(
-        "preview: drag motionPath waypoints, drag a top-level node, or hit ✎ to reshape an ease curve.\n" +
+        "preview: drag waypoints/nodes; double-click a path to add a waypoint or a handle to remove it;\n" +
+          "         ✎ reshapes an ease curve; 'vary ×4' proposes motion variants.\n" +
           "deep-link a scene + time:  http://localhost:5173/?scene=<scene-name>&t=<seconds>",
       );
       if (PACKAGED) {
