@@ -648,6 +648,12 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
           );
           cvRow.prepend(el("label", {}, "curviness"));
           card.append(cvRow);
+          // auto-rotate: turn the node to face its direction of travel
+          const ar = el("input", { type: "checkbox" }) as HTMLInputElement;
+          ar.checked = store.motionPathAutoRotate(label);
+          ar.addEventListener("change", () => store.setAutoRotate(label, ar.checked));
+          const arRow = el("div", { class: "prop-row" }, el("label", {}, "auto-rotate"), ar);
+          card.append(arRow);
         }
         if (step.kind === "to" || step.kind === "tween") {
           const easeSelect = el("select");

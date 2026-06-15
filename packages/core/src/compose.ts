@@ -66,6 +66,7 @@ export interface OverlayDoc {
       order?: number;
       points?: [number, number][];
       curviness?: number;
+      autoRotate?: boolean;
     }
   >;
 }
@@ -263,7 +264,7 @@ function applyOverlay(
       to: ["duration", "ease", "stagger"],
       tween: ["duration", "ease"],
       wait: ["duration"],
-      motionPath: ["points", "duration", "ease", "curviness"],
+      motionPath: ["points", "duration", "ease", "curviness", "autoRotate"],
       beat: ["at", "gap", "scale", "duration", "order"],
     };
 

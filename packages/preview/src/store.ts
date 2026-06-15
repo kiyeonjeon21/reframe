@@ -46,7 +46,7 @@ export class EditorStore {
   addedOps = new Map<string, AddedOp>();
   /** Editor-authored motionPaths (a node with no motion gets one via "add move"),
    *  keyed by label — the source of truth for their draggable waypoints. */
-  addedPaths = new Map<string, { target: string; points: [number, number][]; duration: number }>();
+  addedPaths = new Map<string, { target: string; points: [number, number][]; duration: number; autoRotate?: boolean }>();
   private opSetupKeys = new Set<string>();
 
   private listeners = new Set<Listener>();
@@ -143,6 +143,30 @@ export class EditorStore {
     }
     ((this.draft.timeline ??= {})[label] ??= {}).points = points;
     this.recompose("value");
+  }
+
+  /** Toggle "rotate to face the direction of travel" on a motionPath. Routes to
+   *  the editor-added path's source, or an overlay patch on a base path. */
+  setAutoRotate(label: string, on: boolean) {
+    const added = this.addedPaths.get(label);
+    if (added) {
+      added.autoRotate = on;
+      this.regenerateOps();
+      return;
+    }
+    ((this.draft.timeline ??= {})[label] ??= {}).autoRotate = on;
+    this.recompose("structure");
+  }
+
+  /** Current autoRotate state of a motionPath (composed). */
+  motionPathAutoRotate(label: string): boolean {
+    let on = false;
+    const walk = (tl: TimelineIR) => {
+      if (tl.kind === "motionPath" && tl.label === label) on = tl.autoRotate ?? false;
+      if ("children" in tl) tl.children.forEach(walk);
+    };
+    if (this.compiled.ir.timeline) walk(this.compiled.ir.timeline);
+    return on;
   }
 
   /** Give a motionless node its first move: a 2-point path from where it sits
@@ -250,7 +274,7 @@ export class EditorStore {
       }
     }
     for (const [label, p] of this.addedPaths) {
-      frags.push({ kind: "motionPath", target: p.target, points: p.points, duration: p.duration, label });
+      frags.push({ kind: "motionPath", target: p.target, points: p.points, duration: p.duration, label, ...(p.autoRotate && { autoRotate: true }) });
     }
     if (frags.length > 0) this.draft.addTimeline = frags;
     else delete this.draft.addTimeline;
@@ -287,8 +311,8 @@ export class EditorStore {
   /** Append a fresh node of any type at scene centre; owned by the overlay.
    *  `extra` carries type-specific inputs (image `src`, path `d`/`fill`). */
   addNode(type: NodeIR["type"], extra: Record<string, unknown> = {}): string {
-    const x = Math.round(this.base.size.width / 2);
-    const y = Math.round(this.base.size.height / 2);
+    const x = extra.x !== undefined ? Math.round(Number(extra.x)) : Math.round(this.base.size.width / 2);
+    const y = extra.y !== undefined ? Math.round(Number(extra.y)) : Math.round(this.base.size.height / 2);
     const id = this.uniqueId(type);
     let node: NodeIR;
     switch (type) {

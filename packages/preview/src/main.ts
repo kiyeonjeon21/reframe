@@ -105,7 +105,8 @@ function loadSrc(src: string, dir: string): Promise<void> {
   const existing = imageLoads.get(src);
   if (images.has(src)) return Promise.resolve();
   if (existing) return existing;
-  const url = `/@fs${src.startsWith("/") ? src : `${dir}/${src}`}`;
+  // data:/http(s):/blob: URLs load directly; everything else resolves via /@fs
+  const url = /^(data:|https?:|blob:)/.test(src) ? src : `/@fs${src.startsWith("/") ? src : `${dir}/${src}`}`;
   const load = new Promise<void>((done) => {
     const img = new Image();
     img.onload = () => {
@@ -911,6 +912,35 @@ window.addEventListener("mousemove", (ev) => {
 });
 window.addEventListener("mouseup", () => {
   drag = null;
+});
+
+// drag-and-drop an image file onto the canvas → an image node at the drop point,
+// sized to the image (fit to ~half the frame), src as a data URL.
+canvas.addEventListener("dragover", (ev) => {
+  if (ev.dataTransfer?.types.includes("Files")) {
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "copy";
+  }
+});
+canvas.addEventListener("drop", (ev) => {
+  if (!store) return;
+  const file = ev.dataTransfer?.files?.[0];
+  if (!file || !file.type.startsWith("image/")) return;
+  ev.preventDefault();
+  const [x, y] = clientToScene(ev);
+  const reader = new FileReader();
+  reader.onload = () => {
+    const src = String(reader.result);
+    const img = new Image();
+    img.onload = () => {
+      const fit = Math.min(1, (store!.base.size.width * 0.5) / img.width, (store!.base.size.height * 0.5) / img.height);
+      const width = Math.round(img.width * fit);
+      const height = Math.round(img.height * fit);
+      store!.addNode("image", { src, width, height, x: Math.round(x), y: Math.round(y) });
+    };
+    img.src = src;
+  };
+  reader.readAsDataURL(file);
 });
 
 /** Distance from point p to segment a→b. */
