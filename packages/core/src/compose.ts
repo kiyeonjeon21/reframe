@@ -32,6 +32,13 @@ export interface OverlayDoc {
   /** Complete nodes appended at the scene root, owned by this overlay. */
   addNodes?: NodeIR[];
   /**
+   * Motion fragments (e.g. `motionOp(...)` beats) APPENDED to the scene
+   * timeline — composed in `par` with the base under their own beat labels, so
+   * the editor can ADD motion to a node, not just patch existing motion. A
+   * fragment whose target id is gone is skipped and reported as an orphan.
+   */
+  addTimeline?: TimelineIR[];
+  /**
    * Parameter patches on labeled timeline steps (or beats by name). Patchable
    * per kind: to -> duration/ease/stagger, tween -> duration/ease,
    * wait -> duration, motionPath -> points/duration/ease, beat ->
@@ -60,7 +67,7 @@ export interface ComposeReport {
   applied: {
     layer: string;
     address: string;
-    action: "set" | "unset" | "add-node" | "behavior-set" | "behavior-remove";
+    action: "set" | "unset" | "add-node" | "behavior-set" | "behavior-remove" | "add-timeline";
   }[];
   orphans: { layer: string; address: string; reason: string }[];
   warnings: string[];
@@ -268,6 +275,35 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
     ir.nodes.push(structuredClone(node));
     nodeById.set(node.id, node);
     applied(`addNodes.${node.id}`, "add-node");
+  }
+
+  // --- added timeline fragments (motion ops): appended in par with the base ---
+  if (overlay.addTimeline && overlay.addTimeline.length > 0) {
+    const collectTargets = (tl: TimelineIR, out: Set<string>) => {
+      if (tl.kind === "tween" || tl.kind === "motionPath") out.add(tl.target);
+      if ("children" in tl) tl.children.forEach((c) => collectTargets(c, out));
+    };
+    const valid: TimelineIR[] = [];
+    overlay.addTimeline.forEach((frag, i) => {
+      const targets = new Set<string>();
+      collectTargets(frag, targets);
+      const missing = [...targets].filter((id) => !nodeById.has(id));
+      if (missing.length > 0) {
+        orphan(`addTimeline[${i}]`, `targets unknown node(s) ${missing.join(", ")} — known ids: ${knownIds()}`);
+        return;
+      }
+      valid.push(structuredClone(frag));
+      applied(`addTimeline[${i}]`, "add-timeline");
+    });
+    if (valid.length > 0) {
+      ir.timeline = ir.timeline
+        ? { kind: "par", children: [ir.timeline, ...valid] }
+        : valid.length === 1
+          ? valid[0]!
+          : { kind: "par", children: valid };
+      delete ir.duration;
+      ir.duration = compileScene(ir).duration;
+    }
   }
 }
 

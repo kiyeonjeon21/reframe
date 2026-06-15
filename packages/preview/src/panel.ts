@@ -6,12 +6,14 @@
 
 import {
   EASE_NAMES,
+  MOTION_OPS,
   PROPS_BY_TYPE,
   isColor,
   composeScene,
   compileScene,
   evaluate,
   type CompiledScene,
+  type MotionOpName,
   type NodeIR,
   type OverlayDoc,
   type PropValue,
@@ -27,6 +29,7 @@ const RANGES: Record<string, [number, number, number]> = {
   scale: [0, 3, 0.01],
   rotation: [-360, 360, 1],
   curviness: [0, 2, 0.05],
+  amount: [0, 3, 0.1],
 };
 const ANCHORS = [
   "top-left", "top-center", "top-right",
@@ -337,6 +340,38 @@ function renderVariations(root: HTMLElement, store: EditorStore) {
   root.append(btn, grid);
 }
 
+/** "Add motion ▸ <op>" on the selected node + a list of added ops (amount + remove). */
+function renderMotionOps(root: HTMLElement, store: EditorStore) {
+  if (store.selectedId) {
+    root.append(el("h3", {}, "Add motion"));
+    const sel = el("select");
+    for (const op of MOTION_OPS) sel.append(el("option", { value: op }, op));
+    const add = el("button", { title: "add this motion to the selected node" }, "+ add");
+    add.addEventListener("click", () => store.addMotionOp(sel.value as MotionOpName, store.selectedId!));
+    root.append(el("div", { class: "prop-row" }, el("label", {}, `▸ ${store.selectedId}`), sel, add));
+  }
+  if (store.addedOps.size > 0) {
+    root.append(el("h3", {}, "Added motion"));
+    for (const [label, op] of store.addedOps) {
+      const head = el("div", {}, `${op.name} `, el("span", { class: "kind" }, `→ ${op.target}`));
+      const rm = el("button", { class: "revert", title: "remove" }, "✕");
+      rm.addEventListener("click", () => store.removeMotionOp(label));
+      head.append(rm);
+      const card = el("div", { class: "step-card" }, head);
+      const amtRow = makeControl(
+        "amount",
+        op.opts.amount ?? 1,
+        false,
+        (v) => store.setOpAmount(label, Number(v)),
+        () => undefined,
+      );
+      amtRow.prepend(el("label", {}, "amount"));
+      card.append(amtRow);
+      root.append(card);
+    }
+  }
+}
+
 export function buildPanel(store: EditorStore, root: HTMLElement) {
   let reportBox: HTMLElement | null = null;
 
@@ -365,8 +400,9 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
     dur.prepend(el("label", {}, "duration (s)"));
     root.append(dur);
 
-    // --- variations (seeded motion variants you can pick from) ---
+    // --- variations + add-motion (motion ops) ---
     renderVariations(root, store);
+    renderMotionOps(root, store);
 
     // --- node tree ---
     root.append(el("h3", {}, "Nodes"));

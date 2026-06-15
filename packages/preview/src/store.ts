@@ -8,10 +8,15 @@
 import {
   composeScene,
   compileScene,
+  motionOp,
+  motionOpLabel,
   SceneValidationError,
   type BehaviorIR,
   type CompiledScene,
   type ComposeReport,
+  type MotionOpName,
+  type MotionOpOpts,
+  type NodeIR,
   type OverlayDoc,
   type PropValue,
   type SceneIR,
@@ -20,6 +25,12 @@ import {
 
 export type ChangeKind = "value" | "structure";
 type Listener = (kind: ChangeKind) => void;
+
+interface AddedOp {
+  name: MotionOpName;
+  target: string;
+  opts: MotionOpOpts;
+}
 
 export class EditorStore {
   base: SceneIR;
@@ -30,6 +41,10 @@ export class EditorStore {
   composeError: string | null = null;
   selectedId: string | null = null;
   overlayName: string;
+  /** Motion ops added in the editor, keyed by their beat label (the source of
+   *  truth that regenerates draft.addTimeline + the ops' setup base props). */
+  addedOps = new Map<string, AddedOp>();
+  private opSetupKeys = new Set<string>();
 
   private listeners = new Set<Listener>();
 
@@ -124,6 +139,65 @@ export class EditorStore {
   setTimelineEase(label: string, bezier: [number, number, number, number]) {
     ((this.draft.timeline ??= {})[label] ??= {}).ease = { cubicBezier: bezier };
     this.recompose("value");
+  }
+
+  private findBaseNode(id: string): NodeIR | null {
+    const walk = (nodes: NodeIR[]): NodeIR | null => {
+      for (const n of nodes) {
+        if (n.id === id) return n;
+        if (n.type === "group") {
+          const hit = walk(n.children);
+          if (hit) return hit;
+        }
+      }
+      return null;
+    };
+    return walk(this.base.nodes);
+  }
+
+  /** Add a motion op to a node ("add motion ▸ <op>"). Captures the node's base
+   *  transform so scale/position ops are correct; appended via addTimeline. */
+  addMotionOp(name: MotionOpName, target: string, amount = 1) {
+    const p = (this.findBaseNode(target)?.props ?? {}) as { scale?: number; x?: number; y?: number; rotation?: number };
+    const opts: MotionOpOpts = { amount, base: { scale: p.scale ?? 1, x: p.x ?? 0, y: p.y ?? 0, rotation: p.rotation ?? 0 } };
+    this.addedOps.set(motionOpLabel(name, target), { name, target, opts });
+    this.regenerateOps();
+  }
+
+  setOpAmount(label: string, amount: number) {
+    const op = this.addedOps.get(label);
+    if (!op) return;
+    op.opts = { ...op.opts, amount };
+    this.regenerateOps();
+  }
+
+  removeMotionOp(label: string) {
+    if (this.addedOps.delete(label)) this.regenerateOps();
+  }
+
+  /** Rebuild draft.addTimeline + the ops' setup base props from addedOps. */
+  private regenerateOps() {
+    for (const k of this.opSetupKeys) {
+      const dot = k.lastIndexOf(".");
+      const id = k.slice(0, dot);
+      const prop = k.slice(dot + 1);
+      if (this.draft.nodes?.[id]) delete this.draft.nodes[id]![prop];
+    }
+    this.opSetupKeys.clear();
+    const frags: TimelineIR[] = [];
+    for (const op of this.addedOps.values()) {
+      const r = motionOp(op.name, op.target, op.opts);
+      frags.push(r.timeline);
+      for (const [id, props] of Object.entries(r.setup ?? {})) {
+        for (const [prop, val] of Object.entries(props)) {
+          ((this.draft.nodes ??= {})[id] ??= {})[prop] = val;
+          this.opSetupKeys.add(`${id}.${prop}`);
+        }
+      }
+    }
+    if (frags.length > 0) this.draft.addTimeline = frags;
+    else delete this.draft.addTimeline;
+    this.recompose("structure");
   }
 
   unsetTimelineParam(
