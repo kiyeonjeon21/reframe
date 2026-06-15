@@ -91,9 +91,16 @@ function groupRuns(runs: Run[], cols: number): Run[][] {
       const b = runs[j]!;
       const ra = rc(a.cell);
       const rb = rc(b.cell);
-      const spatial = Math.abs(ra.r - rb.r) + Math.abs(ra.c - rb.c) === 1 || a.cell === b.cell;
-      const temporal = a.p0 <= b.p1 + TEMPORAL_SLACK && b.p0 <= a.p1 + TEMPORAL_SLACK;
-      if (spatial && temporal) union(i, j);
+      const sameCell = a.cell === b.cell;
+      const adjacent = sameCell || Math.abs(ra.r - rb.r) + Math.abs(ra.c - rb.c) === 1;
+      // The generous slack bridges an intra-gesture lull (a pop's velocity-≈0
+      // peak) only within the SAME cell. Across adjacent cells it must be a
+      // single simultaneous object, so require real temporal overlap (slack 1)
+      // — otherwise closely-spaced staggered reveals in neighbouring cells
+      // would merge into one over-long event.
+      const slack = sameCell ? TEMPORAL_SLACK : 1;
+      const temporal = a.p0 <= b.p1 + slack && b.p0 <= a.p1 + slack;
+      if (adjacent && temporal) union(i, j);
     }
   }
   const groups = new Map<number, Run[]>();
