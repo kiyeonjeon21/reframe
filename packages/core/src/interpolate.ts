@@ -2,6 +2,23 @@ import type { Ease, PropValue } from "./ir.js";
 
 type EaseFn = (u: number) => number;
 
+// expressive-ease constants (GSAP / easings.net defaults)
+const BACK_C1 = 1.70158;
+const BACK_C2 = BACK_C1 * 1.525;
+const BACK_C3 = BACK_C1 + 1;
+const ELASTIC_C4 = (2 * Math.PI) / 3;
+const ELASTIC_C5 = (2 * Math.PI) / 4.5;
+
+/** Canonical 4-segment bounce; the in/inout variants are reflections of it. */
+function easeOutBounce(u: number): number {
+  const n1 = 7.5625;
+  const d1 = 2.75;
+  if (u < 1 / d1) return n1 * u * u;
+  if (u < 2 / d1) return n1 * (u -= 1.5 / d1) * u + 0.75;
+  if (u < 2.5 / d1) return n1 * (u -= 2.25 / d1) * u + 0.9375;
+  return n1 * (u -= 2.625 / d1) * u + 0.984375;
+}
+
 const EASE_TABLE: Record<string, EaseFn> = {
   linear: (u) => u,
   easeInQuad: (u) => u * u,
@@ -17,6 +34,32 @@ const EASE_TABLE: Record<string, EaseFn> = {
   easeOutExpo: (u) => (u === 1 ? 1 : 1 - 2 ** (-10 * u)),
   easeInOutExpo: (u) =>
     u === 0 ? 0 : u === 1 ? 1 : u < 0.5 ? 2 ** (20 * u - 10) / 2 : (2 - 2 ** (-20 * u + 10)) / 2,
+  // --- expressive eases (GSAP's signature feel) — standard Penner equations ---
+  // back: overshoots past the target then settles (pop / snap)
+  easeInBack: (u) => BACK_C3 * u ** 3 - BACK_C1 * u * u,
+  easeOutBack: (u) => 1 + BACK_C3 * (u - 1) ** 3 + BACK_C1 * (u - 1) ** 2,
+  easeInOutBack: (u) =>
+    u < 0.5
+      ? ((2 * u) ** 2 * ((BACK_C2 + 1) * 2 * u - BACK_C2)) / 2
+      : ((2 * u - 2) ** 2 * ((BACK_C2 + 1) * (2 * u - 2) + BACK_C2) + 2) / 2,
+  // elastic: rings around the target before settling (playful spring)
+  easeInElastic: (u) =>
+    u === 0 ? 0 : u === 1 ? 1 : -(2 ** (10 * u - 10)) * Math.sin((u * 10 - 10.75) * ELASTIC_C4),
+  easeOutElastic: (u) =>
+    u === 0 ? 0 : u === 1 ? 1 : 2 ** (-10 * u) * Math.sin((u * 10 - 0.75) * ELASTIC_C4) + 1,
+  easeInOutElastic: (u) =>
+    u === 0
+      ? 0
+      : u === 1
+        ? 1
+        : u < 0.5
+          ? -(2 ** (20 * u - 10) * Math.sin((20 * u - 11.125) * ELASTIC_C5)) / 2
+          : (2 ** (-20 * u + 10) * Math.sin((20 * u - 11.125) * ELASTIC_C5)) / 2 + 1,
+  // bounce: drops and bounces to rest (lands without overshoot)
+  easeInBounce: (u) => 1 - easeOutBounce(1 - u),
+  easeOutBounce,
+  easeInOutBounce: (u) =>
+    u < 0.5 ? (1 - easeOutBounce(1 - 2 * u)) / 2 : (1 + easeOutBounce(2 * u - 1)) / 2,
 };
 
 export const EASE_NAMES = Object.keys(EASE_TABLE) as import("./ir.js").EaseName[];

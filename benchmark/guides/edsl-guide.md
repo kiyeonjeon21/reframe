@@ -80,6 +80,11 @@ them with normal TS (`Object.fromEntries`, `.map`) for data-driven scenes.
 Eases: `linear`, `easeIn/Out/InOutQuad`, `easeIn/Out/InOutCubic`,
 `easeIn/Out/InOutQuart`, `easeIn/Out/InOutExpo`, or `{ cubicBezier: [x1,y1,x2,y2] }`.
 Decelerating entrances = `easeOut*`, accelerating exits = `easeIn*`.
+Expressive eases for a premium feel: `easeIn/Out/InOutBack` (overshoots past the
+target then settles — a pop/snap), `easeIn/Out/InOutElastic` (rings around the
+target — a playful spring), `easeIn/Out/InOutBounce` (drops and bounces to rest).
+A logo or card "popping" in usually wants `easeOutBack`; a stamp landing,
+`easeOutBounce`.
 Scene duration is inferred from the timeline.
 
 ## Behaviors: continuous motion during holds

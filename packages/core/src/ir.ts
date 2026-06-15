@@ -22,7 +22,16 @@ export type EaseName =
   | "easeInOutQuart"
   | "easeInExpo"
   | "easeOutExpo"
-  | "easeInOutExpo";
+  | "easeInOutExpo"
+  | "easeInBack"
+  | "easeOutBack"
+  | "easeInOutBack"
+  | "easeInElastic"
+  | "easeOutElastic"
+  | "easeInOutElastic"
+  | "easeInBounce"
+  | "easeOutBounce"
+  | "easeInOutBounce";
 
 export type Ease = EaseName | { cubicBezier: [number, number, number, number] };
 
