@@ -60,10 +60,11 @@ const compTimelineEl = document.getElementById("comp-timeline") as HTMLDivElemen
 let compPlayhead: HTMLDivElement | null = null;
 let compTotal = 0;
 let compStarts: number[] = []; // composition scene start times (play-all + playhead)
-// play-all: continuous playback across a composition's scenes
+// play-all: a continuous-playback MODE that draws the whole composition from
+// precompiled scenes (no editor-store swaps), blending crossfades.
 let playAll = false;
-let compT = 0; // global composition time when playing all
-let switching = false; // guards the async scene switch at a boundary
+let compT = 0; // global composition time in play-all mode
+let playCC: import("@reframe/core").CompiledComposition | null = null;
 
 let store: EditorStore | null = null;
 let panel: ReturnType<typeof buildPanel> | null = null;
@@ -96,30 +97,40 @@ const images = new Map<string, CanvasImageSource>();
 const imageLoads = new Map<string, Promise<void>>();
 let sceneDir = "";
 
+/** Load one src via /@fs (deduped); resolves when decoded or on error. */
+function loadSrc(src: string, dir: string): Promise<void> {
+  const existing = imageLoads.get(src);
+  if (images.has(src)) return Promise.resolve();
+  if (existing) return existing;
+  const url = `/@fs${src.startsWith("/") ? src : `${dir}/${src}`}`;
+  const load = new Promise<void>((done) => {
+    const img = new Image();
+    img.onload = () => {
+      images.set(src, img);
+      done();
+      draw();
+    };
+    img.onerror = () => {
+      console.warn(`image "${src}" failed to load (${url}) — rendering placeholder`);
+      done();
+    };
+    img.src = url;
+  });
+  imageLoads.set(src, load);
+  return load;
+}
+
 /** Load any not-yet-loaded srcs of the current scene via /@fs. */
 function ensureImages(): Promise<void> {
   if (!store) return Promise.resolve();
-  const pending: Promise<void>[] = [];
-  for (const src of collectImageSrcs(store.compiled.ir)) {
-    if (images.has(src) || imageLoads.has(src)) continue;
-    const url = `/@fs${src.startsWith("/") ? src : `${sceneDir}/${src}`}`;
-    const load = new Promise<void>((done) => {
-      const img = new Image();
-      img.onload = () => {
-        images.set(src, img);
-        done();
-        draw();
-      };
-      img.onerror = () => {
-        console.warn(`image "${src}" failed to load (${url}) — rendering placeholder`);
-        done();
-      };
-      img.src = url;
-    });
-    imageLoads.set(src, load);
-    pending.push(load);
-  }
-  return Promise.all(pending).then(() => undefined);
+  return Promise.all([...collectImageSrcs(store.compiled.ir)].map((s) => loadSrc(s, sceneDir))).then(() => undefined);
+}
+
+/** Preload images across every scene of a composition (for continuous play). */
+function ensureCompositionImages(cc: import("@reframe/core").CompiledComposition): Promise<void> {
+  return Promise.all(
+    cc.scenes.flatMap((p) => [...collectImageSrcs(p.scene)].map((s) => loadSrc(s, __REFRAME_EXAMPLES_DIR__))),
+  ).then(() => undefined);
 }
 
 /** Build the editor over a SceneIR (from a scene file or a composition scene). */
@@ -143,7 +154,7 @@ async function openSceneIR(ir: SceneIR, dir: string, writeUrl = true) {
   });
   await document.fonts.ready;
   await ensureImages();
-  if (!switching) t = 0;
+  t = 0;
   panel.rebuild();
   buildTimeline();
   draw();
@@ -156,7 +167,7 @@ async function openSceneIR(ir: SceneIR, dir: string, writeUrl = true) {
 
 async function loadScene(path: string) {
   activeComposition = null;
-  playAll = false;
+  leavePlayAllMode();
   playAllBtn.style.display = "none";
   compTimelineEl.classList.remove("on");
   const mod = await modules[path]!.load();
@@ -264,7 +275,7 @@ function buildTimeline() {
       active: i === activeSceneIndex,
       beat: false,
       onClick: () => {
-        stopPlayAll();
+        leavePlayAllMode();
         void openScene(i);
       },
     }));
@@ -680,21 +691,47 @@ function sceneIndexAt(T: number): number {
   return idx;
 }
 
+/** Draw one scene's frame onto the canvas at `alpha` (its own background fills
+ *  the frame, so alpha<1 cross-dissolves it over what's already drawn). */
+function drawSceneAt(compiled: import("@reframe/core").CompiledScene, localT: number, alpha: number) {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = compiled.ir.background ?? "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawDisplayList(ctx, evaluate(compiled, localT), images);
+  ctx.restore();
+}
+
+/** Render the whole composition at global time T, blending crossfades — driven
+ *  from precompiled scenes, so no editor-store swap (smooth, continuous). */
+function drawComposition(T: number) {
+  if (!playCC) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const active = playCC.scenes
+    .filter((p) => T >= p.start - 1e-6 && T < p.start + p.duration)
+    .sort((a, b) => a.start - b.start);
+  for (const p of active) {
+    // an incoming crossfade ramps 0→1 over its overlap; everything else is opaque
+    const alpha =
+      p.transition === "crossfade" && p.overlap > 0 && T < p.start + p.overlap
+        ? Math.max(0, Math.min(1, (T - p.start) / p.overlap))
+        : 1;
+    drawSceneAt(p.compiled, T - p.start, alpha);
+  }
+  if (compPlayhead) compPlayhead.style.left = `${(T / compTotal) * 100}%`;
+  scrub.value = String(compTotal ? T / compTotal : 0);
+  timeLabel.textContent = `${T.toFixed(3)} / ${compTotal.toFixed(3)}`;
+}
+
 function tick(now: number) {
   const dt = (now - lastTick) / 1000;
-  if (playing && playAll && activeComposition && store && !switching) {
-    // continuous playback across scenes: advance global time, switch at boundaries
-    compT += dt * speed;
-    if (compT >= compTotal) compT = 0;
-    const idx = sceneIndexAt(compT);
-    if (idx !== activeSceneIndex) {
-      switching = true;
-      void openScene(idx).then(() => {
-        switching = false;
-      });
-    } else {
-      t = compT - (compStarts[activeSceneIndex] ?? 0);
-      draw();
+  if (playAll && playCC) {
+    if (playing) {
+      compT += dt * speed;
+      if (compT >= compTotal) compT = 0; // loop the whole composition
+      drawComposition(compT);
     }
   } else if (playing && store) {
     t += dt * speed;
@@ -708,29 +745,51 @@ function tick(now: number) {
 }
 requestAnimationFrame(tick);
 
-function stopPlayAll() {
-  if (!playAll) return;
+/** Enter continuous-play mode: precompile every scene, preload images, drive
+ *  the canvas globally. The editor store is left frozen until we exit. */
+async function enterPlayAll() {
+  if (!activeComposition) return;
+  playCC = compileComposition(activeComposition);
+  compTotal = playCC.duration || 1;
+  compStarts = playCC.scenes.map((p) => p.start);
+  compT = (compStarts[activeSceneIndex] ?? 0) + t; // continue from where we are
+  const size = playCC.scenes[0]!.compiled.ir.size;
+  canvas.width = size.width;
+  canvas.height = size.height;
+  await ensureCompositionImages(playCC);
+  playAll = true;
+  playing = true;
+  playAllBtn.classList.add("on");
+  playAllBtn.textContent = "stop all";
+  playBtn.textContent = "pause";
+  drawComposition(compT);
+}
+
+/** Leave continuous-play mode WITHOUT opening a scene (caller opens one). */
+function leavePlayAllMode() {
   playAll = false;
   playing = false;
+  playCC = null;
   playAllBtn.classList.remove("on");
   playAllBtn.textContent = "play all";
   playBtn.textContent = "play";
 }
 
+/** Exit to the editor at the current global time (open the scene under T). */
+async function exitPlayAll() {
+  if (!playAll) return;
+  const T = compT;
+  const idx = sceneIndexAt(T);
+  leavePlayAllMode();
+  await openScene(idx);
+  if (store) t = Math.max(0, Math.min(T - (compStarts[idx] ?? 0), store.compiled.duration));
+  draw();
+}
+
 playAllBtn.addEventListener("click", () => {
   if (!activeComposition) return;
-  playAll = !playAll;
-  playAllBtn.classList.toggle("on", playAll);
-  if (playAll) {
-    compT = (compStarts[activeSceneIndex] ?? 0) + t; // continue from where we are
-    playing = true;
-    playBtn.textContent = "pause";
-    playAllBtn.textContent = "stop all";
-  } else {
-    playing = false;
-    playBtn.textContent = "play";
-    playAllBtn.textContent = "play all";
-  }
+  if (playAll) void exitPlayAll();
+  else void enterPlayAll();
 });
 
 /** Position the loop-range band over the scrubber. */
@@ -792,8 +851,15 @@ playBtn.addEventListener("click", () => {
 });
 
 scrub.addEventListener("input", () => {
+  // in play-all the scrubber spans the whole composition (global time)
+  if (playAll && playCC) {
+    playing = false;
+    playBtn.textContent = "play";
+    compT = Number(scrub.value) * compTotal;
+    drawComposition(compT);
+    return;
+  }
   if (!store) return;
-  stopPlayAll();
   playing = false;
   playBtn.textContent = "play";
   t = Number(scrub.value) * store.compiled.duration;
