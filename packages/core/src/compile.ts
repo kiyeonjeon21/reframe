@@ -37,11 +37,49 @@ export interface CompiledScene {
   nodeById: Map<string, NodeIR>;
   /** Declaration order — defines stagger order. */
   nodeOrder: string[];
-  /** Absolute [start, end] of every labeled timeline step. */
+  /** Absolute [start, end] of every labeled timeline step (beat names included). */
   labelTimes: Map<string, LabelSpan>;
+  /** The subset of label spans that come from beat nodes — keyed by beat name. */
+  beatTimes: Map<string, LabelSpan>;
 }
 
 const key = (target: string, prop: string) => `${target}.${prop}`;
+
+/** Deep time-stretch: multiply every duration/interval/offset by k. Used to
+ * realise a beat's `scale`/`duration` without threading scale through the walk. */
+function scaleTimeline(tl: TimelineIR, k: number): TimelineIR {
+  switch (tl.kind) {
+    case "seq":
+    case "par":
+      return { ...tl, children: tl.children.map((c) => scaleTimeline(c, k)) };
+    case "stagger":
+      return { ...tl, interval: tl.interval * k, children: tl.children.map((c) => scaleTimeline(c, k)) };
+    case "wait":
+      return { ...tl, duration: tl.duration * k };
+    case "tween":
+      return { ...tl, duration: (tl.duration ?? DEFAULT_TWEEN_DURATION) * k };
+    case "to":
+      return {
+        ...tl,
+        duration: (tl.duration ?? DEFAULT_TO_DURATION) * k,
+        ...(tl.stagger !== undefined && { stagger: tl.stagger * k }),
+      };
+    case "beat":
+      return {
+        ...tl,
+        children: tl.children.map((c) => scaleTimeline(c, k)),
+        ...(tl.gap !== undefined && { gap: tl.gap * k }),
+      };
+  }
+}
+
+/** Stable reorder of a seq's beat children by their `order` (default = index). */
+function orderBeats(children: TimelineIR[]): TimelineIR[] {
+  return children
+    .map((c, i) => ({ c, i, key: c.kind === "beat" && c.order !== undefined ? c.order : i }))
+    .sort((a, b) => a.key - b.key || a.i - b.i)
+    .map((x) => x.c);
+}
 
 export function compileScene(ir: SceneIR): CompiledScene {
   const nodeById = new Map<string, NodeIR>();
@@ -93,6 +131,50 @@ export function compileScene(ir: SceneIR): CompiledScene {
   };
 
   const labelTimes = new Map<string, LabelSpan>();
+  const beatTimes = new Map<string, LabelSpan>();
+
+  /** Side-effect-free duration of a subtree (mirrors walkInner timing). */
+  const durationOf = (tl: TimelineIR, start: number): number => {
+    switch (tl.kind) {
+      case "seq": {
+        let t = start;
+        for (const child of orderBeats(tl.children)) t = durationOf(child, t);
+        return t;
+      }
+      case "par": {
+        let end = start;
+        for (const child of tl.children) end = Math.max(end, durationOf(child, start));
+        return end;
+      }
+      case "stagger": {
+        let end = start;
+        tl.children.forEach((child, i) => {
+          end = Math.max(end, durationOf(child, start + i * tl.interval));
+        });
+        return end;
+      }
+      case "wait":
+        return start + tl.duration;
+      case "tween":
+        return start + (tl.duration ?? DEFAULT_TWEEN_DURATION);
+      case "to": {
+        const override = ir.states?.[tl.state] ?? {};
+        const duration = tl.duration ?? DEFAULT_TO_DURATION;
+        const si = tl.stagger ?? 0;
+        const targets = nodeOrder.filter(
+          (id) => id in override && (tl.filter === undefined || tl.filter.includes(id)),
+        );
+        return start + duration + Math.max(0, targets.length - 1) * si;
+      }
+      case "beat": {
+        const grouping: TimelineIR = { kind: tl.parallel ? "par" : "seq", children: tl.children };
+        const natural = durationOf(grouping, 0);
+        const k = tl.scale ?? (tl.duration !== undefined ? tl.duration / Math.max(1e-9, natural) : 1);
+        const beatStart = tl.at ?? start + (tl.gap ?? 0);
+        return beatStart + k * natural;
+      }
+    }
+  };
 
   /** Walks a timeline node starting at `start`, returns its end time. */
   const walk = (tl: TimelineIR, start: number): number => {
@@ -105,8 +187,19 @@ export function compileScene(ir: SceneIR): CompiledScene {
     switch (tl.kind) {
       case "seq": {
         let t = start;
-        for (const child of tl.children) t = walk(child, t);
+        for (const child of orderBeats(tl.children)) t = walk(child, t);
         return t;
+      }
+      case "beat": {
+        // lower to the grouping, time-stretch the interior, place rigidly
+        const grouping: TimelineIR = { kind: tl.parallel ? "par" : "seq", children: tl.children };
+        const k = tl.scale ?? (tl.duration !== undefined ? tl.duration / Math.max(1e-9, durationOf(grouping, 0)) : 1);
+        const inner = k === 1 ? grouping : scaleTimeline(grouping, k);
+        const beatStart = tl.at ?? start + (tl.gap ?? 0);
+        const end = walk(inner, beatStart);
+        beatTimes.set(tl.name, { t0: beatStart, t1: end });
+        labelTimes.set(tl.name, { t0: beatStart, t1: end });
+        return end;
       }
       case "par": {
         let end = start;
@@ -175,5 +268,6 @@ export function compileScene(ir: SceneIR): CompiledScene {
     nodeById,
     nodeOrder,
     labelTimes,
+    beatTimes,
   };
 }

@@ -110,6 +110,21 @@ export function validateScene(ir: SceneIR): void {
       case "wait":
         if (tl.duration < 0) problems.push(`${path}: wait duration must be >= 0`);
         break;
+      case "beat":
+        if (labels.has(tl.name)) {
+          problems.push(
+            `${path}: duplicate timeline label "${tl.name}" (beat name) — labels are overlay addresses and must be unique`,
+          );
+        }
+        labels.add(tl.name);
+        if (tl.duration !== undefined && tl.duration <= 0) {
+          problems.push(`${path}: beat "${tl.name}" duration must be > 0`);
+        }
+        if (tl.scale !== undefined && tl.scale <= 0) {
+          problems.push(`${path}: beat "${tl.name}" scale must be > 0`);
+        }
+        tl.children.forEach((c, i) => checkTimeline(c, `${path}.beat(${tl.name})[${i}]`));
+        break;
     }
   };
   if (ir.timeline) checkTimeline(ir.timeline, "timeline");

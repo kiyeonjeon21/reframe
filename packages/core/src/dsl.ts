@@ -89,6 +89,25 @@ export function stagger(interval: number, ...children: TimelineIR[]): TimelineIR
   return { kind: "stagger", interval, children };
 }
 
+export interface BeatOpts {
+  /** Group children in parallel instead of sequence. */
+  parallel?: boolean;
+  /** Absolute start (rigid placement). */
+  at?: number;
+  /** Relative shift before the beat. */
+  gap?: number;
+  /** Interior time-stretch factor. */
+  scale?: number;
+  /** Target total duration (→ scale). */
+  duration?: number;
+  /** Sort key within a parent seq (reorder). */
+  order?: number;
+}
+
+export function beat(name: string, opts: BeatOpts, children: TimelineIR[]): TimelineIR {
+  return { kind: "beat", name, children, ...opts };
+}
+
 export function to(
   state: string,
   opts: { duration?: number; ease?: Ease; stagger?: number; filter?: string[]; label?: string } = {},

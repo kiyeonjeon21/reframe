@@ -148,7 +148,31 @@ export type TimelineIR =
       ease?: Ease;
       label?: string;
     }
-  | { kind: "wait"; duration: number; label?: string };
+  | { kind: "wait"; duration: number; label?: string }
+  | {
+      /**
+       * A named, retimable, reorderable span wrapping timeline steps — the
+       * semantic unit ("brand-reveal", "feature-cascade") humans and AI revise.
+       * Lowers to its grouping (seq, or par if `parallel`) before timing, so
+       * `beat(name, {}, children)` is byte-identical to `seq(children)`.
+       * Ops are RIGID: they translate/stretch the whole span, preserving the
+       * interior's relative timing (so sub-beat overlay edits survive a move).
+       */
+      kind: "beat";
+      name: string;
+      parallel?: boolean;
+      /** Absolute start (rigid placement). Overrides sequential flow. */
+      at?: number;
+      /** Relative shift: a leading delay before the beat (and everything after). */
+      gap?: number;
+      /** Interior time-stretch factor (every child offset and duration ×scale). */
+      scale?: number;
+      /** Target total duration → scale = duration / natural duration. */
+      duration?: number;
+      /** Sort key within a parent seq (reorder); default = declaration index. */
+      order?: number;
+      children: TimelineIR[];
+    };
 
 export interface BehaviorIR {
   target: string;

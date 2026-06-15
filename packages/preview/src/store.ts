@@ -91,12 +91,19 @@ export class EditorStore {
     this.recompose("structure");
   }
 
-  setTimelineParam(label: string, key: "duration" | "ease" | "stagger", value: number | string) {
+  setTimelineParam(
+    label: string,
+    key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order",
+    value: number | string,
+  ) {
     ((this.draft.timeline ??= {})[label] ??= {})[key] = value as never;
     this.recompose("value");
   }
 
-  unsetTimelineParam(label: string, key: "duration" | "ease" | "stagger") {
+  unsetTimelineParam(
+    label: string,
+    key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order",
+  ) {
     delete this.draft.timeline?.[label]?.[key];
     this.prune();
     this.recompose("structure");

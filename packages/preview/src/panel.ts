@@ -200,6 +200,39 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
       }
     }
 
+    // --- beats (semantic groups) ---
+    const beats: Extract<TimelineIR, { kind: "beat" }>[] = [];
+    const beatOf = new Map<string, string>();
+    const walkBeats = (tl: TimelineIR, owner?: string) => {
+      if (tl.kind === "beat") {
+        beats.push(tl);
+        tl.children.forEach((c) => walkBeats(c, tl.name));
+        return;
+      }
+      if ("label" in tl && tl.label !== undefined && owner) beatOf.set(tl.label, owner);
+      if ("children" in tl) tl.children.forEach((c) => walkBeats(c, owner));
+    };
+    if (ir.timeline) walkBeats(ir.timeline);
+    if (beats.length > 0) {
+      root.append(el("h3", {}, "Beats"));
+      for (const b of beats) {
+        const card = el("div", { class: "step-card beat-card" },
+          el("div", {}, `${b.name} `, el("span", { class: "kind" }, "(beat)")),
+        );
+        const gapRow = makeControl("gap", b.gap ?? 0, store.hasTimelineEdit(b.name, "gap"),
+          (v) => store.setTimelineParam(b.name, "gap", Number(v)),
+          () => store.unsetTimelineParam(b.name, "gap"));
+        gapRow.prepend(el("label", {}, "gap"));
+        card.append(gapRow);
+        const scaleRow = makeControl("scale", b.scale ?? 1, store.hasTimelineEdit(b.name, "scale"),
+          (v) => store.setTimelineParam(b.name, "scale", Number(v)),
+          () => store.unsetTimelineParam(b.name, "scale"));
+        scaleRow.prepend(el("label", {}, "scale"));
+        card.append(scaleRow);
+        root.append(card);
+      }
+    }
+
     // --- labeled timeline steps ---
     const steps: Extract<TimelineIR, { label?: string }>[] = [];
     const walkTl = (tl: TimelineIR) => {
@@ -211,9 +244,10 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
       root.append(el("h3", {}, "Timeline"));
       for (const step of steps) {
         const label = step.label!;
-        const card = el("div", { class: "step-card" },
-          el("div", {}, `${label} `, el("span", { class: "kind" }, `(${step.kind})`)),
-        );
+        const beatName = beatOf.get(label);
+        const head = el("div", {}, `${label} `, el("span", { class: "kind" }, `(${step.kind})`));
+        if (beatName) head.append(el("span", { class: "badge" }, ` ↳ ${beatName}`));
+        const card = el("div", { class: "step-card" }, head);
         const durRow = makeControl(
           "duration",
           "duration" in step ? (step.duration ?? 0.5) : 0.5,

@@ -7,6 +7,7 @@ import {
   text,
   seq,
   par,
+  beat,
   stagger,
   tween,
   wait,
@@ -126,7 +127,7 @@ export default scene({
 
   timeline: par(
     // ----- chapter 1: logo sting -----
-    seq(
+    beat("ch1-logo", {}, [seq(
       wait(0.2),
       par(
         tween("disc", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutExpo", label: "logo-in" }),
@@ -139,10 +140,10 @@ export default scene({
         tween("lockup", { opacity: 0 }, { duration: 0.5, ease: "easeInQuad" }),
         tween("lockup", { scale: 0.96 }, { duration: 0.5, ease: "easeInCubic" }),
       ),
-    ),
+    )]),
 
     // ----- chapter 2: AI writes the scene -----
-    seq(
+    beat("ch2-code", {}, [seq(
       wait(CH.ch2),
       tween("g2", { opacity: 1, y: 0 }, { duration: 0.5, ease: "easeOutCubic", label: "ch2-in" }),
       stagger(0.22, ...CODE_LINES.map((_, i) => tween(`code-${i}`, { opacity: 1 }, { duration: 0.3, ease: "easeOutQuad" }))),
@@ -152,10 +153,10 @@ export default scene({
       ),
       wait(CH.ch3 - CH.ch2 - 0.5 - 6 * 0.22 - 0.3 - 0.7 - 0.4),
       tween("g2", { opacity: 0 }, { duration: 0.4, ease: "easeInQuad" }),
-    ),
+    )]),
 
     // ----- chapter 3: knobs (the card persists and reacts) -----
-    seq(
+    beat("ch3-knobs", {}, [seq(
       wait(CH.ch3),
       tween("g3", { opacity: 1, y: 0 }, { duration: 0.5, ease: "easeOutCubic", label: "ch3-in" }),
       wait(0.4),
@@ -174,10 +175,10 @@ export default scene({
       tween("miniWm", { opacity: 1 }, { duration: 0.4, ease: "easeOutQuad" }),
       wait(CH.ch4 - CH.ch3 - 0.5 - 0.4 - 1.0 - 0.3 - 0.8 - 0.3 - 0.4 - 0.8),
       tween("g3", { opacity: 0 }, { duration: 0.4, ease: "easeInQuad" }),
-    ),
+    )]),
 
     // ----- chapter 4: redesign + survival -----
-    seq(
+    beat("ch4-survival", {}, [seq(
       wait(CH.ch4),
       tween("g4", { opacity: 1, y: 0 }, { duration: 0.5, ease: "easeOutCubic", label: "ch4-in" }),
       // the AI's "redesign": the card's internals rearrange…
@@ -201,10 +202,10 @@ export default scene({
         tween("g4", { opacity: 0 }, { duration: 0.4, ease: "easeInQuad" }),
         tween("card", { opacity: 0, y: 630 }, { duration: 0.5, ease: "easeInCubic" }),
       ),
-    ),
+    )]),
 
     // ----- chapter 5: batch -----
-    seq(
+    beat("ch5-batch", {}, [seq(
       wait(CH.ch5),
       tween("g5", { opacity: 1 }, { duration: 0.5, ease: "easeOutCubic", label: "ch5-in" }),
       stagger(
@@ -221,10 +222,10 @@ export default scene({
         tween("g5", { opacity: 0 }, { duration: 0.4, ease: "easeInQuad" }),
         ...MINIS.map((m) => tween(m.id, { opacity: 0 }, { duration: 0.4, ease: "easeInQuad" })),
       ),
-    ),
+    )]),
 
     // ----- chapter 6: close -----
-    seq(
+    beat("ch6-close", {}, [seq(
       wait(CH.ch6),
       par(
         tween("lockup", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutExpo", label: "close-in" }),
@@ -233,7 +234,7 @@ export default scene({
       ),
       wait(CH.end - CH.ch6 - 0.7 - 0.8),
       tween("lockup", { opacity: 0 }, { duration: 0.7, ease: "easeInQuad" }),
-    ),
+    )]),
   ),
 
   behaviors: [

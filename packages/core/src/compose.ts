@@ -32,10 +32,16 @@ export interface OverlayDoc {
   /** Complete nodes appended at the scene root, owned by this overlay. */
   addNodes?: NodeIR[];
   /**
-   * Parameter patches on labeled timeline steps. Patchable per kind:
-   * to -> duration/ease/stagger, tween -> duration/ease, wait -> duration.
+   * Parameter patches on labeled timeline steps (or beats by name). Patchable
+   * per kind: to -> duration/ease/stagger, tween -> duration/ease,
+   * wait -> duration, beat -> at/gap/scale/duration/order. A beat move is
+   * rigid, so child labels inside it keep their relative timing and any
+   * overlay edits on those children survive.
    */
-  timeline?: Record<string, { duration?: number; ease?: Ease; stagger?: number }>;
+  timeline?: Record<
+    string,
+    { duration?: number; ease?: Ease; stagger?: number; at?: number; gap?: number; scale?: number; order?: number }
+  >;
 }
 
 export interface ComposeReport {
@@ -198,6 +204,7 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
     const byLabel = new Map<string, TimelineIR>();
     const walkTimeline = (tl: TimelineIR) => {
       if ("label" in tl && tl.label !== undefined) byLabel.set(tl.label, tl);
+      if (tl.kind === "beat") byLabel.set(tl.name, tl); // beats addressed by name
       if ("children" in tl) tl.children.forEach(walkTimeline);
     };
     if (ir.timeline) walkTimeline(ir.timeline);
@@ -206,6 +213,7 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
       to: ["duration", "ease", "stagger"],
       tween: ["duration", "ease"],
       wait: ["duration"],
+      beat: ["at", "gap", "scale", "duration", "order"],
     };
 
     let timingPatched = false;
@@ -230,7 +238,7 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
         }
         (step as unknown as Record<string, unknown>)[key] = value;
         applied(`timeline.${label}.${key}`, "set");
-        if (key === "duration" || key === "stagger") timingPatched = true;
+        if (["duration", "stagger", "at", "gap", "scale", "order"].includes(key)) timingPatched = true;
       }
     }
     // scene() bakes the inferred duration into ir.duration, so a patched step
