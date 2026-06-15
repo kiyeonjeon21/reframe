@@ -1,0 +1,4 @@
+# generator intermediates / per-user output (regenerate with generate.mts)
+_gen.ts
+_avatar-*-raw.png
+assets/avatar-*.png
