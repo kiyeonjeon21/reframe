@@ -38,6 +38,10 @@ function opPoints(op: DisplayOp): OpPoints {
     case "image":
       local = [op.offsetX, op.offsetY, op.width, op.height];
       break;
+    case "path":
+      // No bbox for an arbitrary `d`; treat the origin as a zero-area point.
+      local = [0, 0, 0, 0];
+      break;
     case "line": {
       const points: [number, number][] = [
         apply(op.transform, op.x1, op.y1),

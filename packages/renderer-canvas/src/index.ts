@@ -115,6 +115,32 @@ export function drawDisplayList(
         }
         break;
       }
+      case "path": {
+        const p = new Path2D(op.d);
+        if (op.fill) {
+          ctx.fillStyle = op.fill;
+          ctx.fill(p);
+        }
+        if (op.stroke && (op.strokeWidth ?? 1) > 0) {
+          ctx.strokeStyle = op.stroke;
+          ctx.lineWidth = op.strokeWidth ?? 1;
+          ctx.lineJoin = "round";
+          ctx.lineCap = "round";
+          if (op.progress < 1) {
+            // draw-on: dash the whole outline as one [len, len] pattern and slide
+            // the gap off. Needs the total length, which only an SVG element
+            // exposes (browser-only); without it, draw the full stroke.
+            const len = pathLength(op.d);
+            if (len > 0) {
+              ctx.setLineDash([len, len]);
+              ctx.lineDashOffset = len * (1 - op.progress);
+            }
+          }
+          ctx.stroke(p);
+          ctx.setLineDash([]);
+        }
+        break;
+      }
       case "text": {
         ctx.font = `${op.fontWeight} ${op.fontSize}px ${quoteFamily(op.fontFamily)}`;
         if (op.letterSpacing) ctx.letterSpacing = `${op.letterSpacing}px`;
@@ -132,6 +158,22 @@ export function drawDisplayList(
 
 function quoteFamily(family: string): string {
   return family.includes(" ") && !family.includes('"') ? `"${family}"` : family;
+}
+
+/** Total length of an SVG path `d`, cached. Browser-only (uses an SVG element);
+ * returns 0 elsewhere so draw-on degrades to a full stroke instead of throwing. */
+const pathLengthCache = new Map<string, number>();
+function pathLength(d: string): number {
+  const hit = pathLengthCache.get(d);
+  if (hit !== undefined) return hit;
+  let len = 0;
+  if (typeof document !== "undefined") {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    el.setAttribute("d", d);
+    len = el.getTotalLength();
+  }
+  pathLengthCache.set(d, len);
+  return len;
 }
 
 export type { SceneIR };

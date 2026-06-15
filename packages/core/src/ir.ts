@@ -104,6 +104,27 @@ export interface TextProps extends BaseProps {
 
 export interface GroupProps extends BaseProps {}
 
+export interface PathProps extends BaseProps {
+  /** SVG path data (the `d` attribute). Drawn as a true vector — crisp at any zoom. */
+  d: string;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  /**
+   * 0..1 — fraction of the OUTLINE drawn, for a self-drawing "draw-on" effect
+   * (animate 0→1). Applies to the stroke; pair a stroke path (draw-on) with a
+   * separate fill path (fade-in) for the classic logo reveal. Default 1.
+   */
+  progress?: number;
+  /**
+   * Local pivot in the path's own coordinate space — scale/rotation happen
+   * around this point. Set it to the art's centre (e.g. the viewBox centre) so
+   * a logo zooms/spins about its middle. Default (0,0).
+   */
+  originX?: number;
+  originY?: number;
+}
+
 export interface ImageProps extends BaseProps {
   /**
    * Image file path: absolute, or relative to the scene file. Drawn
@@ -122,6 +143,7 @@ export type NodeIR =
   | { type: "line"; id: string; props: LineProps }
   | { type: "text"; id: string; props: TextProps }
   | { type: "image"; id: string; props: ImageProps }
+  | { type: "path"; id: string; props: PathProps }
   | { type: "group"; id: string; props: GroupProps; children: NodeIR[] };
 
 export type PropValue = number | string;

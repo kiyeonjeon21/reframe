@@ -12,6 +12,7 @@ import type {
   ImageProps,
   LineProps,
   NodeIR,
+  PathProps,
   PropValue,
   RectProps,
   SceneIR,
@@ -70,6 +71,11 @@ export function text(props: { id: string } & TextProps): NodeIR {
 export function image(props: { id: string } & ImageProps): NodeIR {
   const { id, ...rest } = props;
   return { type: "image", id, props: rest };
+}
+
+export function path(props: { id: string } & PathProps): NodeIR {
+  const { id, ...rest } = props;
+  return { type: "path", id, props: rest };
 }
 
 export function group(props: { id: string } & GroupProps, children: NodeIR[]): NodeIR {

@@ -134,6 +134,9 @@ function opCorners(op: DisplayOp): [number, number][] {
         applyMat(op.transform, px!, py!),
       );
     }
+    case "path":
+      // No cheap bbox for an arbitrary `d`; mark the origin for selection.
+      return [applyMat(op.transform, 0, 0)];
   }
 }
 

@@ -34,6 +34,13 @@ Factories return plain data. Every node needs a unique `id`.
   `content` may be a number; numeric content interpolates (count-up) and renders
   via `toFixed(contentDecimals ?? 0)`. For a "8.2"-style label, set
   `contentDecimals: 1`.
+- `path({ id, d, x, y, fill?, stroke?, strokeWidth?, progress?, originX?, originY?, opacity?, rotation?, scale?, anchor? })` —
+  a true vector shape from an SVG path `d` string (crisp at any zoom; recolour by
+  animating `fill`/`stroke`). `progress` 0..1 draws the stroke OUTLINE on (animate
+  0→1 for a self-drawing logo). `originX`/`originY` is the local pivot — set it to
+  the art's centre (e.g. the viewBox centre) so `scale`/`rotation` happen about the
+  middle. `d` is drawn in its own coords; `x`/`y` place that pivot. Classic logo
+  reveal: a stroke path drawing on, then a fill path fading in over it.
 - `image({ id, src, x, y, width, height, opacity?, rotation?, scale?, anchor? })` —
   `src` is a file path, absolute or relative to the scene file; drawn stretched
   to `width`×`height` (png/jpg/webp). `src` switches discretely (no crossfade) —

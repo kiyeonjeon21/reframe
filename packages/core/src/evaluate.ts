@@ -75,6 +75,16 @@ export type DisplayOp =
       height: number;
       offsetX: number;
       offsetY: number;
+    })
+  | (OpBase & {
+      type: "path";
+      /** SVG path data, drawn via Path2D. */
+      d: string;
+      /** 0..1 fraction of the stroke outline drawn (draw-on). */
+      progress: number;
+      fill?: string;
+      stroke?: string;
+      strokeWidth?: number;
     });
 
 export type DisplayList = DisplayOp[];
@@ -270,6 +280,25 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           height,
           offsetX: -width * ax,
           offsetY: -height * ay,
+        });
+        return;
+      }
+      case "path": {
+        // d is drawn in its own coords; shift by -origin so scale/rotation
+        // (already in `matrix`) pivot around the art's centre, not (0,0).
+        const ox = num(id, "originX", node.props.originX ?? 0);
+        const oy = num(id, "originY", node.props.originY ?? 0);
+        const fill = opt(id, "fill", node.props.fill);
+        const stroke = opt(id, "stroke", node.props.stroke);
+        ops.push({
+          type: "path",
+          id,
+          transform: ox === 0 && oy === 0 ? matrix : multiply(matrix, [1, 0, 0, 1, -ox, -oy]),
+          opacity,
+          d: str(id, "d", node.props.d),
+          progress: Math.max(0, Math.min(1, num(id, "progress", node.props.progress ?? 1))),
+          ...(fill !== undefined && { fill }),
+          ...(stroke !== undefined && { stroke, strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1) }),
         });
         return;
       }
