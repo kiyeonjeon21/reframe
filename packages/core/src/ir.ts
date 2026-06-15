@@ -102,7 +102,19 @@ export interface TextProps extends BaseProps {
   letterSpacing?: number;
 }
 
-export interface GroupProps extends BaseProps {}
+/**
+ * A clip region (in a group's local coordinate space) that masks its children —
+ * e.g. a rounded-rect phone screen so content inside stays within it. A rect
+ * with `radius` covers most cases; ellipse is a bonus.
+ */
+export type ClipShape =
+  | { kind: "rect"; x: number; y: number; width: number; height: number; radius?: number }
+  | { kind: "ellipse"; x: number; y: number; width: number; height: number };
+
+export interface GroupProps extends BaseProps {
+  /** Clip the group's children to this shape (group-local coords). */
+  clip?: ClipShape;
+}
 
 export interface PathProps extends BaseProps {
   /** SVG path data (the `d` attribute). Drawn as a true vector — crisp at any zoom. */

@@ -30,6 +30,7 @@ export {
   type DisplayList,
   type DisplayOp,
   type Mat2D,
+  type ClipRegion,
   type TextAlign,
   type TextBaseline,
 } from "./evaluate.js";

@@ -34,7 +34,18 @@ export function validateScene(ir: SceneIR): void {
         problems.push(`duplicate node id "${node.id}" — every node id must be unique`);
       }
       nodeById.set(node.id, node);
-      if (node.type === "group") collect(node.children);
+      if (node.type === "group") {
+        const clip = node.props.clip;
+        if (clip) {
+          if (clip.kind !== "rect" && clip.kind !== "ellipse") {
+            problems.push(`group "${node.id}" clip: unknown kind "${(clip as { kind: string }).kind}" — use "rect" or "ellipse"`);
+          }
+          if (!(clip.width > 0) || !(clip.height > 0)) {
+            problems.push(`group "${node.id}" clip: width and height must be > 0`);
+          }
+        }
+        collect(node.children);
+      }
     }
   };
   collect(ir.nodes);

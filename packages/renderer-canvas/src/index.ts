@@ -40,6 +40,22 @@ export function drawDisplayList(
 ): void {
   for (const op of ops) {
     ctx.save();
+    // ancestor-group clips: each in its own space, intersected before the op draws
+    if (op.clips) {
+      for (const clip of op.clips) {
+        ctx.setTransform(...clip.transform);
+        ctx.beginPath();
+        const { shape } = clip;
+        if (shape.kind === "ellipse") {
+          ctx.ellipse(shape.x + shape.width / 2, shape.y + shape.height / 2, Math.abs(shape.width / 2), Math.abs(shape.height / 2), 0, 0, Math.PI * 2);
+        } else if (shape.radius && shape.radius > 0) {
+          ctx.roundRect(shape.x, shape.y, shape.width, shape.height, shape.radius);
+        } else {
+          ctx.rect(shape.x, shape.y, shape.width, shape.height);
+        }
+        ctx.clip();
+      }
+    }
     ctx.setTransform(...op.transform);
     ctx.globalAlpha = Math.max(0, Math.min(1, op.opacity));
 

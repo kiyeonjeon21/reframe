@@ -6,12 +6,19 @@
 
 import { sampleBehavior } from "./behaviors.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
-import type { Anchor, NodeIR, PropValue } from "./ir.js";
+import type { Anchor, ClipShape, NodeIR, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
 import { pathPoint, pathTangentAngle } from "./path.js";
 
 /** Canvas-style 2D affine matrix [a, b, c, d, e, f]. */
 export type Mat2D = [number, number, number, number, number, number];
+
+/** A clip from an ancestor group: its shape in the group's coordinate space,
+ *  plus the matrix mapping that space to the scene. The renderer intersects it. */
+export interface ClipRegion {
+  transform: Mat2D;
+  shape: ClipShape;
+}
 
 export type TextAlign = "left" | "center" | "right";
 export type TextBaseline = "top" | "middle" | "bottom";
@@ -23,6 +30,8 @@ interface OpBase {
   transform: Mat2D;
   /** Cumulative opacity, parent-multiplied. */
   opacity: number;
+  /** Clip regions from ancestor groups (intersected by the renderer). */
+  clips?: ClipRegion[];
 }
 
 export type DisplayOp =
@@ -254,8 +263,9 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     return v === "" && base === undefined ? undefined : String(v);
   };
 
-  const walk = (node: NodeIR, parent: Mat2D, parentOpacity: number) => {
+  const walk = (node: NodeIR, parent: Mat2D, parentOpacity: number, clips: ClipRegion[]) => {
     const id = node.id;
+    const clipSpread = clips.length > 0 ? { clips } : undefined;
 
     if (node.type === "line") {
       const opacity = parentOpacity * num(id, "opacity", node.props.opacity ?? 1);
@@ -274,6 +284,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         y2: y1 + (num(id, "y2", node.props.y2) - y1) * progress,
         stroke: str(id, "stroke", node.props.stroke),
         strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1),
+        ...clipSpread,
       });
       return;
     }
@@ -291,9 +302,12 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     );
 
     switch (node.type) {
-      case "group":
-        for (const child of node.children) walk(child, matrix, opacity);
+      case "group": {
+        // a clip on this group masks its children, in the group's own space
+        const childClips = node.props.clip ? [...clips, { transform: matrix, shape: node.props.clip }] : clips;
+        for (const child of node.children) walk(child, matrix, opacity, childClips);
         return;
+      }
       case "rect":
       case "ellipse": {
         const width = num(id, "width", node.props.width);
@@ -314,6 +328,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth }),
           ...(node.type === "rect" && { radius: num(id, "radius", node.props.radius ?? 0) }),
+          ...clipSpread,
         });
         return;
       }
@@ -331,6 +346,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           height,
           offsetX: -width * ax,
           offsetY: -height * ay,
+          ...clipSpread,
         });
         return;
       }
@@ -350,6 +366,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           progress: Math.max(0, Math.min(1, num(id, "progress", node.props.progress ?? 1))),
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1) }),
+          ...clipSpread,
         });
         return;
       }
@@ -373,12 +390,13 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           letterSpacing: num(id, "letterSpacing", node.props.letterSpacing ?? 0),
           align: TEXT_ALIGN[ax] ?? "left",
           baseline: TEXT_BASELINE[ay] ?? "top",
+          ...clipSpread,
         });
         return;
       }
     }
   };
 
-  for (const node of compiled.ir.nodes) walk(node, IDENTITY, 1);
+  for (const node of compiled.ir.nodes) walk(node, IDENTITY, 1, []);
   return ops;
 }
