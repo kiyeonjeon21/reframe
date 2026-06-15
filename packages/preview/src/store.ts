@@ -284,18 +284,34 @@ export class EditorStore {
     return Boolean(this.draft.addNodes?.some((n) => n.id === id));
   }
 
-  /** Append a fresh text/rect/ellipse at scene centre; owned by the overlay. */
-  addNode(type: "text" | "rect" | "ellipse"): string {
+  /** Append a fresh node of any type at scene centre; owned by the overlay.
+   *  `extra` carries type-specific inputs (image `src`, path `d`/`fill`). */
+  addNode(type: NodeIR["type"], extra: Record<string, unknown> = {}): string {
     const x = Math.round(this.base.size.width / 2);
     const y = Math.round(this.base.size.height / 2);
     const id = this.uniqueId(type);
     let node: NodeIR;
-    if (type === "text") {
-      node = { type, id, props: { x, y, anchor: "center", content: "Text", fontFamily: "Inter", fontSize: 64, fontWeight: 700, fill: "#FFFFFF" } };
-    } else if (type === "rect") {
-      node = { type, id, props: { x, y, anchor: "center", width: 220, height: 130, fill: "#FF4D00", radius: 10 } };
-    } else {
-      node = { type, id, props: { x, y, anchor: "center", width: 160, height: 160, fill: "#00C2A8" } };
+    switch (type) {
+      case "text":
+        node = { type, id, props: { x, y, anchor: "center", content: "Text", fontFamily: "Inter", fontSize: 64, fontWeight: 700, fill: "#FFFFFF" } };
+        break;
+      case "rect":
+        node = { type, id, props: { x, y, anchor: "center", width: 220, height: 130, fill: "#FF4D00", radius: 10 } };
+        break;
+      case "ellipse":
+        node = { type, id, props: { x, y, anchor: "center", width: 160, height: 160, fill: "#00C2A8" } };
+        break;
+      case "line":
+        node = { type, id, props: { x1: x - 120, y1: y, x2: x + 120, y2: y, stroke: "#FFFFFF", strokeWidth: 4 } };
+        break;
+      case "image":
+        node = { type, id, props: { x, y, anchor: "center", src: String(extra.src ?? ""), width: Number(extra.width ?? 320), height: Number(extra.height ?? 200) } };
+        break;
+      case "path":
+        node = { type, id, props: { x, y, anchor: "center", d: String(extra.d ?? ""), ...(extra.fill !== undefined && { fill: String(extra.fill) }), ...(extra.stroke !== undefined && { stroke: String(extra.stroke) }), originX: Number(extra.originX ?? 0), originY: Number(extra.originY ?? 0), ...(extra.scale !== undefined && { scale: Number(extra.scale) }) } };
+        break;
+      default:
+        node = { type: "group", id, props: { x, y }, children: [] };
     }
     (this.draft.addNodes ??= []).push(node);
     this.selectedId = id;

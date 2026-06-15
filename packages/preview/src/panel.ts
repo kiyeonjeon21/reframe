@@ -387,15 +387,55 @@ function renderMotionOps(root: HTMLElement, store: EditorStore) {
   }
 }
 
-/** "Add node ▸ text / rect / ellipse" — appends an overlay-owned node at centre. */
+/** Pull <path> data out of pasted SVG markup → path nodes (fill/stroke + a
+ *  scale that fits the art to ~40% of the frame, pivoting on the viewBox centre). */
+function svgToPathNodes(markup: string, store: EditorStore): number {
+  const doc = new DOMParser().parseFromString(markup, "image/svg+xml");
+  if (doc.querySelector("parsererror")) return 0;
+  const svg = doc.querySelector("svg");
+  const paths = Array.from(doc.querySelectorAll("path")).filter((p) => p.getAttribute("d"));
+  if (paths.length === 0) return 0;
+  // viewBox (or width/height) gives the art box → centre pivot + a fit scale
+  const vb = (svg?.getAttribute("viewBox") ?? "").split(/[ ,]+/).map(Number);
+  const vw = vb.length === 4 ? vb[2]! : Number(svg?.getAttribute("width")) || 100;
+  const vh = vb.length === 4 ? vb[3]! : Number(svg?.getAttribute("height")) || 100;
+  const ox = (vb.length === 4 ? vb[0]! : 0) + vw / 2;
+  const oy = (vb.length === 4 ? vb[1]! : 0) + vh / 2;
+  const fit = Math.min((store.base.size.width * 0.4) / vw, (store.base.size.height * 0.4) / vh);
+  for (const p of paths) {
+    store.addNode("path", {
+      d: p.getAttribute("d")!,
+      ...(p.getAttribute("fill") && p.getAttribute("fill") !== "none" ? { fill: p.getAttribute("fill") } : {}),
+      ...(p.getAttribute("stroke") ? { stroke: p.getAttribute("stroke") } : {}),
+      originX: ox,
+      originY: oy,
+      scale: Math.round(fit * 1000) / 1000,
+    });
+  }
+  return paths.length;
+}
+
+/** "Add node" — every IR type. image/svg need input (a src / pasted markup). */
 function renderAddNode(root: HTMLElement, store: EditorStore) {
   root.append(el("h3", {}, "Add node"));
   const row = el("div", { class: "prop-row" }, el("label", {}, "▸ new"));
-  for (const type of ["text", "rect", "ellipse"] as const) {
+  for (const type of ["text", "rect", "ellipse", "line"] as const) {
     const b = el("button", { title: `add a ${type} at scene centre` }, type);
     b.addEventListener("click", () => store.addNode(type));
     row.append(b);
   }
+  const img = el("button", { title: "add an image (URL, or a path relative to the scene file)" }, "image");
+  img.addEventListener("click", () => {
+    const src = prompt("Image URL or path (relative to the scene file):", "");
+    if (src) store.addNode("image", { src });
+  });
+  const svg = el("button", { title: "paste SVG markup → vector path node(s) (e.g. a logo)" }, "svg / logo");
+  svg.addEventListener("click", () => {
+    const markup = prompt("Paste SVG markup:", "");
+    if (!markup) return;
+    if (svgToPathNodes(markup, store) === 0) alert("no <path d=…> found in that SVG");
+  });
+  row.append(img, svg);
   root.append(row);
 }
 
