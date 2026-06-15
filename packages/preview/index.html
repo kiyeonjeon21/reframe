@@ -55,7 +55,9 @@
   #comp-timeline { display: none; padding: 8px 16px 10px; background: #1f1f25; border-top: 1px solid #333; }
   #comp-timeline.on { display: block; }
   #comp-timeline .ct-title { color: #8a8a96; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-  #comp-track { position: relative; background: #16161b; border-radius: 6px; }
+  .ct-bandrow { display: flex; align-items: flex-start; }
+  .ct-bandrow .tk-label { padding-top: 4px; }
+  #comp-track { position: relative; flex: 1; min-width: 0; background: #16161b; border-radius: 6px; }
   .ct-scene { position: absolute; background: #2a2a32; border: 1px solid #3a3a44; border-radius: 5px; cursor: pointer; overflow: hidden; box-sizing: border-box; padding: 4px 8px; white-space: nowrap; }
   .ct-scene:hover { border-color: #7d9aff; }
   .ct-scene.active { background: #31313c; border-color: #7d9aff; color: #fff; }

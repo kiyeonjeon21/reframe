@@ -319,7 +319,10 @@ function buildTimeline() {
   });
   compPlayhead = el("div", { id: "ct-playhead" });
   track.append(compPlayhead);
-  compTimelineEl.append(track);
+  // a 120px label gutter (matching the node-track rows) so the band lane and the
+  // node lanes share one time axis — both playheads then land at the same x.
+  const bandRow = el("div", { class: "ct-bandrow" }, el("div", { class: "tk-label" }, activeComposition ? "scenes" : "beats"), track);
+  compTimelineEl.append(bandRow);
   updateCompPlayhead();
 
   // node-track dope sheet (the open scene's nodes ↔ their motion on the timeline)
