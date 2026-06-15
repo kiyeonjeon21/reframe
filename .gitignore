@@ -14,3 +14,5 @@ packages/reframe-video/preview/
 packages/reframe-video/LICENSE
 packages/reframe-video/*.tgz
 benchmark/harness/motion/calibration/trace-work/
+refs/*.mov
+refs/*.mp4

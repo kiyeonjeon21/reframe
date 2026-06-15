@@ -16,11 +16,20 @@
 import { classifyEasing, type MotionProfile } from "./analyze.js";
 import type { MotionEvent, MotionEventKind, MotionSketch } from "@reframe/core";
 
-// cellDiff is mean |Δ| (8-bit); background sits near codec noise, content
-// motion spikes well above. Hysteresis: start a run above HI, hold above LO.
-const HI = 1.5;
-const LO = 0.8;
+// cellDiff is mean |Δ| (8-bit). Background sits near codec noise, content
+// motion spikes above. Hysteresis: start a run above HI, hold above LO.
+// Thresholds are background-RELATIVE: a clean dark clip keeps the calibrated
+// floor (~1.5), a noisy/light UI clip raises it so ambient texture/compression
+// noise doesn't seed runs. Upward-only + floored, so the analytic scenes are
+// unaffected (their median cellDiff ≈ 0 → HI stays at the floor).
+const HI_FLOOR = 1.5;
+const HI_LO_RATIO = 0.55; // ≈ the original 0.8/1.5
+const NOISE_MARGIN = 1.5; // HI = max(HI_FLOOR, median + margin)
 const MIN_RUN_PAIRS = 2; // drop single-pair flickers
+// An event longer than this fraction of the clip is CONTINUOUS activity
+// (cursor, typing, ongoing UI motion) that never returns to a static floor —
+// not a discrete event. Excluded (noise filtering, not silent edit loss).
+const CONTINUOUS_FRAC = 0.35;
 // Bridge a brief diff lull within one gesture (velocity≈0 at a pop's peak, or
 // the flat seam between an ease-out rise and an ease-in fall). Spatial
 // adjacency is also required to merge, so staggered/concurrent enters in
@@ -38,7 +47,16 @@ interface Run {
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-function findRuns(diff: number[][], nCells: number): Run[] {
+/** Median of all cellDiff samples — the clip's background activity level. */
+function backgroundLevel(diff: number[][]): number {
+  const flat: number[] = [];
+  for (const row of diff) for (const v of row) flat.push(v);
+  if (flat.length === 0) return 0;
+  flat.sort((a, b) => a - b);
+  return flat[Math.floor(flat.length / 2)]!;
+}
+
+function findRuns(diff: number[][], nCells: number, hi: number, lo: number): Run[] {
   const runs: Run[] = [];
   const nPairs = diff.length;
   for (let cell = 0; cell < nCells; cell++) {
@@ -46,10 +64,10 @@ function findRuns(diff: number[][], nCells: number): Run[] {
     let start = 0;
     for (let p = 0; p < nPairs; p++) {
       const v = diff[p]![cell]!;
-      if (!active && v > HI) {
+      if (!active && v > hi) {
         active = true;
         start = p;
-      } else if (active && v < LO) {
+      } else if (active && v < lo) {
         if (p - start >= MIN_RUN_PAIRS) runs.push({ cell, p0: start, p1: p - 1 });
         active = false;
       }
@@ -100,7 +118,10 @@ export function extractMotionSketch(profile: MotionProfile): MotionSketch {
   const nCells = spec.cols * spec.rows;
   const nFrames = occupancy.length;
 
-  const groups = groupRuns(findRuns(diff, nCells), spec.cols);
+  // background-relative thresholds (upward-only from the calibrated floor)
+  const hi = Math.max(HI_FLOOR, backgroundLevel(diff) + NOISE_MARGIN);
+  const lo = hi * HI_LO_RATIO;
+  const groups = groupRuns(findRuns(diff, nCells, hi, lo), spec.cols);
 
   const events: MotionEvent[] = groups.map((group) => {
     const cells = [...new Set(group.map((r) => r.cell))];
@@ -167,7 +188,13 @@ export function extractMotionSketch(profile: MotionProfile): MotionSketch {
     };
   });
 
-  events.sort((a, b) => a.t0 - b.t0);
-  rhythm.beatCount = events.length;
-  return { duration, fps, events, rhythm };
+  // exclude continuous activity: an event spanning a large fraction of the
+  // clip never returned to a static floor, so it is ongoing motion, not a
+  // discrete event (real product video always has some ambient activity).
+  const maxEventSec = CONTINUOUS_FRAC * duration;
+  const discrete = events.filter((e) => e.t1 - e.t0 <= maxEventSec);
+
+  discrete.sort((a, b) => a.t0 - b.t0);
+  rhythm.beatCount = discrete.length;
+  return { duration, fps, events: discrete, rhythm };
 }

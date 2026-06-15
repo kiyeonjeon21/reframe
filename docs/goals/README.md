@@ -46,16 +46,19 @@ reason to build ON this repo rather than start over.
 
 ## Sequence
 
-1. **[goal-1] reference-to-motion** — most novel, cleanest verifier, the
-   "make it like this video" capability. Self-contained round-trip.
+1. **[goal-1] reference-to-motion** — DONE (commit 4f4084a). 7/7 on analytic
+   scenes; `reframe trace`. Validated for clean sources only.
+1.5. **[goal-1-5] real-video hardening** — a real Notion video exposed a
+   continuous-activity merge (an 11s bogus event) + light-background threshold
+   mis-fire. Required before goal-2 maps real sketches onto beats.
 2. **[goal-2] semantic timeline (Beats)** — the conceptual keystone; the unit
    that revision (#8) and reference-application (#5) both operate on.
 3. **[goal-3] asset orchestration** — turns the manual ACE-Step/Kokoro/image
    wiring (done by hand for worldcup-glyph) into declared, deterministic scene
    data.
 
-Do them in order: goal-2 consumes goal-1's output shape; goal-3 is independent
-but lower-novelty, so it can run in parallel by a second agent if desired.
+Order: goal-1 → goal-1.5 → goal-2 (consumes the hardened sketch); goal-3 is
+independent and lower-novelty, parallelizable by a second agent.
 
 ## The human/agent split (read this before delegating)
 

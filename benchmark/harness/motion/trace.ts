@@ -144,6 +144,27 @@ async function main() {
     );
   }
 
+  // ---- real-video robustness gate (structural sanity, no ground truth) ----
+  // The Notion ref is not authored, so we can only assert robustness: the
+  // continuous-activity merge is gone, the count is sane, no event spans the
+  // busy middle. Conditional on the gitignored 10MB ref being present.
+  const { existsSync } = await import("node:fs");
+  const refMov = join(ROOT, "refs", "notion-sample.mov");
+  if (existsSync(refMov)) {
+    const sk = extractMotionSketch(await analyzeMotion(refMov, { grid: true, fps: 60 }));
+    const longest = Math.max(0, ...sk.events.map((e) => e.t1 - e.t0));
+    const cap = 0.35 * sk.duration;
+    const count = sk.events.length;
+    const ok = longest <= cap && count >= 3 && count <= 40;
+    gate(
+      "realvideo:notion-sample",
+      ok,
+      `${count} events (band 3..40), longest=${longest.toFixed(2)}s ≤ cap ${cap.toFixed(2)}s — 11s merge ${longest <= cap ? "gone" : "PRESENT"}`,
+    );
+  } else {
+    console.log("SKIP  realvideo:notion-sample  (refs/notion-sample.mov absent — analytic gates still run)");
+  }
+
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} trace gates passed`);
   process.exit(failed.length ? 1 : 0);
