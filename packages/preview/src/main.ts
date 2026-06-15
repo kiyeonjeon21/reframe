@@ -55,10 +55,15 @@ const markInBtn = document.getElementById("mark-in") as HTMLButtonElement;
 const markOutBtn = document.getElementById("mark-out") as HTMLButtonElement;
 const speedSel = document.getElementById("speed") as HTMLSelectElement;
 const loopBand = document.getElementById("loop-band") as HTMLDivElement;
+const playAllBtn = document.getElementById("play-all") as HTMLButtonElement;
 const compTimelineEl = document.getElementById("comp-timeline") as HTMLDivElement;
 let compPlayhead: HTMLDivElement | null = null;
 let compTotal = 0;
-let compStarts: number[] = [];
+let compStarts: number[] = []; // composition scene start times (play-all + playhead)
+// play-all: continuous playback across a composition's scenes
+let playAll = false;
+let compT = 0; // global composition time when playing all
+let switching = false; // guards the async scene switch at a boundary
 
 let store: EditorStore | null = null;
 let panel: ReturnType<typeof buildPanel> | null = null;
@@ -129,15 +134,18 @@ async function openSceneIR(ir: SceneIR, dir: string, writeUrl = true) {
   canvas.height = store.compiled.ir.size.height;
   store.subscribe((kind) => {
     t = Math.min(t, store!.compiled.duration);
-    if (kind === "structure") panel!.rebuild();
-    else panel!.refreshReport();
+    if (kind === "structure") {
+      panel!.rebuild();
+      buildTimeline(); // beats may have changed
+    } else panel!.refreshReport();
     void ensureImages(); // an edited src loads lazily, then redraws
     draw();
   });
   await document.fonts.ready;
   await ensureImages();
-  t = 0;
+  if (!switching) t = 0;
   panel.rebuild();
+  buildTimeline();
   draw();
   if (writeUrl) syncUrl();
   tIn = 0;
@@ -148,6 +156,8 @@ async function openSceneIR(ir: SceneIR, dir: string, writeUrl = true) {
 
 async function loadScene(path: string) {
   activeComposition = null;
+  playAll = false;
+  playAllBtn.style.display = "none";
   compTimelineEl.classList.remove("on");
   const mod = await modules[path]!.load();
   await openSceneIR(mod.default, modules[path]!.dir);
@@ -158,7 +168,8 @@ async function loadComposition(key: string) {
   const mod = await compositions[key]!.load();
   activeComposition = mod.default;
   activeSceneIndex = 0;
-  buildCompTimeline();
+  compT = 0;
+  playAllBtn.style.display = "";
   await openScene(0);
 }
 
@@ -166,35 +177,129 @@ async function loadComposition(key: string) {
 async function openScene(index: number) {
   if (!activeComposition) return;
   activeSceneIndex = index;
-  buildCompTimeline();
   await openSceneIR(activeComposition.scenes[index]!.scene, __REFRAME_EXAMPLES_DIR__, false);
 }
 
-/** The composition timeline (bottom): scene bands laid out proportionally over
- *  the whole duration, with a playhead. Click a band → open that scene. */
-function buildCompTimeline() {
+interface TimelineSeg {
+  label: string;
+  start: number;
+  end: number;
+  suffix: string;
+  active: boolean;
+  beat: boolean;
+  onClick: () => void;
+}
+
+/** Greedy lane assignment so time-overlapping bands stack on separate rows
+ *  (a crossfade or parallel beat shows clearly instead of colliding on one line). */
+function assignLanes(segs: TimelineSeg[]): number[] {
+  const laneEnd: number[] = [];
+  return segs.map((s) => {
+    let lane = laneEnd.findIndex((e) => e <= s.start + 1e-6);
+    if (lane < 0) lane = laneEnd.length;
+    laneEnd[lane] = s.end;
+    return lane;
+  });
+}
+
+/** Top-level beats of the open scene (a single scene's "chapters"), as segments.
+ *  A beat's window is the union of its descendant label spans — the time it
+ *  actually animates — so chapters built as par(beat-with-leading-wait, …)
+ *  still separate cleanly instead of all starting at the structural t=0. */
+function topLevelBeatSegs(): TimelineSeg[] {
+  if (!store) return [];
+  const ir = store.compiled.ir;
+  const lt = store.compiled.labelTimes;
+  const segs: TimelineSeg[] = [];
+  const visit = (tl: import("@reframe/core").TimelineIR, insideBeat: boolean) => {
+    if (tl.kind === "beat") {
+      if (!insideBeat) {
+        let t0 = Infinity;
+        let t1 = -Infinity;
+        const collect = (s: import("@reframe/core").TimelineIR) => {
+          if ("label" in s && s.label !== undefined) {
+            const sp = lt.get(s.label);
+            if (sp) {
+              t0 = Math.min(t0, sp.t0);
+              t1 = Math.max(t1, sp.t1);
+            }
+          }
+          if ("children" in s) s.children.forEach(collect);
+        };
+        tl.children.forEach(collect);
+        const span = store!.compiled.beatTimes.get(tl.name);
+        // start where the chapter first animates (skips the leading wait); run to
+        // the beat's structural end so chapters tile instead of leaving gaps.
+        const start = t0 === Infinity ? (span?.t0 ?? 0) : t0;
+        const end = span ? span.t1 : t1 === -Infinity ? start : t1;
+        if (end >= start) {
+          segs.push({ label: tl.name, start, end, suffix: "", active: false, beat: true, onClick: () => setTime(start) });
+        }
+      }
+      tl.children.forEach((c) => visit(c, true));
+      return;
+    }
+    if ("children" in tl) tl.children.forEach((c) => visit(c, insideBeat));
+  };
+  if (ir.timeline) visit(ir.timeline, false);
+  return segs;
+}
+
+/** The bottom timeline: scene bands for a composition, else the open scene's
+ *  top-level beat bands. Overlapping bands stack on lanes; click to jump. */
+function buildTimeline() {
   compTimelineEl.replaceChildren();
   compPlayhead = null;
-  if (!activeComposition) {
+  let segs: TimelineSeg[];
+  let title: string;
+  if (activeComposition) {
+    const cc = compileComposition(activeComposition);
+    compTotal = cc.duration || 1;
+    compStarts = cc.scenes.map((p) => p.start);
+    segs = cc.scenes.map((p, i) => ({
+      label: p.id,
+      start: p.start,
+      end: p.start + p.duration,
+      suffix: p.transition === "crossfade" ? " ⤫" : "",
+      active: i === activeSceneIndex,
+      beat: false,
+      onClick: () => {
+        stopPlayAll();
+        void openScene(i);
+      },
+    }));
+    title = `▤ ${activeComposition.id} — ${cc.scenes.length} scenes · ${cc.duration.toFixed(1)}s`;
+  } else {
+    segs = topLevelBeatSegs();
+    compTotal = store?.compiled.duration || 1;
+    compStarts = [];
+    title = `beats — ${segs.length} · ${compTotal.toFixed(1)}s`;
+  }
+  if (segs.length === 0) {
     compTimelineEl.classList.remove("on");
     return;
   }
   compTimelineEl.classList.add("on");
-  const cc = compileComposition(activeComposition);
-  compTotal = cc.duration || 1;
-  compStarts = cc.scenes.map((p) => p.start);
-  compTimelineEl.append(el("div", { class: "ct-title" }, `▤ ${activeComposition.id} — ${cc.scenes.length} scenes · ${cc.duration.toFixed(1)}s`));
+  compTimelineEl.append(el("div", { class: "ct-title" }, title));
+
+  const lanes = assignLanes(segs);
+  const laneCount = Math.max(...lanes) + 1;
+  const LANE_H = 28;
+  const GAP = 4;
   const track = el("div", { id: "comp-track" });
-  cc.scenes.forEach((p, i) => {
+  track.style.height = `${laneCount * LANE_H + (laneCount - 1) * GAP}px`;
+  segs.forEach((s, i) => {
     const band = el(
       "div",
-      { class: `ct-scene${i === activeSceneIndex ? " active" : ""}`, title: `open ${p.id}` },
-      p.id,
-      el("span", { class: "ct-range" }, `${p.start.toFixed(1)}–${(p.start + p.duration).toFixed(1)}s${p.transition === "crossfade" ? " ⤫" : ""}`),
+      { class: `ct-scene${s.active ? " active" : ""}${s.beat ? " beat" : ""}`, title: s.label },
+      s.label,
+      el("span", { class: "ct-range" }, `${s.start.toFixed(1)}–${s.end.toFixed(1)}s${s.suffix}`),
     );
-    band.style.left = `${(p.start / compTotal) * 100}%`;
-    band.style.width = `${(p.duration / compTotal) * 100}%`;
-    band.addEventListener("click", () => void openScene(i));
+    band.style.left = `${(s.start / compTotal) * 100}%`;
+    band.style.width = `${Math.max(0, (s.end - s.start) / compTotal) * 100}%`;
+    band.style.top = `${lanes[i]! * (LANE_H + GAP)}px`;
+    band.style.height = `${LANE_H}px`;
+    band.addEventListener("click", s.onClick);
     track.append(band);
   });
   compPlayhead = el("div", { id: "ct-playhead" });
@@ -203,11 +308,12 @@ function buildCompTimeline() {
   updateCompPlayhead();
 }
 
-/** Position the composition playhead at the open scene's start + local time. */
+/** Position the playhead: composition time (open scene start + local t), or
+ *  just local t for a single scene. */
 function updateCompPlayhead() {
   if (!compPlayhead) return;
-  const start = compStarts[activeSceneIndex] ?? 0;
-  compPlayhead.style.left = `${((start + t) / compTotal) * 100}%`;
+  const global = activeComposition ? (compStarts[activeSceneIndex] ?? 0) + t : t;
+  compPlayhead.style.left = `${(global / compTotal) * 100}%`;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string>, ...kids: (HTMLElement | string)[]): HTMLElementTagNameMap[K] {
@@ -566,9 +672,32 @@ canvas.addEventListener("dblclick", (ev) => {
   }
 });
 
+/** The scene index whose window contains composition time T (the later one in a
+ *  crossfade overlap — the incoming scene). */
+function sceneIndexAt(T: number): number {
+  let idx = 0;
+  for (let i = 0; i < compStarts.length; i++) if (compStarts[i]! <= T + 1e-6) idx = i;
+  return idx;
+}
+
 function tick(now: number) {
-  if (playing && store) {
-    t += ((now - lastTick) / 1000) * speed;
+  const dt = (now - lastTick) / 1000;
+  if (playing && playAll && activeComposition && store && !switching) {
+    // continuous playback across scenes: advance global time, switch at boundaries
+    compT += dt * speed;
+    if (compT >= compTotal) compT = 0;
+    const idx = sceneIndexAt(compT);
+    if (idx !== activeSceneIndex) {
+      switching = true;
+      void openScene(idx).then(() => {
+        switching = false;
+      });
+    } else {
+      t = compT - (compStarts[activeSceneIndex] ?? 0);
+      draw();
+    }
+  } else if (playing && store) {
+    t += dt * speed;
     const lo = loopOn ? tIn : 0;
     const hi = loopOn ? Math.min(tOut, store.compiled.duration) : store.compiled.duration;
     if (t > hi || t < lo) t = lo; // loop the [in, out] range (or the whole clip)
@@ -578,6 +707,31 @@ function tick(now: number) {
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+
+function stopPlayAll() {
+  if (!playAll) return;
+  playAll = false;
+  playing = false;
+  playAllBtn.classList.remove("on");
+  playAllBtn.textContent = "play all";
+  playBtn.textContent = "play";
+}
+
+playAllBtn.addEventListener("click", () => {
+  if (!activeComposition) return;
+  playAll = !playAll;
+  playAllBtn.classList.toggle("on", playAll);
+  if (playAll) {
+    compT = (compStarts[activeSceneIndex] ?? 0) + t; // continue from where we are
+    playing = true;
+    playBtn.textContent = "pause";
+    playAllBtn.textContent = "stop all";
+  } else {
+    playing = false;
+    playBtn.textContent = "play";
+    playAllBtn.textContent = "play all";
+  }
+});
 
 /** Position the loop-range band over the scrubber. */
 function updateLoopBand() {
@@ -639,6 +793,7 @@ playBtn.addEventListener("click", () => {
 
 scrub.addEventListener("input", () => {
   if (!store) return;
+  stopPlayAll();
   playing = false;
   playBtn.textContent = "play";
   t = Number(scrub.value) * store.compiled.duration;

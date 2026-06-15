@@ -51,14 +51,15 @@
   .beat-lane.selected { background: #31313c; color: #fff; }
   .beat-lane.missing { color: #ff7b72; cursor: default; }
   .beat-markers { color: #7d9aff; font-size: 11px; margin-top: 3px; opacity: 0.85; }
-  /* composition timeline (scene bands across the whole composition, at the bottom) */
-  #comp-timeline { display: none; align-items: stretch; gap: 0; padding: 8px 16px 10px; background: #1f1f25; border-top: 1px solid #333; }
+  /* bottom timeline: scene bands (composition) or top-level beat bands (one scene) */
+  #comp-timeline { display: none; padding: 8px 16px 10px; background: #1f1f25; border-top: 1px solid #333; }
   #comp-timeline.on { display: block; }
   #comp-timeline .ct-title { color: #8a8a96; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-  #comp-track { position: relative; height: 34px; background: #16161b; border-radius: 6px; }
-  .ct-scene { position: absolute; top: 0; bottom: 0; background: #2a2a32; border: 1px solid #3a3a44; border-radius: 5px; cursor: pointer; overflow: hidden; box-sizing: border-box; padding: 4px 8px; white-space: nowrap; }
+  #comp-track { position: relative; background: #16161b; border-radius: 6px; }
+  .ct-scene { position: absolute; background: #2a2a32; border: 1px solid #3a3a44; border-radius: 5px; cursor: pointer; overflow: hidden; box-sizing: border-box; padding: 4px 8px; white-space: nowrap; }
   .ct-scene:hover { border-color: #7d9aff; }
   .ct-scene.active { background: #31313c; border-color: #7d9aff; color: #fff; }
+  .ct-scene.beat { border-style: dashed; }
   .ct-scene .ct-range { color: #8a8a96; font-size: 10px; margin-left: 6px; font-variant-numeric: tabular-nums; }
   #ct-playhead { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #ff4d00; pointer-events: none; }
 </style>
@@ -71,6 +72,7 @@
   <div id="bar">
     <select id="scene-select"></select>
     <button id="play">play</button>
+    <button id="play-all" title="play the whole composition across scenes" style="display:none">play all</button>
     <button id="mark-in" title="set loop start to current time">[</button>
     <button id="loop" title="loop the in/out range">loop</button>
     <button id="mark-out" title="set loop end to current time">]</button>
