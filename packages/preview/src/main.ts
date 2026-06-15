@@ -60,6 +60,8 @@ const compTimelineEl = document.getElementById("comp-timeline") as HTMLDivElemen
 let compPlayhead: HTMLDivElement | null = null;
 let compTotal = 0;
 let compStarts: number[] = []; // composition scene start times (play-all + playhead)
+let tracksOpen = false; // node-track dope sheet expanded
+let tkPlayhead: HTMLDivElement | null = null;
 // play-all: a continuous-playback MODE that draws the whole composition from
 // precompiled scenes (no editor-store swaps), blending crossfades.
 let playAll = false;
@@ -261,6 +263,7 @@ function topLevelBeatSegs(): TimelineSeg[] {
 function buildTimeline() {
   compTimelineEl.replaceChildren();
   compPlayhead = null;
+  tkPlayhead = null;
   let segs: TimelineSeg[];
   let title: string;
   if (activeComposition) {
@@ -317,14 +320,84 @@ function buildTimeline() {
   track.append(compPlayhead);
   compTimelineEl.append(track);
   updateCompPlayhead();
+
+  // node-track dope sheet (the open scene's nodes ↔ their motion on the timeline)
+  if (store) {
+    const toggle = el("button", { class: "tk-toggle" }, `${tracksOpen ? "▾" : "▸"} node tracks`);
+    toggle.addEventListener("click", () => {
+      tracksOpen = !tracksOpen;
+      buildTimeline();
+    });
+    compTimelineEl.append(toggle);
+    const tracks = el("div", { id: "comp-tracks", class: tracksOpen ? "on" : "" });
+    compTimelineEl.append(tracks);
+    if (tracksOpen) buildTracks(tracks);
+  }
+}
+
+/** Per-node motion bars from the compiled scene — segments (tweens/`to`) and
+ *  motionPath windows, keyed by node id. This IS the timeline graph reframe
+ *  already computes; the dope sheet just draws it and links it to the nodes. */
+function buildTracks(container: HTMLElement) {
+  if (!store) return;
+  const c = store.compiled;
+  const dur = c.duration || 1;
+  const bars = new Map<string, { t0: number; t1: number; prop: string }[]>();
+  const push = (id: string, b: { t0: number; t1: number; prop: string }) => {
+    const arr = bars.get(id);
+    if (arr) arr.push(b);
+    else bars.set(id, [b]);
+  };
+  for (const [key, segs] of c.segments) {
+    const dot = key.lastIndexOf(".");
+    const id = key.slice(0, dot);
+    const prop = key.slice(dot + 1);
+    for (const s of segs) push(id, { t0: s.t0, t1: s.t1, prop });
+  }
+  for (const [id, drivers] of c.motionPaths) {
+    for (const d of drivers) push(id, { t0: d.t0, t1: d.t1, prop: "path" });
+  }
+  // rows in declaration order, only nodes that animate
+  for (const id of c.nodeOrder) {
+    const segs = bars.get(id);
+    if (!segs) continue;
+    const row = el("div", { class: `tk-row${store.selectedId === id ? " selected" : ""}` });
+    const label = el("div", { class: "tk-label", title: id }, id);
+    label.addEventListener("click", () => store!.select(id));
+    const lane = el("div", { class: "tk-lane" });
+    for (const b of segs) {
+      const bar = el("div", { class: `tk-bar${b.prop === "path" ? " path" : ""}`, title: `${b.prop} ${b.t0.toFixed(2)}–${b.t1.toFixed(2)}s` });
+      bar.style.left = `${(b.t0 / dur) * 100}%`;
+      bar.style.width = `${Math.max(0.4, ((b.t1 - b.t0) / dur) * 100)}%`;
+      bar.addEventListener("click", () => {
+        store!.select(id);
+        setTime(b.t0);
+      });
+      lane.append(bar);
+    }
+    row.append(label, lane);
+    container.append(row);
+  }
+  tkPlayhead = el("div", { id: "tk-playhead" });
+  container.append(tkPlayhead);
+  updateTkPlayhead();
 }
 
 /** Position the playhead: composition time (open scene start + local t), or
  *  just local t for a single scene. */
 function updateCompPlayhead() {
-  if (!compPlayhead) return;
-  const global = activeComposition ? (compStarts[activeSceneIndex] ?? 0) + t : t;
-  compPlayhead.style.left = `${(global / compTotal) * 100}%`;
+  if (compPlayhead) {
+    const global = activeComposition ? (compStarts[activeSceneIndex] ?? 0) + t : t;
+    compPlayhead.style.left = `${(global / compTotal) * 100}%`;
+  }
+  updateTkPlayhead();
+}
+
+/** Node-track playhead at the open scene's local time (over the 120px label gutter). */
+function updateTkPlayhead() {
+  if (!tkPlayhead || !store) return;
+  const frac = t / (store.compiled.duration || 1);
+  tkPlayhead.style.left = `calc(120px + ${frac} * (100% - 120px))`;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string>, ...kids: (HTMLElement | string)[]): HTMLElementTagNameMap[K] {
