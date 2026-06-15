@@ -8,9 +8,14 @@ import {
   EASE_NAMES,
   PROPS_BY_TYPE,
   isColor,
+  composeScene,
+  compileScene,
+  evaluate,
+  type CompiledScene,
   type NodeIR,
   type OverlayDoc,
   type PropValue,
+  type SceneIR,
   type TimelineIR,
 } from "@reframe/core";
 import type { EditorStore } from "./store.js";
@@ -202,6 +207,136 @@ function makeControl(
   return row;
 }
 
+// --- variation grid: seeded perturbations of the editable motion ---
+function mulberry32(seed: number): () => number {
+  let a = (seed >>> 0) || 1;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let x = Math.imul(a ^ (a >>> 15), 1 | a);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const clampN = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+function firstMotionPathTarget(tl: TimelineIR | undefined): string | null {
+  let found: string | null = null;
+  const walk = (s: TimelineIR) => {
+    if (found) return;
+    if (s.kind === "motionPath") found = s.target;
+    if ("children" in s) s.children.forEach(walk);
+  };
+  if (tl) walk(tl);
+  return found;
+}
+
+/** A seeded variation of the current motion (curviness + interior waypoints +
+ *  ease curves jittered) as an overlay, built on top of the current draft. */
+function makeVariant(draft: OverlayDoc, compiled: CompiledScene, seed: number): OverlayDoc {
+  const rng = mulberry32(Math.imul(seed, 2654435761));
+  const v: OverlayDoc = structuredClone(draft);
+  const tl = (v.timeline ??= {});
+  const walk = (s: TimelineIR) => {
+    if (s.kind === "motionPath" && s.label) {
+      const cur = tl[s.label] ?? {};
+      const baseCurv = (cur.curviness ?? s.curviness ?? 1) as number;
+      const basePts = (cur.points ?? s.points) as [number, number][];
+      tl[s.label] = {
+        ...cur,
+        curviness: clampN(baseCurv + (rng() - 0.5) * 1.3, 0, 2),
+        points: basePts.map((p, i, arr) =>
+          i === 0 || i === arr.length - 1
+            ? p
+            : [Math.round(p[0] + (rng() - 0.5) * 130), Math.round(p[1] + (rng() - 0.5) * 130)],
+        ),
+      };
+    } else if ((s.kind === "to" || s.kind === "tween") && s.label) {
+      const cur = tl[s.label] ?? {};
+      const curEase = cur.ease ?? ("ease" in s ? s.ease : undefined);
+      const bz = (
+        curEase && typeof curEase === "object" && "cubicBezier" in curEase
+          ? [...curEase.cubicBezier]
+          : [0.33, 0, 0.67, 1]
+      ) as number[];
+      tl[s.label] = {
+        ...cur,
+        ease: {
+          cubicBezier: [
+            clampN(bz[0]! + (rng() - 0.5) * 0.4, 0, 1),
+            clampN(bz[1]! + (rng() - 0.5) * 1.2, -0.4, 1.5),
+            clampN(bz[2]! + (rng() - 0.5) * 0.4, 0, 1),
+            clampN(bz[3]! + (rng() - 0.5) * 1.2, -0.4, 1.5),
+          ],
+        },
+      };
+    }
+    if ("children" in s) s.children.forEach(walk);
+  };
+  if (compiled.ir.timeline) walk(compiled.ir.timeline);
+  return v;
+}
+
+/** Draw the target node's trail (position over time) into a thumbnail canvas. */
+function renderThumb(c: HTMLCanvasElement, base: SceneIR, variant: OverlayDoc, target: string) {
+  const cx = c.getContext("2d")!;
+  cx.fillStyle = "#0e0f15";
+  cx.fillRect(0, 0, c.width, c.height);
+  let compiled: CompiledScene;
+  try {
+    compiled = compileScene(composeScene(base, variant).ir);
+  } catch {
+    return;
+  }
+  const D = compiled.duration;
+  const W = compiled.ir.size.width;
+  const H = compiled.ir.size.height;
+  const sc = Math.min(c.width / W, c.height / H) * 0.9;
+  const ox = (c.width - W * sc) / 2;
+  const oy = (c.height - H * sc) / 2;
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= 28; i++) {
+    const op = evaluate(compiled, (i / 28) * D).find((o) => o.id === target);
+    if (op) pts.push([ox + op.transform[4] * sc, oy + op.transform[5] * sc]);
+  }
+  if (pts.length < 2) return;
+  cx.strokeStyle = "#7d9aff";
+  cx.lineWidth = 1.5;
+  cx.beginPath();
+  pts.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1])));
+  cx.stroke();
+  for (const p of pts) {
+    cx.beginPath();
+    cx.arc(p[0], p[1], 1.4, 0, Math.PI * 2);
+    cx.fillStyle = "#9db4ff";
+    cx.fill();
+  }
+}
+
+/** "vary ×4" → seeded motion variations as adoptable trail thumbnails
+ *  (recognition over recall). Click one to adopt; click vary again to branch. */
+function renderVariations(root: HTMLElement, store: EditorStore) {
+  const target = firstMotionPathTarget(store.compiled.ir.timeline);
+  if (!target) return; // a trail needs a motionPath to preview
+  root.append(el("h3", {}, "Variations"));
+  const grid = el("div", { style: "display:flex;gap:6px;flex-wrap:wrap;margin:4px 0" });
+  let round = 0;
+  const btn = el("button", { title: "generate motion variations" }, "vary ×4");
+  btn.addEventListener("click", () => {
+    grid.replaceChildren();
+    for (let k = 1; k <= 4; k++) {
+      const variant = makeVariant(store.draft, store.compiled, k + round * 4 + 1);
+      const c = el("canvas", { title: "click to adopt this motion", style: "border-radius:6px;cursor:pointer;border:1px solid #333" });
+      c.width = 150;
+      c.height = 92;
+      renderThumb(c, store.base, variant, target);
+      c.addEventListener("click", () => store.importDraft(variant));
+      grid.append(c);
+    }
+    round++;
+  });
+  root.append(btn, grid);
+}
+
 export function buildPanel(store: EditorStore, root: HTMLElement) {
   let reportBox: HTMLElement | null = null;
 
@@ -229,6 +364,9 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
     );
     dur.prepend(el("label", {}, "duration (s)"));
     root.append(dur);
+
+    // --- variations (seeded motion variants you can pick from) ---
+    renderVariations(root, store);
 
     // --- node tree ---
     root.append(el("h3", {}, "Nodes"));
