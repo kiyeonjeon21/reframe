@@ -57,6 +57,36 @@ tweak in the preview.**
 | ![Glyph reveal](docs/assets/glyph-reveal.gif) | |
 | [`glyph-reveal.ts`](examples/scenes/glyph-reveal.ts) — the archival stop-motion format: AI-generated plates as `image` nodes, ~7fps hard cuts, push-in, camera shake, a tick per cut. Swap any plate from an overlay or batch row: `nodes.frame-3.src` | |
 
+## Motion vocabulary: name a motion, don't keyframe it
+
+Motion is hard to put into words and tedious to hand-key, so reframe ships a
+small set of **named motion presets**: `draw-bloom`, `punch-in`, `rise-settle`,
+`slide-bank`, `reveal-orbit`, `spin-forge`. Each is a *seeded generator*, not a
+canned template. The same name yields a family of distinct takes, and a `seed`
+varies it within that family (an 8-seed spread stays measurably different yet
+recognizably the same motion, gated in the tests).
+
+```ts
+motionPreset("spin-forge", { target: logo, energy: 0.8, seed: 3 })
+```
+
+`energy` (clean to springy) and `speed` are universal knobs. The preset emits a
+beat you can retime, and a waypoint you drag on its path becomes an overlay edit
+that survives a knob-driven regeneration: knobs regenerate the base, hand craft
+persists. Two new primitives back it:
+
+- **`path` node**: a true vector SVG shape with a `progress` draw-on, so the
+  outline draws itself, stays crisp at any zoom, and recolors by animating fill.
+- **`motionPath`**: drives a node's x/y along a Catmull-Rom curve (with tangent
+  `autoRotate`), the curved motion straight tweens cannot do.
+
+[`examples/logo-sting/`](examples/logo-sting/) turns any SVG into a share-worthy
+animated sting in one command (a local file, or any of simple-icons' brands):
+
+```bash
+npx tsx examples/logo-sting/generate.mts react --motion spin-forge
+```
+
 ## Why not just Hyperframes / Remotion?
 
 Because their output is arbitrary HTML/React — great to generate once,
@@ -267,5 +297,5 @@ edit survival across AI regeneration, and a five-turn natural-language
 iteration loop with zero silent edit loss. Receipts: `benchmark/ANALYSIS.md`,
 `benchmark/MOTION.md`, `benchmark/regen/REGEN-ANALYSIS.md`,
 `benchmark/nl-loop/NL-LOOP.md`. What "alpha" means honestly: it has not met
-strangers yet — surface area is intentionally small (5 node types, one font,
+strangers yet — surface area is intentionally small (6 node types, one font,
 Canvas 2D) and the IR/overlay schema has no compatibility promise before 1.0.
