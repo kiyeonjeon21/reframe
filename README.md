@@ -81,11 +81,11 @@ persists. Two new primitives back it:
 - **`motionPath`**: drives a node's x/y along a Catmull-Rom curve (with tangent
   `autoRotate`), the curved motion straight tweens cannot do.
 
-[`examples/logo-sting/`](examples/logo-sting/) turns any SVG into a share-worthy
-animated sting in one command (a local file, or any of simple-icons' brands):
+Turn any SVG into a share-worthy animated sting in one command, no clone needed
+(a local file, or any of simple-icons' brands):
 
 ```bash
-npx tsx examples/logo-sting/generate.mts react --motion spin-forge
+npx reframe-video logo react --motion spin-forge
 ```
 
 <img alt="Six real brand logos, six motions" src="docs/assets/logo-sting.gif" width="720" />

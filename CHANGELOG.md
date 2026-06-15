@@ -8,6 +8,15 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-16
+
+### Added
+
+- `reframe logo <logo.svg | brand-slug> [--motion <preset>] [--energy n] [--seed n]`
+  CLI command: animate any SVG (a local file, or a simple-icons brand) into a
+  logo sting with no clone needed, e.g.
+  `npx reframe-video logo react --motion spin-forge`.
+
 ## [0.1.2] - 2026-06-16
 
 ### Added
@@ -44,7 +53,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kiyeonjeon21/reframe/releases/tag/v0.1.0

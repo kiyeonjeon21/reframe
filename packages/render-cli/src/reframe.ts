@@ -45,6 +45,9 @@ const USAGE = `reframe — declarative motion graphics
 usage:
   ${CMD} render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S] [--no-audio]
   ${CMD} batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
+  ${CMD} logo <logo.svg|brand-slug> ["Name"] [--motion <preset>] [--energy 0..1] [--seed N] [-o out.mp4]
+                                 animate a logo into a sting (presets: draw-bloom, punch-in,
+                                 rise-settle, slide-bank, reveal-orbit, spin-forge)
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
@@ -188,6 +191,47 @@ async function main() {
         await (PACKAGED
           ? run(process.execPath, [RENDER_CLI, mode, inputPath, ...outArgs])
           : run("npx", ["tsx", RENDER_CLI, mode, inputPath, ...outArgs])),
+      );
+    }
+
+    case "logo": {
+      // positional: <slug|file> [Display Name]; everything else is a flag
+      const positional: string[] = [];
+      const flags: Record<string, string> = {};
+      for (let i = 0; i < rest.length; i++) {
+        const a = rest[i]!;
+        if (a.startsWith("--")) flags[a.slice(2)] = rest[++i] ?? "";
+        else if (a === "-o") flags.o = rest[++i] ?? "";
+        else positional.push(a);
+      }
+      const arg = positional[0];
+      if (!arg) {
+        fail(`usage: ${CMD} logo <logo.svg | brand-slug> ["Display Name"] [--motion <preset>] [--energy 0..1] [--speed n] [--intensity 0..1] [--from left|right|top|bottom] [--seed n] [-o out.mp4]`);
+      }
+      preflightFfmpeg();
+      const { tmpdir } = await import("node:os");
+      const { resolveLogo, buildLogoSting } = await import("./logoSting.js");
+      const num = (k: string) => (flags[k] !== undefined ? Number(flags[k]) : undefined);
+      console.log(`loading logo: ${arg} …`);
+      const { data, slug } = await resolveLogo(arg, positional[1], {
+        motion: flags.motion,
+        energy: num("energy"),
+        speed: num("speed"),
+        intensity: num("intensity"),
+        from: flags.from,
+        seed: num("seed"),
+      });
+      const sceneIR = buildLogoSting(data);
+      const tmp = join(tmpdir(), `reframe-logo-${slug}-${process.pid}.json`);
+      await writeFile(tmp, JSON.stringify(sceneIR));
+      const outBase = PACKAGED ? join(USER_CWD, "out") : join(ROOT, "out");
+      const out = flags.o ? userPath(flags.o) : join(outBase, `logo-${slug}.mp4`);
+      await mkdir(dirname(out), { recursive: true });
+      console.log(`rendering ${data.name} (${data.paths.length} path${data.paths.length > 1 ? "s" : ""}, motion: ${data.motion ?? "reveal-orbit"}) → ${out}`);
+      process.exit(
+        await (PACKAGED
+          ? run(process.execPath, [RENDER_CLI, "ir", tmp, "-o", out, "--no-audio"])
+          : run("npx", ["tsx", RENDER_CLI, "ir", tmp, "-o", out, "--no-audio"])),
       );
     }
 
