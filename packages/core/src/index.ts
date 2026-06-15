@@ -19,6 +19,8 @@ export {
 } from "./audio.js";
 export {
   evaluate,
+  sampleProp,
+  nodeParentMatrix,
   type DisplayList,
   type DisplayOp,
   type Mat2D,

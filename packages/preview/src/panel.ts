@@ -372,6 +372,18 @@ function renderMotionOps(root: HTMLElement, store: EditorStore) {
   }
 }
 
+/** "Add node ▸ text / rect / ellipse" — appends an overlay-owned node at centre. */
+function renderAddNode(root: HTMLElement, store: EditorStore) {
+  root.append(el("h3", {}, "Add node"));
+  const row = el("div", { class: "prop-row" }, el("label", {}, "▸ new"));
+  for (const type of ["text", "rect", "ellipse"] as const) {
+    const b = el("button", { title: `add a ${type} at scene centre` }, type);
+    b.addEventListener("click", () => store.addNode(type));
+    row.append(b);
+  }
+  root.append(row);
+}
+
 export function buildPanel(store: EditorStore, root: HTMLElement) {
   let reportBox: HTMLElement | null = null;
 
@@ -400,8 +412,9 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
     dur.prepend(el("label", {}, "duration (s)"));
     root.append(dur);
 
-    // --- variations + add-motion (motion ops) ---
+    // --- variations + add-node + add-motion (motion ops) ---
     renderVariations(root, store);
+    renderAddNode(root, store);
     renderMotionOps(root, store);
 
     // --- node tree ---
@@ -428,6 +441,21 @@ export function buildPanel(store: EditorStore, root: HTMLElement) {
       if (node) {
         const id = node.id;
         root.append(el("h3", {}, `Props: ${id} (${node.type})`));
+        const added = store.isAddedNode(id);
+        const actions = el("div", { class: "prop-row" });
+        const dup = el("button", { title: "duplicate this node" }, "duplicate");
+        dup.addEventListener("click", () => store.duplicateNode(id));
+        actions.append(dup);
+        if (added) {
+          const del = el("button", { title: "remove this overlay-added node" }, "delete");
+          del.addEventListener("click", () => store.removeNode(id));
+          actions.append(del);
+        } else {
+          const hide = el("button", { title: "base node — hide it (opacity 0) instead of deleting" }, "hide");
+          hide.addEventListener("click", () => store.hideNode(id));
+          actions.append(hide);
+        }
+        root.append(actions);
         const props = node.props as unknown as Record<string, PropValue | undefined>;
         const states = ir.states ?? {};
         const initial = ir.initial;

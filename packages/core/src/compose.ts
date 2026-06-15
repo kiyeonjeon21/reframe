@@ -32,6 +32,13 @@ export interface OverlayDoc {
   /** Complete nodes appended at the scene root, owned by this overlay. */
   addNodes?: NodeIR[];
   /**
+   * Remove nodes by id. Only nodes added by an overlay (via `addNodes`) can be
+   * removed — a node owned by the BASE scene is refused and reported as an
+   * orphan (hide it with `opacity: 0` instead, so the regenerated design is
+   * never silently dropped). An unknown id is likewise an orphan.
+   */
+  removeNodes?: string[];
+  /**
    * Motion fragments (e.g. `motionOp(...)` beats) APPENDED to the scene
    * timeline — composed in `par` with the base under their own beat labels, so
    * the editor can ADD motion to a node, not just patch existing motion. A
@@ -67,7 +74,14 @@ export interface ComposeReport {
   applied: {
     layer: string;
     address: string;
-    action: "set" | "unset" | "add-node" | "behavior-set" | "behavior-remove" | "add-timeline";
+    action:
+      | "set"
+      | "unset"
+      | "add-node"
+      | "remove-node"
+      | "behavior-set"
+      | "behavior-remove"
+      | "add-timeline";
   }[];
   orphans: { layer: string; address: string; reason: string }[];
   warnings: string[];
@@ -82,6 +96,17 @@ export function composeScene(
   const ir = structuredClone(base);
   const report: ComposeReport = { applied: [], orphans: [], warnings: [] };
 
+  // Ids the BASE scene owns (computed before any overlay runs) — removeNodes may
+  // only drop overlay-added nodes, never these.
+  const baseNodeIds = new Set<string>();
+  const collectBase = (nodes: NodeIR[]) => {
+    for (const node of nodes) {
+      baseNodeIds.add(node.id);
+      if (node.type === "group") collectBase(node.children);
+    }
+  };
+  collectBase(base.nodes);
+
   overlays.forEach((overlay, index) => {
     const layer = overlay.name ?? `overlay-${index}`;
     if (overlay.target !== undefined && overlay.target !== ir.id) {
@@ -89,14 +114,20 @@ export function composeScene(
         `${layer}: authored against scene "${overlay.target}" but composing onto "${ir.id}"`,
       );
     }
-    applyOverlay(ir, overlay, layer, report);
+    applyOverlay(ir, overlay, layer, report, baseNodeIds);
   });
 
   validateScene(ir);
   return { ir, report };
 }
 
-function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: ComposeReport) {
+function applyOverlay(
+  ir: SceneIR,
+  overlay: OverlayDoc,
+  layer: string,
+  report: ComposeReport,
+  baseNodeIds: Set<string>,
+) {
   const nodeById = new Map<string, NodeIR>();
   const collect = (nodes: NodeIR[]) => {
     for (const node of nodes) {
@@ -275,6 +306,28 @@ function applyOverlay(ir: SceneIR, overlay: OverlayDoc, layer: string, report: C
     ir.nodes.push(structuredClone(node));
     nodeById.set(node.id, node);
     applied(`addNodes.${node.id}`, "add-node");
+  }
+
+  // --- removed nodes: overlay-added only; a base node is refused (hide it). ---
+  for (const id of overlay.removeNodes ?? []) {
+    if (baseNodeIds.has(id)) {
+      orphan(
+        `removeNodes.${id}`,
+        `"${id}" is a base scene node — the scene owns it; hide it with opacity: 0 instead of removing`,
+      );
+      continue;
+    }
+    const index = ir.nodes.findIndex((n) => n.id === id);
+    if (index < 0) {
+      orphan(
+        `removeNodes.${id}`,
+        `unknown overlay-added node "${id}" — nothing to remove`,
+      );
+      continue;
+    }
+    ir.nodes.splice(index, 1);
+    nodeById.delete(id);
+    applied(`removeNodes.${id}`, "remove-node");
   }
 
   // --- added timeline fragments (motion ops): appended in par with the base ---

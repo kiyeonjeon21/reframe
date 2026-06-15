@@ -5,7 +5,7 @@
  * path never uses wall-clock time.
  */
 
-import { collectImageSrcs, evaluate, type DisplayOp, type SceneIR } from "@reframe/core";
+import { collectImageSrcs, evaluate, nodeParentMatrix, type DisplayOp, type NodeIR, type SceneIR } from "@reframe/core";
 import { renderFrame, drawDisplayList } from "@reframe/renderer-canvas";
 import { userScenes } from "virtual:reframe-user-scenes";
 import { buildPanel } from "./panel.js";
@@ -230,18 +230,31 @@ function draw() {
   drawMotionPreview();
 
   if (store.selectedId) {
-    const ops = evaluate(store.compiled, t).filter((op) => op.id === store!.selectedId);
+    const selNode = findNodeById(store.compiled.ir.nodes, store.selectedId);
+    const allOps = evaluate(store.compiled, t);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.strokeStyle = "#7d9aff";
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
-    for (const op of ops) {
-      const corners = opCorners(op);
-      ctx.beginPath();
-      corners.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
-      if (corners.length > 2) ctx.closePath();
-      ctx.stroke();
+    if (selNode && selNode.type === "group") {
+      // a group has no op of its own — box the union of its descendant ops
+      const ids = new Set(descendantLeafIds(selNode));
+      const pts = allOps.filter((op) => ids.has(op.id)).flatMap(opCorners);
+      if (pts.length > 0) {
+        const xs = pts.map((p) => p[0]);
+        const ys = pts.map((p) => p[1]);
+        const [x0, y0, x1, y1] = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+        ctx.strokeRect(x0 - 6, y0 - 6, x1 - x0 + 12, y1 - y0 + 12);
+      }
+    } else {
+      for (const op of allOps.filter((op) => op.id === store!.selectedId)) {
+        const corners = opCorners(op);
+        ctx.beginPath();
+        corners.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+        if (corners.length > 2) ctx.closePath();
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }
@@ -301,8 +314,42 @@ function hitOp(op: DisplayOp, x: number, y: number): boolean {
 
 type DragState =
   | { kind: "waypoint"; label: string; index: number; points: [number, number][] }
-  | { kind: "node"; id: string; startX: number; startY: number; px: number; py: number };
+  // `inv` is the inverse of the node's parent-matrix linear part, mapping a
+  // scene-space drag delta into the node's parent space (identity for a
+  // top-level node, so the delta is 1:1; non-trivial for nested children).
+  | { kind: "node"; id: string; startX: number; startY: number; px: number; py: number; inv: [number, number, number, number] };
 let drag: DragState | null = null;
+
+function findNodeById(nodes: NodeIR[], id: string): NodeIR | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.type === "group") {
+      const hit = findNodeById(node.children, id);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+/** Leaf (drawable) descendant ids of a node — the ops that form its hit area. */
+function descendantLeafIds(node: NodeIR): string[] {
+  if (node.type !== "group") return [node.id];
+  return node.children.flatMap(descendantLeafIds);
+}
+
+/** Begin dragging a node's x/y, capturing the inverse parent-space mapping. */
+function startNodeDrag(id: string, x: number, y: number) {
+  if (!store) return;
+  const node = findNodeById(store.compiled.ir.nodes, id);
+  if (!node || !("x" in node.props)) return;
+  const props = node.props as { x: number; y: number };
+  const p = nodeParentMatrix(store.compiled, id, t) ?? [1, 0, 0, 1, 0, 0];
+  const [a, b, c, d] = p;
+  const det = a * d - b * c || 1;
+  drag = { kind: "node", id, startX: props.x, startY: props.y, px: x, py: y, inv: [d / det, -b / det, -c / det, a / det] };
+  playing = false;
+  playBtn.textContent = "play";
+}
 
 canvas.addEventListener("mousedown", (ev) => {
   if (!store) return;
@@ -318,21 +365,26 @@ canvas.addEventListener("mousedown", (ev) => {
       return;
     }
   }
-  // 2) drag a TOP-LEVEL leaf node to reposition (sets its base x/y; scene-space delta).
-  //    Lines (x1/y1/x2/y2) and groups (no own op) are excluded for v1.
-  const topLevel = new Set(
-    store.compiled.ir.nodes.filter((n) => n.type !== "group" && n.type !== "line").map((n) => n.id),
-  );
   const ops = evaluate(store.compiled, t);
+  // 2) a SELECTED group moves as a whole when you press inside its content.
+  //    (To grab a child instead, double-click it — enters the group.)
+  const sel = store.selectedId ? findNodeById(store.compiled.ir.nodes, store.selectedId) : null;
+  if (sel && sel.type === "group") {
+    const ids = new Set(descendantLeafIds(sel));
+    if (ops.some((op) => ids.has(op.id) && hitOp(op, x, y))) {
+      startNodeDrag(sel.id, x, y);
+      ev.preventDefault();
+      return;
+    }
+  }
+  // 3) drag the top-most leaf under the cursor (nested or top-level). The
+  //    overlay address stays nodes.<id>.x/y; nested deltas are parent-corrected.
+  //    Lines (x1/y1/x2/y2) are a separate gesture.
   for (let i = ops.length - 1; i >= 0; i--) {
     const op = ops[i]!;
-    if (!topLevel.has(op.id) || !hitOp(op, x, y)) continue;
-    const node = store.compiled.ir.nodes.find((n) => n.id === op.id)!;
-    const props = node.props as { x: number; y: number };
-    drag = { kind: "node", id: op.id, startX: props.x, startY: props.y, px: x, py: y };
+    if (op.type === "line" || !hitOp(op, x, y)) continue;
     store.select(op.id);
-    playing = false;
-    playBtn.textContent = "play";
+    startNodeDrag(op.id, x, y);
     ev.preventDefault();
     return;
   }
@@ -345,8 +397,11 @@ window.addEventListener("mousemove", (ev) => {
     drag.points[drag.index] = [Math.round(x), Math.round(y)];
     store.setMotionPathPoints(drag.label, drag.points);
   } else {
-    store.setNodeProp(drag.id, "x", Math.round(drag.startX + (x - drag.px)));
-    store.setNodeProp(drag.id, "y", Math.round(drag.startY + (y - drag.py)));
+    const dx = x - drag.px;
+    const dy = y - drag.py;
+    const [ia, ib, ic, id] = drag.inv;
+    store.setNodeProp(drag.id, "x", Math.round(drag.startX + ia * dx + ic * dy));
+    store.setNodeProp(drag.id, "y", Math.round(drag.startY + ib * dx + id * dy));
   }
   draw();
 });
@@ -389,6 +444,17 @@ canvas.addEventListener("dblclick", (ev) => {
         return;
       }
     }
+  }
+  // not on a waypoint → dive in: select the top-most leaf under the cursor (so a
+  // child inside a selected group becomes selectable for direct dragging).
+  const ops = evaluate(store.compiled, t);
+  for (let i = ops.length - 1; i >= 0; i--) {
+    const op = ops[i]!;
+    if (op.type === "line" || !hitOp(op, x, y)) continue;
+    store.select(op.id);
+    draw();
+    ev.preventDefault();
+    return;
   }
 });
 

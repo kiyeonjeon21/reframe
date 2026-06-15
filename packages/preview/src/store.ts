@@ -200,6 +200,105 @@ export class EditorStore {
     this.recompose("structure");
   }
 
+  // --- add / duplicate / remove nodes (overlay-owned) ---
+
+  /** Every node id currently in the composed scene (base + overlay-added). */
+  private allNodeIds(): Set<string> {
+    const ids = new Set<string>();
+    const walk = (nodes: NodeIR[]) => {
+      for (const n of nodes) {
+        ids.add(n.id);
+        if (n.type === "group") walk(n.children);
+      }
+    };
+    walk(this.compiled.ir.nodes);
+    for (const n of this.draft.addNodes ?? []) ids.add(n.id);
+    return ids;
+  }
+
+  private uniqueId(base: string): string {
+    const ids = this.allNodeIds();
+    if (!ids.has(base)) return base;
+    for (let i = 2; ; i++) if (!ids.has(`${base}-${i}`)) return `${base}-${i}`;
+  }
+
+  /** True for nodes this overlay added (the only ones removeNode can drop). */
+  isAddedNode(id: string): boolean {
+    return Boolean(this.draft.addNodes?.some((n) => n.id === id));
+  }
+
+  /** Append a fresh text/rect/ellipse at scene centre; owned by the overlay. */
+  addNode(type: "text" | "rect" | "ellipse"): string {
+    const x = Math.round(this.base.size.width / 2);
+    const y = Math.round(this.base.size.height / 2);
+    const id = this.uniqueId(type);
+    let node: NodeIR;
+    if (type === "text") {
+      node = { type, id, props: { x, y, anchor: "center", content: "Text", fontFamily: "Inter", fontSize: 64, fontWeight: 700, fill: "#FFFFFF" } };
+    } else if (type === "rect") {
+      node = { type, id, props: { x, y, anchor: "center", width: 220, height: 130, fill: "#FF4D00", radius: 10 } };
+    } else {
+      node = { type, id, props: { x, y, anchor: "center", width: 160, height: 160, fill: "#00C2A8" } };
+    }
+    (this.draft.addNodes ??= []).push(node);
+    this.selectedId = id;
+    this.recompose("structure");
+    return id;
+  }
+
+  /** Clone a node to the scene root (overlay-owned), offset so it's visible. */
+  duplicateNode(id: string): string | null {
+    const src = this.findNode(this.compiled.ir.nodes, id);
+    if (!src) return null;
+    const clone = structuredClone(src) as NodeIR;
+    clone.id = this.uniqueId(`${id}-copy`);
+    const reId = (n: NodeIR) => {
+      if (n.id !== clone.id) n.id = this.uniqueId(n.id);
+      if (n.type === "group") n.children.forEach(reId);
+    };
+    if (clone.type === "group") clone.children.forEach(reId);
+    if ("x" in clone.props) {
+      (clone.props as { x: number; y: number }).x += 24;
+      (clone.props as { x: number; y: number }).y += 24;
+    }
+    (this.draft.addNodes ??= []).push(clone);
+    this.selectedId = clone.id;
+    this.recompose("structure");
+    return clone.id;
+  }
+
+  /** Remove an overlay-added node (base nodes can't be removed — hide instead).
+   *  Returns false if id is a base node so the caller can offer "hide". */
+  removeNode(id: string): boolean {
+    const list = this.draft.addNodes;
+    const index = list?.findIndex((n) => n.id === id) ?? -1;
+    if (!list || index < 0) return false;
+    list.splice(index, 1);
+    if (list.length === 0) delete this.draft.addNodes;
+    delete this.draft.nodes?.[id];
+    for (const [label, op] of this.addedOps) if (op.target === id) this.addedOps.delete(label);
+    if (this.selectedId === id) this.selectedId = null;
+    this.prune();
+    this.regenerateOps(); // rebuilds addTimeline + recomposes
+    return true;
+  }
+
+  /** Non-destructive "delete" for a base node: hide it via opacity 0. */
+  hideNode(id: string) {
+    this.setNodeProp(id, "opacity", 0);
+  }
+
+  private findNode(nodes: NodeIR[], id: string): NodeIR | null {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.type === "group") {
+        const hit = this.findNode(n.children, id);
+        if (hit) return hit;
+      }
+    }
+    return null;
+  }
+
   unsetTimelineParam(
     label: string,
     key: "duration" | "ease" | "stagger" | "at" | "gap" | "scale" | "order" | "curviness",

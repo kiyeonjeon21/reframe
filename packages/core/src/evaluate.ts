@@ -136,59 +136,110 @@ function behaviorEnvelope(b: { from?: number; until?: number; ramp?: number }, t
   return Math.max(0, Math.min(1, envelope));
 }
 
+/**
+ * Sample one node prop at time t — the single source of animated values shared
+ * by `evaluate` (rendering) and `nodeParentMatrix` (editor hit/drag math), so
+ * both agree to the last bit. Pure; the determinism contract rests on it.
+ */
+export function sampleProp(
+  compiled: CompiledScene,
+  t: number,
+  target: string,
+  prop: string,
+  fallback: PropValue,
+): PropValue {
+  let value = compiled.initialValues.get(`${target}.${prop}`) ?? fallback;
+  let segStart = Number.NEGATIVE_INFINITY; // authored start of the active tween segment
+  const segs = compiled.segments.get(`${target}.${prop}`);
+  if (segs) {
+    let active: PropertySegment | undefined;
+    for (const seg of segs) {
+      if (seg.t0 <= t) active = seg;
+      else break;
+    }
+    if (active) {
+      segStart = active.t0;
+      if (t >= active.t1) {
+        value = active.to;
+      } else {
+        const u = resolveEase(active.ease)((t - active.t0) / (active.t1 - active.t0));
+        value = lerpValue(active.from, active.to, u);
+      }
+    }
+  }
+  // A motion path overrides x/y (and rotation, if autoRotate) within its
+  // window, holding the end after it completes. Whichever driver was authored
+  // LATER wins (compare start times), so a tween placed after the path takes
+  // over in its own window while gaps still hold the path's end. Applied
+  // before behaviors so a wiggle/oscillate can still ride on top.
+  if (prop === "x" || prop === "y" || prop === "rotation") {
+    const drivers = compiled.motionPaths.get(target);
+    if (drivers) {
+      let active: MotionDriver | undefined;
+      for (const d of drivers) {
+        if (d.t0 <= t) active = d;
+        else break;
+      }
+      if (active && active.t0 >= segStart && (prop !== "rotation" || active.autoRotate) && active.points.length > 0) {
+        const span = active.t1 - active.t0;
+        const u = span <= 0 ? 1 : resolveEase(active.ease)(Math.max(0, Math.min(1, (t - active.t0) / span)));
+        if (prop === "x") value = pathPoint(active.points, active.closed, u, active.curviness)[0];
+        else if (prop === "y") value = pathPoint(active.points, active.closed, u, active.curviness)[1];
+        else value = pathTangentAngle(active.points, active.closed, u, active.curviness) + active.rotateOffset;
+      }
+    }
+  }
+  for (const b of compiled.ir.behaviors ?? []) {
+    if (b.target === target && b.prop === prop && typeof value === "number") {
+      const envelope = behaviorEnvelope(b, t);
+      if (envelope > 0) value = value + envelope * sampleBehavior(b.behavior, t);
+    }
+  }
+  return value;
+}
+
+/**
+ * The accumulated transform of a node's ANCESTORS at time t — the coordinate
+ * space its `x/y` live in (identity for a top-level node). The editor inverts
+ * this to convert a scene-space drag delta into the node's parent space, so a
+ * nested child can be dragged and the overlay still writes `nodes.<id>.x/y`.
+ * Walks groups exactly as `evaluate` does (same sampler, no opacity culling so
+ * an invisible-at-t node is still positionable). Returns null if id is unknown.
+ */
+export function nodeParentMatrix(compiled: CompiledScene, id: string, t: number): Mat2D | null {
+  const num = (target: string, prop: string, fallback: number): number => {
+    const v = sampleProp(compiled, t, target, prop, fallback);
+    return typeof v === "number" ? v : fallback;
+  };
+  let result: Mat2D | null = null;
+  const walk = (node: NodeIR, parent: Mat2D): boolean => {
+    if (node.id === id) {
+      result = parent;
+      return true;
+    }
+    if (node.type === "group") {
+      const m = multiply(
+        parent,
+        localMatrix(
+          num(node.id, "x", node.props.x),
+          num(node.id, "y", node.props.y),
+          num(node.id, "rotation", node.props.rotation ?? 0),
+          num(node.id, "scale", node.props.scale ?? 1),
+        ),
+      );
+      for (const child of node.children) if (walk(child, m)) return true;
+    }
+    return false;
+  };
+  for (const node of compiled.ir.nodes) if (walk(node, IDENTITY)) break;
+  return result;
+}
+
 export function evaluate(compiled: CompiledScene, t: number): DisplayList {
   const ops: DisplayList = [];
 
-  const valueAt = (target: string, prop: string, fallback: PropValue): PropValue => {
-    let value = compiled.initialValues.get(`${target}.${prop}`) ?? fallback;
-    let segStart = Number.NEGATIVE_INFINITY; // authored start of the active tween segment
-    const segs = compiled.segments.get(`${target}.${prop}`);
-    if (segs) {
-      let active: PropertySegment | undefined;
-      for (const seg of segs) {
-        if (seg.t0 <= t) active = seg;
-        else break;
-      }
-      if (active) {
-        segStart = active.t0;
-        if (t >= active.t1) {
-          value = active.to;
-        } else {
-          const u = resolveEase(active.ease)((t - active.t0) / (active.t1 - active.t0));
-          value = lerpValue(active.from, active.to, u);
-        }
-      }
-    }
-    // A motion path overrides x/y (and rotation, if autoRotate) within its
-    // window, holding the end after it completes. Whichever driver was authored
-    // LATER wins (compare start times), so a tween placed after the path takes
-    // over in its own window while gaps still hold the path's end. Applied
-    // before behaviors so a wiggle/oscillate can still ride on top.
-    if (prop === "x" || prop === "y" || prop === "rotation") {
-      const drivers = compiled.motionPaths.get(target);
-      if (drivers) {
-        let active: MotionDriver | undefined;
-        for (const d of drivers) {
-          if (d.t0 <= t) active = d;
-          else break;
-        }
-        if (active && active.t0 >= segStart && (prop !== "rotation" || active.autoRotate) && active.points.length > 0) {
-          const span = active.t1 - active.t0;
-          const u = span <= 0 ? 1 : resolveEase(active.ease)(Math.max(0, Math.min(1, (t - active.t0) / span)));
-          if (prop === "x") value = pathPoint(active.points, active.closed, u, active.curviness)[0];
-          else if (prop === "y") value = pathPoint(active.points, active.closed, u, active.curviness)[1];
-          else value = pathTangentAngle(active.points, active.closed, u, active.curviness) + active.rotateOffset;
-        }
-      }
-    }
-    for (const b of compiled.ir.behaviors ?? []) {
-      if (b.target === target && b.prop === prop && typeof value === "number") {
-        const envelope = behaviorEnvelope(b, t);
-        if (envelope > 0) value = value + envelope * sampleBehavior(b.behavior, t);
-      }
-    }
-    return value;
-  };
+  const valueAt = (target: string, prop: string, fallback: PropValue): PropValue =>
+    sampleProp(compiled, t, target, prop, fallback);
 
   const num = (target: string, prop: string, fallback: number): number => {
     const v = valueAt(target, prop, fallback);
