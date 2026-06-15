@@ -5,7 +5,7 @@
  * path never uses wall-clock time.
  */
 
-import { collectImageSrcs, compileComposition, evaluate, nodeParentMatrix, type CompositionIR, type DisplayOp, type NodeIR, type SceneIR } from "@reframe/core";
+import { collectImageSrcs, compileComposition, evaluate, nodeParentMatrix, type CompositionIR, type DisplayOp, type NodeIR, type SceneIR, type TimelineIR } from "@reframe/core";
 import { renderFrame, drawDisplayList } from "@reframe/renderer-canvas";
 import { userScenes } from "virtual:reframe-user-scenes";
 import { buildPanel } from "./panel.js";
@@ -204,6 +204,64 @@ interface TimelineSeg {
   onClick: () => void;
 }
 
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+type BeatIR = Extract<TimelineIR, { kind: "beat" }>;
+function findBeat(tl: TimelineIR | undefined, name: string): BeatIR | null {
+  let found: BeatIR | null = null;
+  const walk = (s: TimelineIR) => {
+    if (s.kind === "beat" && s.name === name) found = s;
+    if ("children" in s) s.children.forEach(walk);
+  };
+  if (tl) walk(tl);
+  return found;
+}
+
+/** Drag a beat band to retime its chapter: horizontal = move (`gap`), right edge
+ *  = stretch (`scale`). Persists as a timeline overlay → survives regen. A click
+ *  without movement falls through to the band's seek. */
+function attachBeatDrag(band: HTMLElement, seg: TimelineSeg) {
+  band.style.cursor = "grab";
+  band.addEventListener("mousedown", (ev) => {
+    if (!store) return;
+    ev.preventDefault();
+    const lane = document.getElementById("comp-track");
+    const pxPerSec = (lane?.clientWidth ?? 1) / (compTotal || 1);
+    const startX = ev.clientX;
+    const rect = band.getBoundingClientRect();
+    const stretch = ev.clientX > rect.right - 8; // grabbed the right edge
+    const beat = findBeat(store.compiled.ir.timeline, seg.label);
+    const origGap = beat?.gap ?? 0;
+    const origScale = beat?.scale ?? 1;
+    const origLeftPct = parseFloat(band.style.left) || 0;
+    const origWidthPct = parseFloat(band.style.width) || 0;
+    let moved = false;
+    band.style.cursor = stretch ? "ew-resize" : "grabbing";
+    const onMove = (e: MouseEvent) => {
+      const dpx = e.clientX - startX;
+      if (Math.abs(dpx) > 3) moved = true;
+      const dT = dpx / pxPerSec;
+      if (stretch) {
+        const newWidthPct = Math.max(0.4, origWidthPct + (dT / (compTotal || 1)) * 100);
+        band.style.width = `${newWidthPct}%`;
+        store!.setTimelineParam(seg.label, "scale", round3(origScale * (newWidthPct / (origWidthPct || 1))));
+      } else {
+        band.style.left = `${Math.max(0, origLeftPct + (dT / (compTotal || 1)) * 100)}%`;
+        store!.setTimelineParam(seg.label, "gap", round3(Math.max(0, origGap + dT)));
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      band.style.cursor = "grab";
+      if (!moved) seg.onClick(); // a plain click seeks
+      else buildTimeline(); // settle bands + tracks from the composed result
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  });
+}
+
 /** Greedy lane assignment so time-overlapping bands stack on separate rows
  *  (a crossfade or parallel beat shows clearly instead of colliding on one line). */
 function assignLanes(segs: TimelineSeg[]): number[] {
@@ -314,7 +372,9 @@ function buildTimeline() {
     band.style.width = `${Math.max(0, (s.end - s.start) / compTotal) * 100}%`;
     band.style.top = `${lanes[i]! * (LANE_H + GAP)}px`;
     band.style.height = `${LANE_H}px`;
-    band.addEventListener("click", s.onClick);
+    // beat bands drag to retime (move/stretch); scene bands just open the scene
+    if (s.beat) attachBeatDrag(band, s);
+    else band.addEventListener("click", s.onClick);
     track.append(band);
   });
   compPlayhead = el("div", { id: "ct-playhead" });
