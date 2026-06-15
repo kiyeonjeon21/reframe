@@ -143,8 +143,8 @@ export function compileScene(ir: SceneIR): CompiledScene {
     const v = current.get(key(target, prop));
     if (v !== undefined) return v;
     // Animatable prop that has a numeric default and was never set explicitly.
-    if (prop === "opacity" || prop === "scale" || prop === "progress") return 1;
-    if (prop === "rotation") return 0;
+    if (prop === "opacity" || prop === "scale" || prop === "progress" || prop === "scaleX" || prop === "scaleY") return 1;
+    if (prop === "rotation" || prop === "skewX" || prop === "skewY") return 0;
     throw new Error(`cannot animate "${prop}" of "${target}": no base value to start from`);
   };
 

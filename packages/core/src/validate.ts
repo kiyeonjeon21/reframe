@@ -6,7 +6,7 @@
 
 import type { CompositionIR, NodeIR, SceneIR, TimelineIR } from "./ir.js";
 
-const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "anchor"];
+const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor"];
 export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   rect: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth", "radius"],
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],

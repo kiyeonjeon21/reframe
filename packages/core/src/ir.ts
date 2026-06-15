@@ -57,7 +57,13 @@ export interface BaseProps {
   y: number;
   opacity?: number;
   rotation?: number; // degrees, around the anchor point
-  scale?: number; // around the anchor point
+  scale?: number; // uniform, around the anchor point
+  /** Per-axis scale multipliers on `scale` (default 1) — a 2.5D squash/tilt. */
+  scaleX?: number;
+  scaleY?: number;
+  /** Shear angles in degrees (default 0) — a 2.5D lean. No true perspective. */
+  skewX?: number;
+  skewY?: number;
   anchor?: Anchor;
 }
 

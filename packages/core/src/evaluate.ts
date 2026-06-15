@@ -111,11 +111,38 @@ function multiply(m: Mat2D, n: Mat2D): Mat2D {
   ];
 }
 
-function localMatrix(x: number, y: number, rotationDeg: number, scale: number): Mat2D {
+/**
+ * The node's local affine matrix: Translate(x,y) ∘ Rotate ∘ Skew ∘ Scale, around
+ * the anchor. `scaleX/scaleY` are per-axis multipliers on `scale`; `skewX/skewY`
+ * are shear angles in degrees (a 2.5D "tilt" — no true perspective). The fast
+ * path returns the exact uniform formula at defaults, so existing scenes stay
+ * byte-identical (the determinism/golden contract).
+ */
+export function localMatrix(
+  x: number,
+  y: number,
+  rotationDeg: number,
+  scale: number,
+  scaleX = 1,
+  scaleY = 1,
+  skewXDeg = 0,
+  skewYDeg = 0,
+): Mat2D {
   const r = (rotationDeg * Math.PI) / 180;
-  const cos = Math.cos(r) * scale;
-  const sin = Math.sin(r) * scale;
-  return [cos, sin, -sin, cos, x, y];
+  if (scaleX === 1 && scaleY === 1 && skewXDeg === 0 && skewYDeg === 0) {
+    const cos = Math.cos(r) * scale;
+    const sin = Math.sin(r) * scale;
+    return [cos, sin, -sin, cos, x, y];
+  }
+  const c = Math.cos(r);
+  const s = Math.sin(r);
+  const tx = Math.tan((skewXDeg * Math.PI) / 180);
+  const ty = Math.tan((skewYDeg * Math.PI) / 180);
+  const R: Mat2D = [c, s, -s, c, 0, 0];
+  const K: Mat2D = [1, ty, tx, 1, 0, 0]; // x' = x + tx·y, y' = ty·x + y
+  const S: Mat2D = [scale * scaleX, 0, 0, scale * scaleY, 0, 0];
+  const m = multiply(R, multiply(K, S)); // R ∘ K ∘ S (scale, then skew, then rotate)
+  return [m[0], m[1], m[2], m[3], x, y];
 }
 
 const ANCHOR_FACTORS: Record<Anchor, [number, number]> = {
@@ -234,6 +261,10 @@ export function nodeParentMatrix(compiled: CompiledScene, id: string, t: number)
           num(node.id, "y", node.props.y),
           num(node.id, "rotation", node.props.rotation ?? 0),
           num(node.id, "scale", node.props.scale ?? 1),
+          num(node.id, "scaleX", node.props.scaleX ?? 1),
+          num(node.id, "scaleY", node.props.scaleY ?? 1),
+          num(node.id, "skewX", node.props.skewX ?? 0),
+          num(node.id, "skewY", node.props.skewY ?? 0),
         ),
       );
       for (const child of node.children) if (walk(child, m)) return true;
@@ -298,6 +329,10 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         num(id, "y", node.props.y),
         num(id, "rotation", node.props.rotation ?? 0),
         num(id, "scale", node.props.scale ?? 1),
+        num(id, "scaleX", node.props.scaleX ?? 1),
+        num(id, "scaleY", node.props.scaleY ?? 1),
+        num(id, "skewX", node.props.skewX ?? 0),
+        num(id, "skewY", node.props.skewY ?? 0),
       ),
     );
 

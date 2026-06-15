@@ -22,12 +22,16 @@ import {
 } from "@reframe/core";
 import type { EditorStore } from "./store.js";
 
-const NUMERIC_DEFAULTS: Record<string, number> = { opacity: 1, scale: 1, rotation: 0 };
+const NUMERIC_DEFAULTS: Record<string, number> = { opacity: 1, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, skewX: 0, skewY: 0 };
 const RANGES: Record<string, [number, number, number]> = {
   opacity: [0, 1, 0.01],
   progress: [0, 1, 0.01],
   scale: [0, 3, 0.01],
+  scaleX: [0, 3, 0.01],
+  scaleY: [0, 3, 0.01],
   rotation: [-360, 360, 1],
+  skewX: [-60, 60, 1],
+  skewY: [-60, 60, 1],
   curviness: [0, 2, 0.05],
   amount: [0, 3, 0.1],
 };
