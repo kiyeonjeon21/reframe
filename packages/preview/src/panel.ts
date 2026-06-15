@@ -349,8 +349,20 @@ function renderMotionOps(root: HTMLElement, store: EditorStore) {
     const add = el("button", { title: "add this motion to the selected node" }, "+ add");
     add.addEventListener("click", () => store.addMotionOp(sel.value as MotionOpName, store.selectedId!));
     root.append(el("div", { class: "prop-row" }, el("label", {}, `▸ ${store.selectedId}`), sel, add));
-    if (!store.hasMotionPath(store.selectedId)) {
-      root.append(el("div", { class: "hint" }, "double-click the canvas to set a move target (then double-click the path to bend it)"));
+    // a motionless top-level node can get its FIRST move (a path to a destination)
+    if (!store.hasMotionPath(store.selectedId) && store.isTopLevel(store.selectedId)) {
+      if (store.pendingMove === store.selectedId) {
+        const cancel = el("button", { title: "cancel" }, "cancel");
+        cancel.addEventListener("click", () => store.disarmMove());
+        const armed = el("div", { class: "prop-row" }, el("label", {}, "▸ click a destination on the canvas…"), cancel);
+        armed.querySelector("label")!.setAttribute("style", "color:#7d9aff");
+        root.append(armed);
+      } else {
+        const mv = el("button", { title: "give this node a move: then click where it should go" }, "+ move");
+        mv.addEventListener("click", () => store.armMove(store.selectedId!));
+        root.append(el("div", { class: "prop-row" }, el("label", {}, "▸ no motion yet"), mv));
+        root.append(el("div", { class: "hint" }, "or double-click the canvas to set a destination"));
+      }
     }
   }
   if (store.addedOps.size > 0) {

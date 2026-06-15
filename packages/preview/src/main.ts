@@ -708,6 +708,7 @@ function draw() {
   scrub.value = String(duration ? t / duration : 0);
   timeLabel.textContent = `${t.toFixed(3)} / ${duration.toFixed(3)}`;
   updateCompPlayhead();
+  canvas.style.cursor = store.pendingMove ? "crosshair" : "";
 }
 
 const HANDLE_R = 9;
@@ -775,6 +776,15 @@ function startNodeDrag(id: string, x: number, y: number) {
 canvas.addEventListener("mousedown", (ev) => {
   if (!store) return;
   const [x, y] = clientToScene(ev);
+  // 0) "add move" armed: this click is the destination for the node's first move
+  if (store.pendingMove) {
+    const id = store.pendingMove;
+    store.disarmMove();
+    store.addMove(id, [x, y]);
+    draw();
+    ev.preventDefault();
+    return;
+  }
   // 1) motionPath waypoint handles take priority
   for (const mp of store.motionPaths()) {
     const i = mp.points.findIndex(([px, py]) => Math.hypot(px - x, py - y) <= HANDLE_R + 4);

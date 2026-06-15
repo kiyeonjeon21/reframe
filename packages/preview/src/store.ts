@@ -158,6 +158,25 @@ export class EditorStore {
     this.regenerateOps();
   }
 
+  /** "Add move" arming: the node awaiting a destination click on the canvas. */
+  pendingMove: string | null = null;
+  armMove(id: string) {
+    this.pendingMove = id;
+    this.notify("structure");
+  }
+  disarmMove() {
+    if (this.pendingMove !== null) {
+      this.pendingMove = null;
+      this.notify("structure");
+    }
+  }
+
+  /** True if the node is a scene-root node (its x/y are scene coords, so a
+   *  canvas click maps to its move path 1:1). */
+  isTopLevel(id: string): boolean {
+    return this.compiled.ir.nodes.some((n) => n.id === id);
+  }
+
   /** True if the node already has a motionPath (base or editor-added). */
   hasMotionPath(target: string): boolean {
     let found = false;
@@ -373,6 +392,7 @@ export class EditorStore {
 
   select(id: string | null) {
     this.selectedId = id;
+    if (id !== this.pendingMove) this.pendingMove = null; // selecting elsewhere cancels arming
     this.notify("structure");
   }
 
