@@ -1,0 +1,37 @@
+name: Publish
+
+# Tag a release to publish: bump packages/reframe-video/package.json, commit,
+# then `git tag v0.1.2 && git push origin v0.1.2`. Uses the NPM_TOKEN repo secret.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+      - run: pnpm install --frozen-lockfile
+      - name: Build the publishable package
+        run: pnpm --filter reframe-video build
+      - name: Guard — tag must match package version
+        run: |
+          PKG_VERSION="v$(node -p "require('./packages/reframe-video/package.json').version")"
+          TAG="${GITHUB_REF_NAME}"
+          echo "tag=$TAG package=$PKG_VERSION"
+          test "$TAG" = "$PKG_VERSION" || { echo "::error::tag $TAG != package $PKG_VERSION"; exit 1; }
+      - name: Publish to npm
+        run: npm publish
+        working-directory: packages/reframe-video
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

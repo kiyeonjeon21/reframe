@@ -16,3 +16,5 @@ packages/reframe-video/*.tgz
 benchmark/harness/motion/calibration/trace-work/
 refs/*.mov
 refs/*.mp4
+.env
+.claude/settings.local.json
