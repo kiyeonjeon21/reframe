@@ -152,3 +152,25 @@ VERIFIER: Matrix — nodeWorldMatrix on a known nested scene matches evaluate's 
 DONE-WHEN: canvas drag moves (a) a top-level group and (b) a nested leaf child, both writing stable nodes.<id> patches that survive regen; nodeWorldMatrix tested against evaluate; add-node+duplicate+delete (overlay-added only) in the panel, base-node delete refused+reported; reframe-demo editable end-to-end (nested drag + group drag + add/delete); all goldens byte-identical; pnpm test + typecheck green.
 
 OUT-OF-SCOPE: rotation/scale handles on canvas (x/y drag only); multi-select/marquee; snapping/guides/alignment; the agent↔UI file round-trip (goal-7); NL→scene .ts sketch (goal-8); editing motionPreset knobs in-preview; nested drag for line (separate gesture).
+
+---
+
+---
+
+## goal-9 condition
+
+Composition — the three-graph model made real. reframe is single-scene; SceneIR has no layer above it, so "scene 간 구분" has no representation. Add a Composition layer ABOVE SceneIR (multi-scene render), extend beat to own a node subset (the intent graph), and surface all three graphs in the preview. Builds on goals 2/3/5/6.
+
+ANCHOR (extend, don't rebuild): ir.ts — NEW CompositionIR {id,scenes:{scene:SceneIR,transition?,at?}[],audio?}; beat gains additive nodes?:string[]. dsl.ts — composition() factory; beat(name,{nodes?},…). compile.ts/sibling — compileComposition: per-scene durations → scene start times honoring transitions/overlaps → total. audio.ts — composition AudioPlan: offset each scene's cues by its start + composition bgm (kokoro via goal-3 gen). render-cli/reframe.ts — render <composition.ts> → ffmpeg concat/xfade → one deterministic mp4; --scene <id> standalone. preview/ — scene navigator (filmstrip → open scene in existing editor) + per-scene timeline grouped by beat. validate.ts — validateComposition.
+
+DECISIONS (fixed — locked by the human):
+1. Composition is a NEW top-level IR wrapping independent SceneIRs — composition({id,scenes:[{scene,transition?,at?}],audio?}). Each scene is a normal SceneIR (renders/previews/overlays standalone, byte-identical to today). Composition renders each scene + concatenates with transitions into one deterministic mp4. NO change to SceneIR, evaluate, or single-scene compile — composition is a layer above.
+2. A beat may own a node subset: beat(name,{nodes?:string[]},children) — purely additive metadata. Does NOT touch compile/evaluate (semantic annotation only); the preview groups node+timeline tracks under the beat, overlay/regen address it by stable name. beat(name,{},…) stays byte-identical to seq.
+3. The preview surfaces all three graphs: a scene navigator (composition filmstrip; click a scene → existing per-scene editor) + a per-scene timeline grouped by beat (each beat a track group of its owned nodes' lanes + label markers). Editing is per-scene; composition is navigated + retimed.
+4. Audio composes at the composition level. A composition audio (bgm spanning scenes) layers over per-scene cues; the composition AudioPlan offsets each scene's cues by that scene's start. Determinism contract extends to the composition AudioPlan + WAV bytes (same boundary — not AAC-in-mp4).
+
+VERIFIER: Determinism — a 2-scene composition renders byte-identically twice (extend determinism.test.ts); AudioPlan byte-stable. Scene independence — a scene inside the composition equals rendering that SceneIR alone (modulo time offset). Beat additivity — beat(name,{nodes:[…]},…) byte-identical to beat(name,{},…); all goldens byte-identical. Survival — an overlay beat-retime + an owned-node edit survive a base regen by stable name/id (regen-contract). Audio/layout — per-scene cues offset by start; bgm spans; AudioPlan total = composition duration; scene starts honor transitions. test + typecheck green.
+
+DONE-WHEN: CompositionIR + composition() + beat additive nodes?; compileComposition lays out scene times w/ transitions; render <composition.ts> → deterministic mp4 (byte-identical twice) + --scene <id> standalone; scene identical inside vs alone (modulo offset); composition AudioPlan byte-stable + offsets cues + bgm; preview scene navigator + per-scene beat-grouped timeline (track groups + label markers); beat-retime + owned-node edit survive regen; beat(name,{nodes},…) byte-identical to beat(name,{},…); all goldens byte-identical; test + typecheck green.
+
+OUT-OF-SCOPE: NL→composition (goal-8); the agent↔UI file round-trip (goal-7); transitions beyond a small set (cut, crossfade/xfade); cross-scene editing in one gesture; a node-graph dependency editor (intent stays beat-grouping); kokoro/ACE-Step model wiring (goal-3 gen — here only the audio slot + plan); any change to single-scene evaluate/compile.

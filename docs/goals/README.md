@@ -74,28 +74,42 @@ reason to build ON this repo rather than start over.
    "do detailed work easily in the UI". Builds on goal-5 + the overlay/regen
    loop.
 
+9. **[goal-9] composition — the three-graph model made real** — reframe is
+   single-scene, so "scene 간 구분" has no representation. Add a **composition**
+   layer ABOVE `SceneIR` (ordered independent scenes + transitions + cross-scene
+   audio → one deterministic mp4, each scene still renders/previews standalone),
+   extend `beat` to **own a node subset** (the intent graph; additive metadata),
+   and **surface all three graphs** in the preview (scene navigator + per-scene
+   timeline grouped by beat). The keystone that makes scene/motion/intent graphs
+   real. *Foundational — in practice sequences ahead of goal-7/8, which then
+   compose across scenes.* Builds on goals 2/3/5/6.
+
 ### Planned (the "copilot" workflow — design decisions already locked)
 
 The product loop is: **NL sketch → easy UI detailing → coding-agent ↔ UI
-round-trip**. goal-6 is the UI-detailing floor. The next two are scoped but not
-yet written as full conditions; their load-bearing representations are locked
-(human-approved) so they become pure implementation when picked up:
+round-trip**, now spanning a multi-scene **composition** (goal-9). goal-6 is the
+UI-detailing floor. The next two are scoped but not yet written as full
+conditions; their load-bearing representations are locked (human-approved) so
+they become pure implementation when picked up:
 
 - **[goal-7] agent↔UI file round-trip** — the "copilot" usability layer.
   *Locked decision:* **file-based autosave, no copy-paste** — the preview
   autosaves the overlay draft to a known path; the coding agent watches it,
   folds edits into the scene `.ts`, and the preview hot-reloads. Closes the
-  observe/fold loop without a clipboard step. Depends on goal-6.
-- **[goal-8] NL sketch → scene** — the front door. *Locked decision:*
-  **code-first** — the agent generates a scene `.ts` (deterministic, foldable
-  literals), not an overlay-only or new sketch-IR representation. A skill-layer
-  goal (LLM emits the scene), so its verifier differs from the engine goals.
+  observe/fold loop without a clipboard step. Depends on goal-6 (and composes
+  across goal-9 scenes).
+- **[goal-8] NL sketch → scene/composition** — the front door. *Locked
+  decision:* **code-first** — the agent generates a scene/composition `.ts`
+  (deterministic, foldable literals), not an overlay-only or new sketch-IR
+  representation. A skill-layer goal (LLM emits the scene), so its verifier
+  differs from the engine goals.
 
 Order: goal-1 → goal-1.5 → goal-2 (consumes the hardened sketch); goal-3 is
 independent and lower-novelty, parallelizable by a second agent. goal-4 depends
 on goal-2 (beats) + the motionPath/path primitives — both landed. goal-5 builds
-on goal-4 + the preview editing loop (both landed). goal-6 builds on goal-5;
-goal-7 builds on goal-6; goal-8 is the skill-layer front door (parallelizable).
+on goal-4 + the preview editing loop (both landed). goal-6 builds on goal-5.
+goal-9 is foundational (multi-scene) and in practice lands before goal-7
+(round-trip across scenes) and goal-8 (NL → composition); both depend on goal-6.
 
 ## The human/agent split (read this before delegating)
 
