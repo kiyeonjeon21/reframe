@@ -15,6 +15,7 @@ export {
 export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan, type MotionDriver } from "./compile.js";
 export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
 export { motionPreset, PRESET_NAMES, type PresetName, type PresetRig, type PresetOpts } from "./presets.js";
+export { devicePreset, deviceScreen, DEVICE_PRESET_NAMES, type DevicePresetName, type DevicePresetOpts } from "./devicePreset.js";
 export { motionOp, motionOpLabel, MOTION_OPS, type MotionOpName, type MotionOpOpts, type MotionOpResult } from "./motionOps.js";
 export {
   resolveAudioPlan,
