@@ -76,13 +76,25 @@ export function buildGhScene(d: GhData): SceneIR {
     text({ id: "made", x: 540, y: 1280, anchor: "center", content: "made with reframe", fontFamily: "Inter", fontSize: 18, fill: "#484F58", opacity: 0 }),
   ];
 
+  // A "stage" group wraps everything so the whole composition can move as one.
+  // Scaling a group happens around its (x,y) point, so to zoom around the card's
+  // CENTER we couple x/y = (1 - scale) * center — the layout coords stay untouched.
+  const CX = 540, CY = 675;
+  const cam = (scale: number) => ({ scale, x: (1 - scale) * CX, y: (1 - scale) * CY });
+
   return scene({
     id: "gh-card",
     size: { width: 1080, height: 1350 },
     fps: 30,
     background: BG,
-    nodes,
-    timeline: seq(
+    nodes: [group({ id: "stage", ...cam(1.06) }, nodes)],
+    timeline: par(
+      // camera: a quick push-in to settle, then a slow cinematic drift (Ken Burns).
+      seq(
+        tween("stage", cam(1), { duration: 1.0, ease: "easeOutExpo", label: "zoom-in" }),
+        tween("stage", cam(1.035), { duration: 4.6, ease: "linear", label: "drift" }),
+      ),
+      seq(
       wait(0.2),
       par(
         tween("avatar", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutBack", label: "avatar-in" }),
@@ -106,6 +118,7 @@ export function buildGhScene(d: GhData): SceneIR {
         seq(wait(0.15), tween("made", { opacity: 1 }, { duration: 0.4, ease: "easeOutQuad" })),
       ),
       wait(1.6, "hold"),
+      ),
     ),
   });
 }
