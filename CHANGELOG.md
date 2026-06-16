@@ -8,6 +8,38 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-16
+
+### Added
+
+#### Character system
+
+- **`rig(boneTree, opts)` / `humanoid(opts)`** — a first-class, declarative
+  character rig that compiles to plain IR: nested `group` joints with stable
+  `${id}-${name}` addresses (the regen contract extends to them). Forward-
+  kinematics posing via **`poseTo`** / **`rigPose`**; a 2-bone inverse-kinematics
+  solver, **`ikReach`**. The character analog of `devicePreset`.
+- **`characterPreset(name, opts)`** — a seeded motion generator (the character
+  analog of `motionPreset`): `walk`, `run`, `jump`, `dance`, `wave`, `cheer`.
+  Returns a composable `beat`; legs use `ikReach`, arms FK. Same `(name, knobs,
+  seed)` is reproducible; a `label` knob keeps beats unique when a preset is
+  reused.
+- **`figure(opts)`** — a dressed character on the humanoid skeleton, with a
+  `style` (`clean` corporate-flat / `cute` mascot) and palette knobs
+  (`skin`/`hair`/`top`/`pants`/`shoe`/`accent`; for `clean` the top follows the
+  accent). Exposes the humanoid joint ids, so `characterPreset` / `ikReach` drive
+  any skin. `face: false` for a faceless figure.
+
+#### Motion
+
+- **Path `d` morphing** — `tween(id, { d })` morphs an SVG path vertex-by-vertex
+  (the Lottie-style shape tween) when both paths share command structure; arcs
+  (`A`) can't morph and incompatible shapes snap at the midpoint.
+
+#### Assets
+
+- Soft CC0 footstep foley (Kenney RPG Audio) for character walk cycles.
+
 ## [0.2.0] - 2026-06-16
 
 ### Added
@@ -117,7 +149,9 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.0...v0.1.1
