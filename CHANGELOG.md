@@ -8,6 +8,24 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-17
+
+### Added
+
+#### Cursor (UI demos)
+
+- **`cursor(opts)`** — a vector mouse pointer node (styles `arrow` / `dot` /
+  `ring`) whose **hotspot is the group origin**, so a move lands the tip on a
+  target. Carries a hidden `${id}-ripple` ring for clicks.
+- **`cursorTo(id, from, to, opts)`** — glide along a gentle human arc (a
+  `motionPath` bowed perpendicular to the travel); **`cursorPath`** for a
+  multi-stop tour.
+- **`cursorClick(id, { press?, ripple?, label? })`** / **`cursorDouble`** — the
+  pointer taps, a ripple ring expands, and an optional target button presses.
+- **`deviceScreenPoint(name, opts, [lx, ly])`** — maps a UI element's
+  screen-local coords to scene coords, so the cursor clicks UI inside a
+  `devicePreset` precisely.
+
 ## [0.4.0] - 2026-06-16
 
 ### Added
@@ -173,7 +191,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.3...v0.2.0
