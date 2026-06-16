@@ -40,7 +40,7 @@ const titleGrp = group({ id: "title-grp", x: CX, y: CY, opacity: 0 }, [
 const titleBeat: TimelineIR = beat("title", {}, [
   seq(
     par(
-      tween("title-grp", { opacity: 1 }, { duration: 0.3 }),
+      tween("title-grp", { opacity: 1 }, { duration: 0.3, label: "title-in" }),
       tween("ttl-1", { x: 0, y: 0, opacity: 1 }, { duration: 0.5, ease: "easeOutCubic" }),
       seq(wait(0.12), tween("ttl-2", { x: 0, y: 0, opacity: 1 }, { duration: 0.5, ease: "easeOutCubic" })),
       seq(wait(0.26), tween("ttl-3", { x: 0, y: 0, opacity: 1 }, { duration: 0.5, ease: "easeOutCubic" })),
@@ -84,7 +84,7 @@ const editorBeat: TimelineIR = beat("editor", {}, [
       tween("ed-playhead", { x: 80 }, { duration: 0.7, ease: "easeInOutCubic" }),
     ),
     tween("ed-chip", { x: 0, opacity: 1 }, { duration: 0.4, ease: "easeOutBack", label: "chip" }),
-    wait(0.9),
+    wait(1.6),
     tween("ed-grp", { opacity: 0, y: CY - 24 }, { duration: 0.45, ease: "easeInCubic", label: "ed-out" }),
   ),
 ]);
@@ -111,13 +111,13 @@ const payoffGrp = group({ id: "pay-grp", x: CX, y: CY, opacity: 0 }, [
 const payoffBeat: TimelineIR = beat("payoff", {}, [
   seq(
     par(
-      tween("pay-grp", { opacity: 1 }, { duration: 0.35 }),
+      tween("pay-grp", { opacity: 1 }, { duration: 0.35, label: "pay-in" }),
       tween("pay-h", { opacity: 1 }, { duration: 0.4, ease: "easeOutCubic" }),
       seq(wait(0.15), tween("pay-base", { x: 0, opacity: 1 }, { duration: 0.45, ease: "easeOutCubic" })),
       seq(wait(0.4), tween("pay-new", { x: 0, opacity: 1 }, { duration: 0.45, ease: "easeOutCubic" })),
     ),
     tween("pay-survive", { y: 0, opacity: 1 }, { duration: 0.5, ease: "easeOutBack", label: "survive" }),
-    wait(1.2),
+    wait(1.8),
     tween("pay-grp", { opacity: 0, y: CY - 24 }, { duration: 0.45, ease: "easeInCubic", label: "pay-out" }),
   ),
 ]);
@@ -132,12 +132,12 @@ const endGrp = group({ id: "end-grp", x: CX, y: CY, opacity: 0 }, [
 const endBeat: TimelineIR = beat("endcard", {}, [
   seq(
     par(
-      tween("end-grp", { opacity: 1 }, { duration: 0.4 }),
+      tween("end-grp", { opacity: 1 }, { duration: 0.4, label: "end-in" }),
       tween("end-logo", { scale: 1 }, { duration: 0.6, ease: "easeOutBack" }),
       seq(wait(0.25), tween("end-line", { opacity: 1 }, { duration: 0.5, ease: "easeOutCubic" })),
       seq(wait(0.45), tween("end-url", { opacity: 1 }, { duration: 0.5, ease: "easeOutCubic" })),
     ),
-    wait(1.6),
+    wait(2.2),
   ),
 ]);
 
@@ -163,4 +163,58 @@ export default scene({
     payoffBeat,
     endBeat,
   ),
+  // Label-anchored audio: a CC0 music bed, a Kokoro voiceover, and real CC0
+  // samples (Cherry mechanical keypresses, Kenney UI clicks, a confirmation) on
+  // the tactile beats. All anchor to timeline labels, so they survive retiming.
+  audio: {
+    bgm: { file: "bgm-song21.mp3", gain: 0.17, fadeIn: 1.5, fadeOut: 2, duck: { depth: 0.5 } },
+    cues: [
+      // ── Kokoro-82M voiceover (examples/scenes/x-demo-vo/, regen with generate.py) ──
+      { at: "watch-in", file: "x-demo-vo/intro.wav", gain: 1.15 },
+      { at: "car-in", file: "x-demo-vo/claim.wav", gain: 1.15 },
+      { at: "ed-in", offset: 0.2, file: "x-demo-vo/edit.wav", gain: 1.15 },
+      { at: "pay-in", offset: 0.1, file: "x-demo-vo/survive.wav", gain: 1.15 },
+      { at: "end-in", offset: 0.2, file: "x-demo-vo/outro.wav", gain: 1.15 },
+      // ── montage entrances: soft air ──
+      { at: "watch-in", sfx: "whoosh", gain: 0.22 },
+      { at: "tablet-in", sfx: "whoosh", gain: 0.22 },
+      { at: "car-in", sfx: "whoosh", gain: 0.2 },
+      { at: "monitor-in", sfx: "whoosh", gain: 0.22 },
+      { at: "terminal-in", sfx: "whoosh", gain: 0.2 },
+      // ── watch: ring sweep + close ──
+      { at: "ring", sfx: "shimmer", gain: 0.3 },
+      { at: "ring", offset: 0.95, file: "confirmation_001.ogg", gain: 0.4 },
+      // ── tablet: real mechanical keypresses as icons land ──
+      { at: "tablet-in", offset: 0.18, file: "keypress-001.wav", gain: 0.45 },
+      { at: "tablet-in", offset: 0.34, file: "keypress-004.wav", gain: 0.42 },
+      { at: "tablet-in", offset: 0.5, file: "keypress-007.wav", gain: 0.42 },
+      { at: "tablet-in", offset: 0.66, file: "keypress-010.wav", gain: 0.4 },
+      // ── car: route draw + arrival ──
+      { at: "route", sfx: "rise", gain: 0.26 },
+      { at: "eta", file: "confirmation_001.ogg", gain: 0.4 },
+      // ── foldable: the hinge opens, UI clicks on ──
+      { at: "unfold", sfx: "whoosh", gain: 0.42 },
+      { at: "light", file: "click_003.ogg", gain: 0.4 },
+      // ── monitor: soft taps as bars grow ──
+      { at: "monitor-in", offset: 0.5, file: "keypress-004.wav", gain: 0.3 },
+      { at: "monitor-in", offset: 0.62, file: "keypress-007.wav", gain: 0.3 },
+      { at: "monitor-in", offset: 0.74, file: "keypress-010.wav", gain: 0.3 },
+      // ── terminal: typing then a confirm ──
+      { at: "terminal-in", offset: 0.12, file: "keypress-001.wav", gain: 0.42 },
+      { at: "terminal-in", offset: 0.26, file: "keypress-007.wav", gain: 0.4 },
+      { at: "terminal-in", offset: 0.4, file: "keypress-014.wav", gain: 0.4 },
+      { at: "terminal-in", offset: 0.78, file: "confirmation_001.ogg", gain: 0.36 },
+      // ── title lands ──
+      { at: "title-in", offset: 0.4, sfx: "thud", gain: 0.5 },
+      // ── editor: grab the beat, overlay saved ──
+      { at: "retime", file: "click_002.ogg", gain: 0.5 },
+      { at: "chip", file: "confirmation_001.ogg", gain: 0.4 },
+      // ── payoff: edits survive ──
+      { at: "pay-in", sfx: "whoosh", gain: 0.24 },
+      { at: "survive", file: "confirmation_001.ogg", gain: 0.55 },
+      // ── end card ──
+      { at: "end-in", sfx: "shimmer", gain: 0.34 },
+      { at: "end-in", offset: 0.5, file: "confirmation_001.ogg", gain: 0.35 },
+    ],
+  },
 });
