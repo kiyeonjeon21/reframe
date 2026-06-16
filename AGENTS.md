@@ -48,10 +48,15 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   pose)` / `rigPose(id, pose)`; 2-bone `ikReach(upper,lower,dx,dy)`. The
   character analog of `devicePreset` — additive, golden-safe, no renderer change.
 - `characterPreset(name, opts)` (`packages/core/src/characterPreset.ts`) — a
-  seeded motion generator for the humanoid rig (the character analog of
+  seeded motion generator for a humanoid/figure rig (the character analog of
   `motionPreset`); returns a composable `beat`. Names: walk/run/jump/dance/wave/
-  cheer; knobs target/energy/speed/seed/cycles/facing/at/travel. Legs via
+  cheer; knobs target/energy/speed/seed/cycles/facing/at/travel/label. Legs via
   `ikReach`, arms FK; deterministic, pure keyframes.
+- `figure(opts)` (`packages/core/src/figure.ts`) — a dressed character on the
+  humanoid skeleton: `style` "clean" (corporate-flat/undraw) | "cute", `palette`
+  knobs (skin/hair/top/pants/shoe/accent; clean's top follows accent), `face`.
+  Exposes the humanoid joint ids → `characterPreset`/`ikReach` drive it. The
+  premium-promo skin; product is the hero (see `examples/scenes/product-promo.ts`).
 - Logo sting: `examples/logo-sting/` (`generate.mts` + `template.ts`); a sample
   `logo.svg` is committed.
 

@@ -37,6 +37,9 @@ export interface CharacterPresetOpts {
   at?: [number, number];
   /** px travelled per cycle for walk/run (default ~stride·2; 0 = walk in place). */
   travel?: number;
+  /** Override the beat name (overlay address) — set this when the same preset is
+   * used more than once in a scene so the beat labels stay unique. */
+  label?: string;
 }
 
 // humanoid limb geometry (must match rig.ts humanoid())
@@ -63,6 +66,7 @@ interface Ctx {
   facing: number;
   at: [number, number];
   travel: number | undefined;
+  label: string | undefined;
   rand: () => number;
   jit: (amp: number) => number;
 }
@@ -70,6 +74,7 @@ function ctx(o: CharacterPresetOpts): Ctx {
   const rand = makeRng((o.seed ?? 0) + 1);
   return {
     g: o.target,
+    label: o.label,
     e: clamp01(o.energy ?? 0.5),
     sp: Math.max(0.25, o.speed ?? 1),
     cycles: Math.max(1, Math.round(o.cycles ?? 4)),
@@ -198,16 +203,18 @@ function cheerBeat(c: Ctx): TimelineIR {
 
 export function characterPreset(name: CharacterPresetName, opts: CharacterPresetOpts): TimelineIR {
   const c = ctx(opts);
+  let tl: TimelineIR;
   switch (name) {
-    case "walk": return gait(c, false);
-    case "run": return gait(c, true);
-    case "jump": return jumpBeat(c);
-    case "dance": return danceBeat(c);
-    case "wave": return waveBeat(c);
-    case "cheer": return cheerBeat(c);
+    case "walk": tl = gait(c, false); break;
+    case "run": tl = gait(c, true); break;
+    case "jump": tl = jumpBeat(c); break;
+    case "dance": tl = danceBeat(c); break;
+    case "wave": tl = waveBeat(c); break;
+    case "cheer": tl = cheerBeat(c); break;
     default: {
       const _exhaustive: never = name;
       throw new Error(`unknown characterPreset "${_exhaustive}"`);
     }
   }
+  return c.label && tl.kind === "beat" ? { ...tl, name: c.label } : tl;
 }

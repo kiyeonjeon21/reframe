@@ -148,15 +148,24 @@ no new renderer concept, so overlays/preview/determinism all apply.
   regen; each rig instance needs a distinct `id` (duplicates collide via scene
   validation). Squash/stretch and expressions are per-bone `d` morphs (above),
   composed on top of FK posing. Idle sway/breathing = `oscillate` on a joint.
+- `figure(opts)` — a **dressed** character (the styled sibling of `humanoid`):
+  same skeleton, but coloured flat-design shapes. `style: "clean"` (corporate-flat
+  / undraw register, the default) or `"cute"` (mascot); `palette` knobs
+  (`skin`/`hair`/`top`/`pants`/`shoe`/`accent`) re-skin it — for `clean` the top
+  follows `accent`, so `figure({ palette: { accent: "#3B82F6" } })` recolours the
+  whole figure; `face: false` makes it faceless. It exposes the humanoid joint
+  ids, so `characterPreset` / `ikReach` drive it unchanged. Use it as the
+  supporting actor in a product promo (gesturing at a `devicePreset`), not the hero.
 - `characterPreset(name, opts)` — a **seeded motion generator** for a `humanoid`
-  rig (the character analog of `motionPreset`). Returns a composable `beat`;
+  or `figure` rig (the character analog of `motionPreset`). Returns a composable `beat`;
   drop it in the timeline: `seq(characterPreset("walk", { target: "hero", at:
   [cx, cy], cycles: 4 }))`. Names: `walk`, `run`, `jump`, `dance`, `wave`,
   `cheer`. Knobs: `target` (rig id), `energy` 0..1, `speed` (>0, divides
   durations), `seed` (varies within the family), `cycles` (walk/run/dance),
   `facing` (±1), `at: [x,y]` (the rig's scene position — needed for walk travel
-  & jump lift), `travel` (px/cycle, 0 = in place). Legs use `ikReach`, arms FK;
-  pure keyframes, so add continuous idle yourself with `oscillate`.
+  & jump lift), `travel` (px/cycle, 0 = in place), `label` (unique beat name —
+  set it when the same preset is used more than once in a scene). Legs use
+  `ikReach`, arms FK; pure keyframes, so add continuous idle yourself with `oscillate`.
 
 ## Audio (optional)
 
