@@ -6,7 +6,8 @@
 import {
   scene, group, ellipse, text,
   seq, par, stagger, tween, wait, oscillate,
-  figure, characterPreset, poseTo, devicePreset,
+  figure, characterPreset, poseTo, devicePreset, deviceScreenPoint,
+  cursor, cursorTo, cursorClick,
 } from "@reframe/core";
 import { heroContent } from "../lib/deviceKit.js";
 
@@ -16,6 +17,12 @@ const PRESENT = { legUpperL: 3, legLowerL: -2, legUpperR: -3, legLowerR: 2, armU
 const BG = "#0B0F1C";
 const ACC = "#FF5A1F";
 const CX = 960, CY = 540;
+
+// the "Get started" CTA, mapped from its screen-local spot to scene coords. The
+// device is at scale 0.88 by the time the cursor clicks (after the focus push).
+// CTA local: inside the hero slot (0,54), at (-w/2+130, h*0.18) = (-362, 102.24).
+const CTA = deviceScreenPoint("browser", { x: 1180, y: 452, scale: 0.88 }, [-362, 54 + 102.24]);
+const CUR_START: [number, number] = [780, 952];
 
 const ce = (id: string, x: number, y: number, d: number, fill: string, opacity = 1) =>
   ellipse({ id, x, y, width: d, height: d, fill, opacity, anchor: "center" });
@@ -47,6 +54,9 @@ export default scene({
     group({ id: "cap", x: CX, y: 1010, opacity: 0 }, [
       text({ id: "cap-t", x: 0, y: 0, content: "your product, in motion. every frame a reframe render.", fontFamily: "Inter", fontSize: 28, fontWeight: 600, fill: "#7E8AA8", anchor: "center" }),
     ]),
+
+    // the cursor — last, so it draws on top of the product
+    cursor({ id: "cur", x: CUR_START[0], y: CUR_START[1], opacity: 0, accent: ACC }),
   ],
 
   timeline: seq(
@@ -72,7 +82,12 @@ export default scene({
       tween("device", { scale: 0.88 }, { duration: 0.9, ease: "easeInOutCubic" }),
       tween("cap", { opacity: 1, y: 974 }, { duration: 0.6, ease: "easeOutCubic" }),
     ),
-    wait(2.4),
+    // a cursor glides up to the CTA and clicks it (ripple + the button presses)
+    wait(0.3),
+    tween("cur", { opacity: 1 }, { duration: 0.3, ease: "easeOutCubic" }),
+    cursorTo("cur", CUR_START, CTA),
+    cursorClick("cur", { press: "browser-ui-cta", label: "cta-click" }),
+    wait(1.8),
   ),
 
   behaviors: [
@@ -84,11 +99,14 @@ export default scene({
   // "walk-in" label (survives retiming); offsets follow the gait clock
   // (~0.14s intro + ~0.348s per half-step at speed 1.15, 8 steps).
   audio: {
-    cues: Array.from({ length: WALK_CYCLES * 2 }, (_, i) => ({
-      at: "walk-in",
-      offset: 0.14 + (i + 1) * 0.348,
-      file: ["footstep_001.ogg", "footstep_002.ogg", "footstep_003.ogg"][i % 3]!,
-      gain: 0.34,
-    })),
+    cues: [
+      ...Array.from({ length: WALK_CYCLES * 2 }, (_, i) => ({
+        at: "walk-in",
+        offset: 0.14 + (i + 1) * 0.348,
+        file: ["footstep_001.ogg", "footstep_002.ogg", "footstep_003.ogg"][i % 3]!,
+        gain: 0.34,
+      })),
+      { at: "cta-click", file: "click_001.ogg", gain: 0.5 }, // the click
+    ],
   },
 });

@@ -199,6 +199,33 @@ const T = splitText("MOTION IS DATA", { id: "t", x: 960, y: 470, fontSize: 130 }
 Every effect is seeded (same `seed` → identical) and pure keyframes. To time a
 `textLoop` window, add up the `textIn` beat length (≈ `(n-1)·stagger + glyphDur`).
 
+## Cursor (UI demos)
+
+A vector mouse pointer that glides across the scene and clicks things — for app
+walkthroughs. `cursor()` returns a node; the moves/clicks return timeline steps.
+The pointer's **hotspot is the group origin**, so a move lands the tip on a target.
+
+- `cursor({ id, x, y, scale?, opacity?, style?, accent? }) → NodeIR` — styles
+  `arrow` (default), `dot`, `ring`. Draw it LAST so it sits on top. Carries a
+  hidden `${id}-ripple` ring for clicks.
+- `cursorTo(id, from, to, { duration?, ease?, arc? }) → TimelineIR` — glide along
+  a gentle human arc (`arc` is the bow, default 0.12). Thread the position: start
+  = the node's `x/y`, each `to` becomes the next `from`.
+- `cursorPath(id, points, opts)` — a multi-stop tour through waypoints.
+- `cursorClick(id, { press?, ripple?, label? })` / `cursorDouble(...)` — the
+  pointer taps, a ripple ring expands, and the `press` node (a button) dips. Pass
+  a unique `label` when you click more than once in a scene.
+- `deviceScreenPoint(name, deviceOpts, [lx, ly]) → [x, y]` — map a UI element's
+  screen-local coords (the coords `devicePreset` `content` is authored in) to
+  scene coords, so the cursor clicks on-screen UI precisely (account for the
+  device's `scale` at click time and any `slot` offset).
+
+```ts
+// nodes:    devicePreset("browser", { id:"d", x, y, scale:0.88, content }), cursor({ id:"cur" })
+const cta = deviceScreenPoint("browser", { x, y, scale: 0.88 }, [lx, ly]);
+seq(cursorTo("cur", [sx, sy], cta), cursorClick("cur", { press: "browser-ui-cta" }))
+```
+
 ## Audio (optional)
 
 Label-anchored sound design — cues follow retiming and regeneration:
