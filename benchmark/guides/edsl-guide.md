@@ -167,6 +167,38 @@ no new renderer concept, so overlays/preview/determinism all apply.
   set it when the same preset is used more than once in a scene). Legs use
   `ikReach`, arms FK; pure keyframes, so add continuous idle yourself with `oscillate`.
 
+## Kinetic text (split + effect presets)
+
+reframe's `text` node renders a whole string as one node, so per-glyph effects
+need the string split into per-character nodes. `splitText` does that once;
+seeded effect generators animate the glyphs (the text analog of `motionPreset`).
+
+- `splitText(text, { id, x, y, fontSize, fontWeight?, fill?, letterSpacing?,
+  align?, unit?, opacity? }) → TextBlock` — lays the phrase out as center-anchored
+  `text` nodes using **real Inter advance widths** (so layout matches the render).
+  Returns `{ nodes, glyphs, ids, width, ... }`; put `...block.nodes` in `nodes`.
+  Glyph ids are `${id}-${i}` (stable regen addresses). `unit: "word"` animates
+  whole words instead of letters; `opacity: 0` (default) starts hidden for entrances.
+- `textIn(name, block, { speed?, energy?, seed?, stagger?, label? }) → TimelineIR`
+  (a `beat`) — entrance: `typewriter`, `cascade`, `rise`, `bounce`, `assemble`
+  (fly in from a seeded scatter), `decode` (scramble through random glyphs then lock).
+- `textLoop(name, block, { from?, until?, ramp?, amplitude?, frequency?, phaseStep? })
+  → BehaviorIR[]` — sustained: `wave` (standing sine), `shimmer`, `wobble`, `float`.
+  Spread it into `behaviors`.
+- `textOut(name, block, { …, dir? }) → TimelineIR` — exit: `shatter` (random
+  direction + spin + fade), `fly` (directional), `dissolve`, `fall`, `collapse`.
+- `textTypeCues(block, { at, interval?, gain? }) → AudioCueIR[]` — per-glyph CC0
+  keypress for a typewriter entrance; spread into `audio.cues`.
+
+```ts
+const T = splitText("MOTION IS DATA", { id: "t", x: 960, y: 470, fontSize: 130 });
+// nodes:     [...T.nodes]
+// timeline:  seq(textIn("cascade", T), wait(2), textOut("shatter", T, { seed: 3 }))
+// behaviors: textLoop("wave", T, { from: 1.6, until: 3.6 })
+```
+Every effect is seeded (same `seed` → identical) and pure keyframes. To time a
+`textLoop` window, add up the `textIn` beat length (≈ `(n-1)·stagger + glyphDur`).
+
 ## Audio (optional)
 
 Label-anchored sound design — cues follow retiming and regeneration:
