@@ -8,6 +8,30 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-16
+
+### Added
+
+#### Kinetic text
+
+- **`splitText(text, opts)`** — splits a phrase into per-glyph (or per-word)
+  centre-anchored `text` nodes using **real Inter advance widths**, so the
+  layout matches the render exactly. Returns a `TextBlock` (`nodes` / `glyphs` /
+  `ids` / `width`); glyph ids `${id}-${i}` are stable regen addresses.
+- A library of **seeded text-effect generators** (same `(name, seed)` →
+  identical IR; pure keyframes):
+  - **`textIn`** — entrance: `typewriter`, `cascade`, `rise`, `bounce`,
+    `assemble` (fly in from a seeded scatter), `decode` (scramble through random
+    glyphs then lock).
+  - **`textLoop`** — sustained behaviors: `wave` (standing sine), `shimmer`,
+    `wobble`, `float`.
+  - **`textOut`** — exit: `shatter` (random direction + spin + fade), `fly`,
+    `dissolve`, `fall`, `collapse`.
+  - **`textTypeCues`** — per-glyph CC0 keypress audio for a typewriter entrance.
+- **`textMetrics`** — Inter 400/700/800 advance-width tables over printable
+  ASCII, measured with the render engine (Playwright `measureText`) so layout is
+  faithful; core stays pure/deterministic at author time.
+
 ## [0.3.0] - 2026-06-16
 
 ### Added
@@ -149,7 +173,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/kiyeonjeon21/reframe/compare/v0.1.2...v0.1.3
