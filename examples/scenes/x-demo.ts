@@ -163,9 +163,10 @@ export default scene({
     payoffBeat,
     endBeat,
   ),
-  // Label-anchored audio: a CC0 music bed, a Kokoro voiceover, and real CC0
-  // samples (Cherry mechanical keypresses, Kenney UI clicks, a confirmation) on
-  // the tactile beats. All anchor to timeline labels, so they survive retiming.
+  // Label-anchored audio, designed against the compiled event clock (every cue
+  // sits on a moment that is actually visible at that time). All real CC0 Kenney
+  // Interface Sounds + Cherry mechanical keypresses (terminal only) + a CC0
+  // music bed + a Kokoro voiceover. Anchored to labels, so they survive retiming.
   audio: {
     bgm: { file: "bgm-song21.mp3", gain: 0.17, fadeIn: 1.5, fadeOut: 2, duck: { depth: 0.5 } },
     cues: [
@@ -175,46 +176,40 @@ export default scene({
       { at: "ed-in", offset: 0.2, file: "x-demo-vo/edit.wav", gain: 1.15 },
       { at: "pay-in", offset: 0.1, file: "x-demo-vo/survive.wav", gain: 1.15 },
       { at: "end-in", offset: 0.2, file: "x-demo-vo/outro.wav", gain: 1.15 },
-      // ── montage entrances: soft air ──
-      { at: "watch-in", sfx: "whoosh", gain: 0.22 },
-      { at: "tablet-in", sfx: "whoosh", gain: 0.22 },
-      { at: "car-in", sfx: "whoosh", gain: 0.2 },
-      { at: "monitor-in", sfx: "whoosh", gain: 0.22 },
-      { at: "terminal-in", sfx: "whoosh", gain: 0.2 },
-      // ── watch: ring sweep + close ──
-      { at: "ring", sfx: "shimmer", gain: 0.3 },
+      // ── watch: the ring sweeps closed (0.6s→1.6s) then a soft ding ──
+      { at: "ring", file: "maximize_005.ogg", gain: 0.3 },
       { at: "ring", offset: 0.95, file: "confirmation_001.ogg", gain: 0.4 },
-      // ── tablet: real mechanical keypresses as icons land ──
-      { at: "tablet-in", offset: 0.18, file: "keypress-001.wav", gain: 0.45 },
-      { at: "tablet-in", offset: 0.34, file: "keypress-004.wav", gain: 0.42 },
-      { at: "tablet-in", offset: 0.5, file: "keypress-007.wav", gain: 0.42 },
-      { at: "tablet-in", offset: 0.66, file: "keypress-010.wav", gain: 0.4 },
-      // ── car: route draw + arrival ──
-      { at: "route", sfx: "rise", gain: 0.26 },
-      { at: "eta", file: "confirmation_001.ogg", gain: 0.4 },
-      // ── foldable: the hinge opens, UI clicks on ──
-      { at: "unfold", sfx: "whoosh", gain: 0.42 },
-      { at: "light", file: "click_003.ogg", gain: 0.4 },
-      // ── monitor: soft taps as bars grow ──
-      { at: "monitor-in", offset: 0.5, file: "keypress-004.wav", gain: 0.3 },
-      { at: "monitor-in", offset: 0.62, file: "keypress-007.wav", gain: 0.3 },
-      { at: "monitor-in", offset: 0.74, file: "keypress-010.wav", gain: 0.3 },
-      // ── terminal: typing then a confirm ──
-      { at: "terminal-in", offset: 0.12, file: "keypress-001.wav", gain: 0.42 },
-      { at: "terminal-in", offset: 0.26, file: "keypress-007.wav", gain: 0.4 },
-      { at: "terminal-in", offset: 0.4, file: "keypress-014.wav", gain: 0.4 },
-      { at: "terminal-in", offset: 0.78, file: "confirmation_001.ogg", gain: 0.36 },
-      // ── title lands ──
-      { at: "title-in", offset: 0.4, sfx: "thud", gain: 0.5 },
-      // ── editor: grab the beat, overlay saved ──
-      { at: "retime", file: "click_002.ogg", gain: 0.5 },
-      { at: "chip", file: "confirmation_001.ogg", gain: 0.4 },
-      // ── payoff: edits survive ──
-      { at: "pay-in", sfx: "whoosh", gain: 0.24 },
-      { at: "survive", file: "confirmation_001.ogg", gain: 0.55 },
-      // ── end card ──
-      { at: "end-in", sfx: "shimmer", gain: 0.34 },
-      { at: "end-in", offset: 0.5, file: "confirmation_001.ogg", gain: 0.35 },
+      // ── tablet: a pluck/select per icon as the wave pops in (2.0s→2.7s) ──
+      { at: "tablet-in", offset: 0.12, file: "pluck_001.ogg", gain: 0.34 },
+      { at: "tablet-in", offset: 0.26, file: "select_001.ogg", gain: 0.32 },
+      { at: "tablet-in", offset: 0.42, file: "pluck_002.ogg", gain: 0.32 },
+      { at: "tablet-in", offset: 0.58, file: "select_002.ogg", gain: 0.3 },
+      // ── car: the route draws (4.25s→5.35s), then arrival ──
+      { at: "route", file: "maximize_009.ogg", gain: 0.26 },
+      { at: "route", offset: 1.1, file: "confirmation_003.ogg", gain: 0.4 },
+      // ── foldable: it unfolds, then the UI lights up ──
+      { at: "unfold", file: "maximize_002.ogg", gain: 0.38 },
+      { at: "light", file: "open_001.ogg", gain: 0.34 },
+      // ── monitor: soft blips as the bars grow (8.25s→8.65s) ──
+      { at: "monitor-in", offset: 0.5, file: "select_003.ogg", gain: 0.28 },
+      { at: "monitor-in", offset: 0.64, file: "pluck_001.ogg", gain: 0.28 },
+      { at: "monitor-in", offset: 0.78, file: "select_001.ogg", gain: 0.26 },
+      // ── terminal: actual keypresses while it types, then a success chime ──
+      { at: "terminal-in", offset: 0.12, file: "keypress-001.wav", gain: 0.4 },
+      { at: "terminal-in", offset: 0.24, file: "keypress-007.wav", gain: 0.38 },
+      { at: "terminal-in", offset: 0.36, file: "keypress-014.wav", gain: 0.38 },
+      { at: "terminal-in", offset: 0.78, file: "confirmation_004.ogg", gain: 0.36 },
+      // ── the title lands: a deep impact ──
+      { at: "title-in", offset: 0.4, file: "bong_001.ogg", gain: 0.45 },
+      // ── editor: grab the beat to drag, then the overlay saves ──
+      { at: "retime", file: "click_001.ogg", gain: 0.42 },
+      { at: "chip", file: "confirmation_002.ogg", gain: 0.4 },
+      // ── payoff: panels appear, then the edits-survived moment ──
+      { at: "pay-in", file: "maximize_001.ogg", gain: 0.24 },
+      { at: "survive", file: "confirmation_001.ogg", gain: 0.5 },
+      // ── end card: a glassy resolve ──
+      { at: "end-in", file: "glass_001.ogg", gain: 0.34 },
+      { at: "end-in", offset: 0.5, file: "confirmation_003.ogg", gain: 0.3 },
     ],
   },
 });

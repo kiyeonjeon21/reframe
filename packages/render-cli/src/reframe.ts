@@ -32,6 +32,9 @@ const USER_CWD = process.env.INIT_CWD ?? process.cwd();
 const RENDER_CLI = PACKAGED
   ? join(ROOT, "dist", "cli.js")
   : join(ROOT, "packages", "render-cli", "src", "cli.ts");
+const LABELS = PACKAGED
+  ? join(ROOT, "dist", "labels.js")
+  : join(ROOT, "packages", "render-cli", "src", "labels.ts");
 const ANALYZE = PACKAGED
   ? join(ROOT, "dist", "analyze.js")
   : join(ROOT, "benchmark", "harness", "motion", "analyze.ts");
@@ -50,6 +53,7 @@ usage:
                                  rise-settle, slide-bank, reveal-orbit, spin-forge)
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
+  ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
   ${CMD} guide [--regen]         print the scene-authoring guide (for you or your AI)
@@ -191,6 +195,16 @@ async function main() {
         await (PACKAGED
           ? run(process.execPath, [RENDER_CLI, mode, inputPath, ...outArgs])
           : run("npx", ["tsx", RENDER_CLI, mode, inputPath, ...outArgs])),
+      );
+    }
+
+    case "labels": {
+      const input = rest[0];
+      if (!input || input.startsWith("-")) fail(`labels needs a scene file\n\n${USAGE}`);
+      const inputPath = userPath(input);
+      if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [LABELS, inputPath]) : run("npx", ["tsx", LABELS, inputPath])),
       );
     }
 

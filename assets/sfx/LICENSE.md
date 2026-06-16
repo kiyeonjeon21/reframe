@@ -5,7 +5,7 @@ Verified against each asset page's license field on 2026-06-11.
 | files | source | author | license |
 |---|---|---|---|
 | keypress-001/004/007/010/014.wav | [Keyboard Soundpack #1](https://opengameart.org/content/keyboard-soundpack-1-typing-and-single-keystrokes) (Cherry KC 1000 recordings) | unicaegames | CC0 |
-| click_002/003/004.ogg, confirmation_001.ogg | [Interface Sounds](https://opengameart.org/content/interface-sounds) | Kenney (kenney.nl) | CC0 |
+| click_001/002/003/004.ogg, confirmation_001/002/003/004.ogg, maximize_001/002/005/009.ogg, open_001.ogg, pluck_001/002.ogg, select_001/002/003.ogg, bong_001.ogg, glass_001.ogg | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | Kenney (kenney.nl) | CC0 |
 | tick.wav (tick_001), pop.wav (drop_002), shimmer.wav (glass_002 + echo tail) | [Interface Sounds](https://opengameart.org/content/interface-sounds) | Kenney (kenney.nl) | CC0 |
 | whoosh.wav (wind body), rise.wav (reversed slice) | [Air whoosh](https://opengameart.org/content/air-whoosh) | qubodup | CC0 |
 | whoosh.wav (transient layer: swish-9) | [Swishes Sound Pack](https://opengameart.org/content/swishes-sound-pack) | artisticdude | CC0 |
