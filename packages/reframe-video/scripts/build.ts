@@ -32,6 +32,7 @@ for (const dir of ["dist", "assets", "guides", "preview"]) {
 const nodeBundles: [entry: string, out: string][] = [
   ["packages/render-cli/src/reframe.ts", "bin.js"],
   ["packages/render-cli/src/cli.ts", "cli.js"],
+  ["packages/render-cli/src/labels.ts", "labels.js"],
   ["benchmark/harness/motion/analyze.ts", "analyze.js"],
   ["benchmark/harness/motion/trace-cli.ts", "trace-cli.js"],
 ];
@@ -121,10 +122,14 @@ await writeFile(
 for (const f of ["main.ts", "panel.ts", "store.ts", "virtual.d.ts"]) {
   let src = await readFile(join(REPO, "packages/preview/src", f), "utf8");
   if (f === "main.ts") {
-    // the packaged preview has no examples/scenes — only cwd scenes
+    // the packaged preview has no examples/ — only cwd scenes/compositions
     src = src.replace(
       /import\.meta\.glob<\{ default: SceneIR \}>\("\.\.\/\.\.\/\.\.\/examples\/scenes\/\*\.ts"\)/,
       "({} as Record<string, () => Promise<{ default: SceneIR }>>)",
+    );
+    src = src.replace(
+      /import\.meta\.glob<\{ default: CompositionIR \}>\("\.\.\/\.\.\/\.\.\/examples\/compositions\/\*\.ts"\)/,
+      "({} as Record<string, () => Promise<{ default: CompositionIR }>>)",
     );
     if (src.includes("import.meta.glob")) throw new Error("examples glob not stripped");
   }

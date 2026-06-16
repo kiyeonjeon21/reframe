@@ -93,6 +93,27 @@ npx reframe-video logo react --motion spin-forge
 *Six real logos (React, Figma, Vercel, GitHub, Notion, Stripe), each a different
 preset, one command each. Pulled from simple-icons by slug, or drop in your own `.svg`.*
 
+## Device mockups: one call, a framed screen
+
+Promo and product shots almost always need the app inside something — a phone, a
+browser, a laptop. The tedious part was never the frame, it was getting the
+screen **clip** right so content sits inside it. `devicePreset` bakes that in:
+ten parametric vector frames, each with a clipped screen "content slot", so a
+mockup is a single call.
+
+```ts
+devicePreset("phone", { id: "hero", content: [ /* ...your UI nodes */ ] })
+```
+
+Ten frames — **phone, tablet, laptop, browser, watch, monitor, tv, foldable,
+terminal, car** — all pure primitives (no assets), deterministic, and additive
+to the golden contract. `deviceScreen`, `deviceScreenCenter`, and `deviceBounds`
+hand back the screen bounds and the frame footprint, so content scrolls inside
+the clip and many devices tile onto a grid. The motion is yours: drive the
+device group with tweens or a `motionPreset`, and the content scrolls because it
+is clipped. See `examples/scenes/device-presets.ts` (three devices, a scrolling
+feed) and `device-teardown.ts` (all ten, each with its own signature move).
+
 ## Why not just Hyperframes / Remotion?
 
 Because their output is arbitrary HTML/React — great to generate once,

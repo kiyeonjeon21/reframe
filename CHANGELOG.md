@@ -8,6 +8,70 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-16
+
+### Added
+
+#### Device mockups
+
+- **`devicePreset(name, opts)`** — ten parametric vector device frames
+  (`phone`, `tablet`, `laptop`, `browser`, `watch`, `monitor`, `tv`,
+  `foldable`, `terminal`, `car`), each with a **clipped screen "content slot"**,
+  so a mockup is one call. Pure primitives, no assets, deterministic, additive
+  to the golden contract.
+- **`deviceScreen` / `deviceScreenCenter` / `deviceBounds`** — content-local
+  screen bounds, the panel's device-local centre (for ejecting it in an
+  exploded view), and the full frame footprint (for laying many devices on a
+  grid).
+
+#### Composition (multi-scene)
+
+- **`CompositionIR`** with **`compileComposition`** and **`renderComposition`**:
+  stack independent scenes into one timeline with cut/crossfade transitions;
+  render one with `--scene <id>`.
+- **`beat.nodes`** records which nodes a beat drives (intent metadata the
+  preview groups by).
+
+#### Motion
+
+- **`motionOp(name, opts)`** — a GSAP-style motion-ops toolkit that applies to
+  any node, from code or the editor.
+- **2.5D tilt**: per-axis `scaleX` / `scaleY` and `skewX` / `skewY` transform
+  props (affine; the default fast-path keeps byte-identity).
+- **`clip` on groups** — rect/ellipse masks in group-local coordinates.
+- **`motionPath`** gains `curviness` (sharp / smooth / loopy) and add/remove
+  waypoint editing.
+
+#### Preview editor
+
+- A large editing overhaul: a node-track dope sheet grouped by the scene graph
+  (collapsible), a bottom composition/beat timeline with lane-stacked overlaps,
+  drag-a-beat-to-retime, smooth continuous play-all, a transform gizmo (scale +
+  rotate), every node type (line, image, svg/logo), image drag-and-drop,
+  multi-select (shift-click + marquee + bulk edit), an onion-skin motion trail,
+  a seeded variation grid, timeline loop range + speed, an ease-curve editor,
+  and a discoverable "+ move" for motionless nodes.
+- Universal canvas editability: drag groups and nested children, add/delete
+  nodes.
+
+#### CLI
+
+- **`reframe labels <scene>`** — print the compiled event clock (every timeline
+  label with its exact seconds). The authoritative timing source for sound
+  design (anchor `audio.cues` to these labels) and for debugging when a beat
+  fires.
+
+#### Assets
+
+- Expanded the vendored CC0 sound library (Kenney Interface Sounds: maximize /
+  minimize sweeps, plucks, selects, four confirmations, bong, glass, open) for
+  richer label-anchored sfx.
+
+### Fixed
+
+- Package build: strip the new `examples/compositions` preview glob (it was
+  breaking the `reframe-video` build) and bundle the `labels` command.
+
 ## [0.1.3] - 2026-06-16
 
 ### Added

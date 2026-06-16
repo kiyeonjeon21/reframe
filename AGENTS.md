@@ -14,6 +14,7 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 - `pnpm reframe render <scene.ts|.html> [--overlay f] [-o out]` — mp4 into `out/`
 - `pnpm reframe batch <scene.ts> <data.json|csv>` — one mp4 per row (row keys are overlay addresses like `nodes.<id>.<prop>`)
 - `pnpm reframe logo <logo.svg | brand-slug> [--motion <preset>] [--energy n] [--seed n]` — animate a logo into a sting (published CLI command; `packages/render-cli/src/logoSting.ts`)
+- `pnpm reframe labels <scene.ts>` — print the compiled event clock (every timeline label → exact seconds; the timing source for `audio.cues` and beat debugging)
 - `pnpm reframe preview` / `new <name>` / `motion <mp4>` / `trace <ref.mp4>` / `guide [--regen]` / `demo`
 - `pnpm test` (vitest), `pnpm typecheck`
 
