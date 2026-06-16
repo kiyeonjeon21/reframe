@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { scene, path, seq, tween } from "../src/dsl.js";
 import { compileScene } from "../src/compile.js";
 import { evaluate } from "../src/evaluate.js";
+import { lerpValue } from "../src/interpolate.js";
 
 const TRI = "M0 0 L100 0 L50 100 Z";
 
@@ -60,5 +61,33 @@ describe("path node", () => {
     expect(pathOp(c, 0).progress).toBeCloseTo(0, 6);
     expect(pathOp(c, 0.5).progress).toBeCloseTo(0.5, 6);
     expect(pathOp(c, 1).progress).toBeCloseTo(1, 6);
+  });
+
+  it("morphs a tweened d vertex-by-vertex (Lottie-style shape tween)", () => {
+    const A = "M0 0 L10 0 L10 10 Z";
+    const B = "M0 0 L20 0 L20 40 Z";
+    const c = compileScene(
+      scene({
+        id: "p",
+        size: { width: 100, height: 100 },
+        fps: 30,
+        nodes: [path({ id: "logo", d: A, x: 0, y: 0, fill: "#fff" })],
+        timeline: seq(tween("logo", { d: B }, { duration: 1, ease: "linear" })),
+      }),
+    );
+    expect(pathOp(c, 0).d).toBe("M 0 0 L 10 0 L 10 10 Z"); // u=0 → A, canonical spacing
+    // halfway: every number is the average of A and B (canonical spacing)
+    expect(pathOp(c, 0.5).d).toBe("M 0 0 L 15 0 L 15 25 Z");
+    expect(pathOp(c, 1).d).toBe(B); // settled: the authored end string, verbatim
+  });
+
+  it("lerpValue morphs compatible paths and snaps incompatible ones", () => {
+    // compatible: same command sequence + arg counts → numeric lerp
+    expect(lerpValue("M0 0 L10 10", "M0 0 L20 30", 0.5)).toBe("M 0 0 L 15 20");
+    // incompatible structure: discrete swap at the midpoint, not a blend
+    expect(lerpValue("M0 0 L10 10", "M0 0 L1 1 L2 2", 0.25)).toBe("M0 0 L10 10");
+    expect(lerpValue("M0 0 L10 10", "M0 0 L1 1 L2 2", 0.75)).toBe("M0 0 L1 1 L2 2");
+    // non-path strings are untouched (still discrete → `to`)
+    expect(lerpValue("none", "#fff", 0.5)).toBe("#fff");
   });
 });
