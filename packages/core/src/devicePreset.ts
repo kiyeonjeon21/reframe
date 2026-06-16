@@ -9,12 +9,17 @@
  *
  * Each instance needs a distinct `id` (it prefixes every generated node id);
  * two with the same prefix collide via the scene's duplicate-id validation.
+ *
+ * Layout/teardown helpers: `deviceScreen` (content-local screen bounds),
+ * `deviceScreenCenter` (device-local screen origin — slide `${id}-screen` against
+ * it to eject the panel for an exploded view), `deviceBounds` (full frame
+ * footprint — for laying many devices on a grid).
  */
 
 import { ellipse, group, path, rect, text } from "./dsl.js";
 import type { NodeIR } from "./ir.js";
 
-export const DEVICE_PRESET_NAMES = ["phone", "tablet", "laptop", "browser", "watch", "monitor"] as const;
+export const DEVICE_PRESET_NAMES = ["phone", "tablet", "laptop", "browser", "watch", "monitor", "tv", "foldable", "terminal", "car"] as const;
 export type DevicePresetName = (typeof DEVICE_PRESET_NAMES)[number];
 
 export interface DevicePresetOpts {
@@ -35,7 +40,7 @@ export interface DevicePresetOpts {
   orientation?: "portrait" | "landscape";
   /** Nodes placed inside the screen (authored in screen-LOCAL centre coords), clipped. */
   content?: NodeIR[];
-  /** Browser address-bar text. */
+  /** Browser/terminal address-bar text. */
   url?: string;
 }
 
@@ -54,23 +59,48 @@ interface ScreenRect {
   width: number;
   height: number;
   radius: number;
+  /** Screen-group centre in device-local coords (default 0,0). */
+  cx?: number;
+  cy?: number;
 }
-/** Portrait screen content area per device (content-local, centred). */
+/** Portrait screen content area per device (content-local, centred). `cx/cy` is
+ *  where the screen sits inside the frame (some chassis offset the panel). */
 const SCREENS: Record<DevicePresetName, ScreenRect> = {
   phone: { width: 352, height: 736, radius: 38 },
   tablet: { width: 544, height: 764, radius: 18 },
-  laptop: { width: 840, height: 520, radius: 8 },
-  browser: { width: 984, height: 568, radius: 6 },
+  laptop: { width: 840, height: 520, radius: 8, cy: -150 },
+  browser: { width: 984, height: 568, radius: 6, cy: 24 },
   watch: { width: 184, height: 224, radius: 44 },
   monitor: { width: 1056, height: 600, radius: 6 },
+  tv: { width: 1280, height: 720, radius: 8, cy: -24 },
+  foldable: { width: 760, height: 560, radius: 20 },
+  terminal: { width: 900, height: 560, radius: 6, cy: 18 },
+  car: { width: 1000, height: 520, radius: 24 },
+};
+
+/** Full frame footprint per device (incl. chrome/stand) — for grid layout. */
+const BOUNDS: Record<DevicePresetName, { width: number; height: number }> = {
+  phone: { width: 392, height: 812 },
+  tablet: { width: 600, height: 820 },
+  laptop: { width: 1100, height: 650 },
+  browser: { width: 1000, height: 660 },
+  watch: { width: 220, height: 300 },
+  monitor: { width: 1120, height: 860 },
+  tv: { width: 1340, height: 920 },
+  foldable: { width: 800, height: 600 },
+  terminal: { width: 916, height: 636 },
+  car: { width: 1060, height: 600 },
 };
 
 const isLandscape = (name: DevicePresetName, o: DevicePresetOpts): boolean =>
   (name === "phone" || name === "tablet") && o.orientation === "landscape";
 
-function screenDims(name: DevicePresetName, o: DevicePresetOpts): ScreenRect {
+function screenDims(name: DevicePresetName, o: DevicePresetOpts): Required<ScreenRect> {
   const d = SCREENS[name];
-  return isLandscape(name, o) ? { width: d.height, height: d.width, radius: d.radius } : d;
+  const base = { cx: d.cx ?? 0, cy: d.cy ?? 0 };
+  return isLandscape(name, o)
+    ? { width: d.height, height: d.width, radius: d.radius, ...base }
+    : { width: d.width, height: d.height, radius: d.radius, ...base };
 }
 
 /** The screen's content area (content-local coords: origin 0,0 = screen centre,
@@ -80,8 +110,23 @@ export function deviceScreen(name: DevicePresetName, opts: DevicePresetOpts = {}
   return { x: 0, y: 0, width: d.width, height: d.height, radius: d.radius };
 }
 
+/** The screen group's centre in device-LOCAL coords. Slide `${id}-screen` against
+ *  this (e.g. `y: deviceScreenCenter(name).y + 160`) to eject the panel from the
+ *  frame for an exploded / teardown view. */
+export function deviceScreenCenter(name: DevicePresetName, opts: DevicePresetOpts = {}): { x: number; y: number } {
+  const d = screenDims(name, opts);
+  return { x: d.cx, y: d.cy };
+}
+
+/** Full frame footprint (width/height incl. chrome & stands) in device-local
+ *  units — use it to scale many devices onto a shared grid. */
+export function deviceBounds(name: DevicePresetName, opts: DevicePresetOpts = {}): { width: number; height: number } {
+  const b = BOUNDS[name];
+  return isLandscape(name, opts) ? { width: b.height, height: b.width } : { ...b };
+}
+
 /** The clipped screen group: bg + a `${id}-content` handle the caller animates. */
-function screenGroup(id: string, p: Palette, o: DevicePresetOpts, cx: number, cy: number, dims: ScreenRect, content: NodeIR[]): NodeIR {
+function screenGroup(id: string, p: Palette, o: DevicePresetOpts, cx: number, cy: number, dims: Required<ScreenRect>, content: NodeIR[]): NodeIR {
   return group({ id: `${id}-screen`, x: cx, y: cy, clip: { kind: "rect", x: -dims.width / 2, y: -dims.height / 2, width: dims.width, height: dims.height, radius: dims.radius } }, [
     rect({ id: `${id}-screenbg`, x: 0, y: 0, anchor: "center", width: dims.width, height: dims.height, fill: o.screen ?? p.screen }),
     group({ id: `${id}-content`, x: 0, y: 0 }, content),
@@ -92,6 +137,7 @@ function buildDevice(name: DevicePresetName, id: string, p: Palette, o: DevicePr
   const dims = screenDims(name, o);
   const sw = dims.width;
   const sh = dims.height;
+  const screen = () => screenGroup(id, p, o, dims.cx, dims.cy, dims, content);
   switch (name) {
     case "phone":
     case "tablet": {
@@ -102,7 +148,7 @@ function buildDevice(name: DevicePresetName, id: string, p: Palette, o: DevicePr
       const land = isLandscape(name, o);
       const nodes: NodeIR[] = [
         rect({ id: `${id}-body`, x: 0, y: 0, anchor: "center", width: bodyW, height: bodyH, fill: p.body, stroke: p.bodyStroke, strokeWidth: 2, radius: bodyR }),
-        screenGroup(id, p, o, 0, 0, dims, content),
+        screen(),
       ];
       if (name === "phone") {
         // notch on the "top" edge, home indicator opposite — swap to a side when landscape
@@ -125,8 +171,8 @@ function buildDevice(name: DevicePresetName, id: string, p: Palette, o: DevicePr
         path({ id: `${id}-base`, x: 0, y: 0, d: "M -450 140 L 450 140 L 520 196 L -520 196 Z", fill: p.body, stroke: p.bodyStroke, strokeWidth: 2 }),
         rect({ id: `${id}-trackpad`, x: 0, y: 196, anchor: "center", width: 120, height: 10, fill: p.detail, radius: 5 }),
         rect({ id: `${id}-hinge`, x: 0, y: 134, anchor: "center", width: 900, height: 10, fill: p.detail, radius: 5 }),
-        screenGroup(id, p, o, 0, -150, dims, content),
-        rect({ id: `${id}-lid`, x: 0, y: -150, anchor: "center", width: sw + 40, height: sh + 40, stroke: p.bodyStroke, strokeWidth: 2, radius: 18 }),
+        screen(),
+        rect({ id: `${id}-lid`, x: 0, y: dims.cy, anchor: "center", width: sw + 40, height: sh + 40, stroke: p.bodyStroke, strokeWidth: 2, radius: 18 }),
       ];
     }
     case "browser": {
@@ -139,13 +185,13 @@ function buildDevice(name: DevicePresetName, id: string, p: Palette, o: DevicePr
         ellipse({ id: `${id}-dot3`, x: -winW / 2 + 78, y: -winH / 2 + 24, anchor: "center", width: 13, height: 13, fill: "#28C840" }),
         rect({ id: `${id}-urlpill`, x: 40, y: -winH / 2 + 24, anchor: "center", width: 760, height: 26, fill: o.screen ?? p.screen, stroke: p.bodyStroke, strokeWidth: 1, radius: 13 }),
         text({ id: `${id}-urltext`, x: 40 - 360, y: -winH / 2 + 24, anchor: "center-left", content: urlText(o.url), fontFamily: "Inter", fontSize: 14, fill: p.chromeText }),
-        screenGroup(id, p, o, 0, 24, dims, content),
+        screen(),
       ];
     }
     case "watch": {
       return [
         rect({ id: `${id}-body`, x: 0, y: 0, anchor: "center", width: sw + 36, height: sh + 36, fill: p.body, stroke: p.bodyStroke, strokeWidth: 3, radius: 60 }),
-        screenGroup(id, p, o, 0, 0, dims, content),
+        screen(),
         rect({ id: `${id}-crown`, x: (sw + 36) / 2, y: -20, anchor: "center", width: 14, height: 40, fill: p.detail, radius: 6 }),
         rect({ id: `${id}-button`, x: (sw + 36) / 2 - 2, y: 40, anchor: "center", width: 8, height: 34, fill: p.detail, radius: 4 }),
       ];
@@ -153,9 +199,57 @@ function buildDevice(name: DevicePresetName, id: string, p: Palette, o: DevicePr
     case "monitor": {
       return [
         rect({ id: `${id}-panel`, x: 0, y: 0, anchor: "center", width: sw + 44, height: sh + 60, fill: p.body, stroke: p.bodyStroke, strokeWidth: 2, radius: 16 }),
-        screenGroup(id, p, o, 0, 0, dims, content),
+        screen(),
         rect({ id: `${id}-neck`, x: 0, y: (sh + 60) / 2 + 60, anchor: "center", width: 60, height: 120, fill: p.body }),
         path({ id: `${id}-stand`, x: 0, y: (sh + 60) / 2 + 60, d: "M -160 50 L 160 50 L 220 80 L -220 80 Z", fill: p.body, stroke: p.bodyStroke, strokeWidth: 2 }),
+      ];
+    }
+    case "tv": {
+      // thin-bezel wide panel on a centre pedestal stand
+      const panelW = sw + 44;
+      const panelH = sh + 48;
+      const panelBottom = dims.cy + panelH / 2;
+      return [
+        rect({ id: `${id}-panel`, x: 0, y: dims.cy, anchor: "center", width: panelW, height: panelH, fill: p.body, stroke: p.bodyStroke, strokeWidth: 2, radius: 12 }),
+        screen(),
+        rect({ id: `${id}-neck`, x: 0, y: panelBottom + 48, anchor: "center", width: 64, height: 96, fill: p.body }),
+        path({ id: `${id}-stand`, x: 0, y: panelBottom + 96, d: "M -210 0 L 210 0 L 270 34 L -270 34 Z", fill: p.body, stroke: p.bodyStroke, strokeWidth: 2 }),
+      ];
+    }
+    case "foldable": {
+      // unfolded wide phone with a centre crease + a top camera pinhole
+      const bodyW = sw + 40;
+      const bodyH = sh + 40;
+      return [
+        rect({ id: `${id}-body`, x: 0, y: 0, anchor: "center", width: bodyW, height: bodyH, fill: p.body, stroke: p.bodyStroke, strokeWidth: 2, radius: 28 }),
+        screen(),
+        rect({ id: `${id}-crease`, x: 0, y: 0, anchor: "center", width: 4, height: sh, fill: p.bodyStroke, radius: 2, opacity: 0.5 }),
+        ellipse({ id: `${id}-camera`, x: 0, y: -sh / 2 + 18, anchor: "center", width: 8, height: 8, fill: p.detail }),
+      ];
+    }
+    case "terminal": {
+      // a CLI window: title bar with lights, a centred prompt label, dark screen
+      const winW = sw + 16;
+      const winH = sh + 76; // 44 title bar
+      return [
+        rect({ id: `${id}-win`, x: 0, y: 0, anchor: "center", width: winW, height: winH, fill: p.chrome, stroke: p.bodyStroke, strokeWidth: 1.5, radius: 12 }),
+        ellipse({ id: `${id}-dot1`, x: -winW / 2 + 28, y: -winH / 2 + 22, anchor: "center", width: 12, height: 12, fill: "#FF5F57" }),
+        ellipse({ id: `${id}-dot2`, x: -winW / 2 + 50, y: -winH / 2 + 22, anchor: "center", width: 12, height: 12, fill: "#FEBC2E" }),
+        ellipse({ id: `${id}-dot3`, x: -winW / 2 + 72, y: -winH / 2 + 22, anchor: "center", width: 12, height: 12, fill: "#28C840" }),
+        text({ id: `${id}-title`, x: 0, y: -winH / 2 + 22, anchor: "center", content: urlText(o.url ?? "zsh"), fontFamily: "Inter", fontSize: 14, fill: p.chromeText }),
+        screen(),
+      ];
+    }
+    case "car": {
+      // wide rounded infotainment display in a dash bezel + climate buttons
+      const bodyW = sw + 60;
+      const bodyH = sh + 60;
+      return [
+        rect({ id: `${id}-body`, x: 0, y: 0, anchor: "center", width: bodyW, height: bodyH, fill: p.body, stroke: p.bodyStroke, strokeWidth: 2, radius: 40 }),
+        screen(),
+        ellipse({ id: `${id}-btn1`, x: -44, y: sh / 2 + 14, anchor: "center", width: 12, height: 12, fill: p.detail }),
+        ellipse({ id: `${id}-btn2`, x: 0, y: sh / 2 + 14, anchor: "center", width: 12, height: 12, fill: p.detail }),
+        ellipse({ id: `${id}-btn3`, x: 44, y: sh / 2 + 14, anchor: "center", width: 12, height: 12, fill: p.detail }),
       ];
     }
   }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scene, group, rect, text } from "../src/dsl.js";
-import { devicePreset, deviceScreen, DEVICE_PRESET_NAMES } from "../src/devicePreset.js";
+import { devicePreset, deviceScreen, deviceScreenCenter, deviceBounds, DEVICE_PRESET_NAMES } from "../src/devicePreset.js";
 import { validateScene } from "../src/validate.js";
 
 type Grp = Extract<import("../src/ir.js").NodeIR, { type: "group" }>;
@@ -59,6 +59,30 @@ describe("devicePreset", () => {
     expect(() =>
       scene({ id: "s", size: { width: 100, height: 100 }, nodes: [devicePreset("phone"), devicePreset("browser")] }),
     ).toThrow(/duplicate node id/);
+  });
+
+  it("ships ten devices; every one builds a valid clipped scene", () => {
+    expect(DEVICE_PRESET_NAMES).toHaveLength(10);
+    for (const name of DEVICE_PRESET_NAMES) {
+      const s = scene({ id: "s", size: { width: 1920, height: 1080 }, nodes: [devicePreset(name, { id: "d" })] });
+      expect(() => validateScene(s)).not.toThrow();
+    }
+  });
+
+  it("deviceBounds + deviceScreenCenter are finite; bounds enclose the screen", () => {
+    for (const name of DEVICE_PRESET_NAMES) {
+      const b = deviceBounds(name);
+      const s = deviceScreen(name);
+      const c = deviceScreenCenter(name);
+      expect(b.width).toBeGreaterThanOrEqual(s.width);
+      expect(b.height).toBeGreaterThan(0);
+      expect(Number.isFinite(c.x)).toBe(true);
+      expect(Number.isFinite(c.y)).toBe(true);
+    }
+    // a chassis that offsets its panel reports a non-zero centre
+    expect(deviceScreenCenter("laptop").y).toBeLessThan(0);
+    expect(deviceScreenCenter("browser").y).toBeGreaterThan(0);
+    expect(deviceScreenCenter("phone")).toEqual({ x: 0, y: 0 });
   });
 
   it("a long browser url is truncated (deterministic, no overflow)", () => {
