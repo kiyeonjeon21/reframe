@@ -10,6 +10,7 @@ Verified against each asset page's license field on 2026-06-11.
 | whoosh.wav (wind body), rise.wav (reversed slice) | [Air whoosh](https://opengameart.org/content/air-whoosh) | qubodup | CC0 |
 | whoosh.wav (transient layer: swish-9) | [Swishes Sound Pack](https://opengameart.org/content/swishes-sound-pack) | artisticdude | CC0 |
 | thud.wav (trimmed) | [Muffled Distant Explosion](https://opengameart.org/content/muffled-distant-explosion) | NenadSimic | CC0 |
+| footstep_001/002/003.ogg (footstep00/03/06) | [RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney (kenney.nl) | CC0 |
 | bgm-song21.mp3 | [Mysterious Ambience (song21)](https://opengameart.org/content/mysterious-ambience-song21) | cynicmusic (pixelsphere.org) | multi-licensed; used under its CC0 option |
 
 CC0 requires no attribution; this file records provenance anyway.

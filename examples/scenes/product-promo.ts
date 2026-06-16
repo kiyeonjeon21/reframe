@@ -79,4 +79,16 @@ export default scene({
     oscillate("fig-chest", "scaleY", { amplitude: 0.012, frequency: 0.6 }, { from: 3.6, ramp: 0.6 }),
     oscillate("fig", "y", { amplitude: 3, frequency: 0.5 }, { from: 3.6, ramp: 0.6 }),
   ],
+
+  // soft CC0 footsteps, one per foot-contact of the walk-in beat. Anchored to the
+  // "walk-in" label (survives retiming); offsets follow the gait clock
+  // (~0.14s intro + ~0.348s per half-step at speed 1.15, 8 steps).
+  audio: {
+    cues: Array.from({ length: WALK_CYCLES * 2 }, (_, i) => ({
+      at: "walk-in",
+      offset: 0.14 + (i + 1) * 0.348,
+      file: ["footstep_001.ogg", "footstep_002.ogg", "footstep_003.ogg"][i % 3]!,
+      gain: 0.34,
+    })),
+  },
 });
