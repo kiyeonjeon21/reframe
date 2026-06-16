@@ -41,6 +41,12 @@ Factories return plain data. Every node needs a unique `id`.
   the art's centre (e.g. the viewBox centre) so `scale`/`rotation` happen about the
   middle. `d` is drawn in its own coords; `x`/`y` place that pivot. Classic logo
   reveal: a stroke path drawing on, then a fill path fading in over it.
+  **`d` is animatable (shape morph):** `tween(id, { d: otherShape }, …)` morphs
+  the path vertex-by-vertex (the Lottie-style shape tween) when both `d` strings
+  share the same command sequence and arg counts — author the two poses with the
+  same structure (e.g. both 4-cubic ovals). Arcs (`A`) can't morph (their 0/1
+  flags aren't interpolable) and incompatible shapes snap at the midpoint; build
+  morph targets from `M/L/C/Q/Z` only.
 - `image({ id, src, x, y, width, height, opacity?, rotation?, scale?, anchor? })` —
   `src` is a file path, absolute or relative to the scene file; drawn stretched
   to `width`×`height` (png/jpg/webp). `src` switches discretely (no crossfade) —
@@ -114,6 +120,52 @@ time window (seconds) with a linear fade of `ramp` (default 0.2s) at each
 bound — e.g. a pulse only during the hold:
 `oscillate("title", "scale", { amplitude: 0.04, frequency: 1.2 }, { from: 1.5, until: 3.5 })`.
 Omit the window to run for the whole scene.
+
+## Character rig (skeleton, poses, IK)
+
+A first-class, declarative character rig that **compiles to plain IR** (nested
+`group` joints + bone paths) — the character analog of `devicePreset`. It needs
+no new renderer concept, so overlays/preview/determinism all apply.
+
+- `humanoid({ id, x, y, scale, opacity?, color?, fill?, glow? })` → a NodeIR: a
+  ready upright body. Joints (stable ids `${id}-${name}`): `chest`, `head`,
+  `armUpperL/armLowerL`, `armUpperR/armLowerR`, `legUpperL/legLowerL`,
+  `legUpperR/legLowerR`. Drop it in `nodes`.
+- `rig(boneTree, opts)` → build your own skeleton. A `Bone` is
+  `{ name, at:[x,y], length?, width?, rotation?, shape?, children? }`. The joint
+  sits at the group origin; the bone extends **+Y at rotation 0**; a child's `at`
+  pivot is in the PARENT bone's local space (e.g. an elbow at `[0, upperLength]`).
+  Nested groups give forward kinematics — a child's rotation composes on its
+  parent's. Default bone = a bezier capsule (morphable); pass `shape` for custom art.
+- A **pose** is `{ jointName: angleDeg }` (0 = bone points down). Animate it:
+  - `poseTo(id, pose, { duration, ease, stagger? })` → a timeline step (a `par`
+    of rotation tweens). Sequence poses for wave/jump/run.
+  - `rigPose(id, pose)` → a `states` fragment, to transition with `to(state, …)`.
+- `ikReach(upper, lower, dx, dy, flip?)` → `[shoulderDeg, elbowDeg]` that place a
+  2-bone limb's tip at `(dx,dy)` relative to its shoulder joint (law of cosines;
+  clamps when out of reach). Feed the two angles into a pose.
+- Joint names are the **stable regen addresses** — never rename them across a
+  regen; each rig instance needs a distinct `id` (duplicates collide via scene
+  validation). Squash/stretch and expressions are per-bone `d` morphs (above),
+  composed on top of FK posing. Idle sway/breathing = `oscillate` on a joint.
+- `figure(opts)` — a **dressed** character (the styled sibling of `humanoid`):
+  same skeleton, but coloured flat-design shapes. `style: "clean"` (corporate-flat
+  / undraw register, the default) or `"cute"` (mascot); `palette` knobs
+  (`skin`/`hair`/`top`/`pants`/`shoe`/`accent`) re-skin it — for `clean` the top
+  follows `accent`, so `figure({ palette: { accent: "#3B82F6" } })` recolours the
+  whole figure; `face: false` makes it faceless. It exposes the humanoid joint
+  ids, so `characterPreset` / `ikReach` drive it unchanged. Use it as the
+  supporting actor in a product promo (gesturing at a `devicePreset`), not the hero.
+- `characterPreset(name, opts)` — a **seeded motion generator** for a `humanoid`
+  or `figure` rig (the character analog of `motionPreset`). Returns a composable `beat`;
+  drop it in the timeline: `seq(characterPreset("walk", { target: "hero", at:
+  [cx, cy], cycles: 4 }))`. Names: `walk`, `run`, `jump`, `dance`, `wave`,
+  `cheer`. Knobs: `target` (rig id), `energy` 0..1, `speed` (>0, divides
+  durations), `seed` (varies within the family), `cycles` (walk/run/dance),
+  `facing` (±1), `at: [x,y]` (the rig's scene position — needed for walk travel
+  & jump lift), `travel` (px/cycle, 0 = in place), `label` (unique beat name —
+  set it when the same preset is used more than once in a scene). Legs use
+  `ikReach`, arms FK; pure keyframes, so add continuous idle yourself with `oscillate`.
 
 ## Audio (optional)
 

@@ -16,3 +16,14 @@ source):
 When the contract is broken anyway, `composeScene` skips the affected edits
 and reports them as orphans with the known-ids list — loud, diagnosable,
 never a silent drop and never a render failure.
+
+## Generated subtrees (devicePreset, rig/humanoid)
+
+Generators emit nodes with deterministic ids under an instance prefix, and those
+ids are stable addresses too. For `devicePreset(name,{id})` the screen/content
+parts are `${id}-screen` / `${id}-content`. For `rig(...)` / `humanoid({id})`
+each joint is `${id}-${jointName}` (e.g. `hero-armUpperR`) and its bone art is
+`${id}-${jointName}-shape`. Across a regen, **keep the instance `id` and the
+joint `name`s** for any character/device that survives the redesign — overlay
+edits (a retimed wave, a nudged limb angle) reference those exact ids. Renaming a
+joint orphans the edit, exactly like renaming a hand-authored node id.

@@ -125,8 +125,9 @@ function formatColor([r, g, b, a]: [number, number, number, number]): string {
 
 /**
  * Interpolate two prop values at progress u (already eased).
- * number↔number lerps, color↔color lerps in RGB, anything else switches
- * discretely at the start of the segment.
+ * number↔number lerps, color↔color lerps in RGB, two *compatible* SVG path
+ * `d` strings morph vertex-by-vertex (the Lottie-style shape tween), anything
+ * else switches discretely.
  */
 export function lerpValue(from: PropValue, to: PropValue, u: number): PropValue {
   if (typeof from === "number" && typeof to === "number") {
@@ -142,5 +143,68 @@ export function lerpValue(from: PropValue, to: PropValue, u: number): PropValue 
       a[3] + (b[3] - a[3]) * u,
     ]);
   }
+  if (looksLikePath(from) && looksLikePath(to)) {
+    const a = tokenizePath(from);
+    const b = tokenizePath(to);
+    if (a && b && morphCompatible(a, b)) return morphPath(a, b, u);
+    return u < 0.5 ? from : to; // incompatible shapes: swap at the midpoint
+  }
   return to;
+}
+
+// --- SVG path morphing ----------------------------------------------------
+// A path `d` is animatable: tween it between two poses and the vertices lerp.
+// This only fires when BOTH endpoints look like path data; everything else
+// (text, "none", arbitrary strings) is left to the discrete switch above.
+
+type PathCmd = { cmd: string; nums: number[] };
+
+const PATH_BODY = /^[\sMmLlHhVvCcSsQqTtAaZz0-9.,eE+-]+$/;
+function looksLikePath(v: PropValue): v is string {
+  return typeof v === "string" && /^\s*[Mm]/.test(v) && PATH_BODY.test(v);
+}
+
+const PATH_TOKEN = /([MmLlHhVvCcSsQqTtAaZz])|(-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)/g;
+function tokenizePath(d: string): PathCmd[] | null {
+  const out: PathCmd[] = [];
+  let cur: PathCmd | null = null;
+  let m: RegExpExecArray | null;
+  PATH_TOKEN.lastIndex = 0;
+  while ((m = PATH_TOKEN.exec(d))) {
+    if (m[1]) out.push((cur = { cmd: m[1], nums: [] }));
+    else if (m[2]) {
+      if (!cur) return null; // a number before any command — not valid path data
+      cur.nums.push(parseFloat(m[2]));
+    }
+  }
+  return out.length ? out : null;
+}
+
+/** Same command sequence and arg counts, and no arc (A/a) whose 0/1 flags
+ * can't be linearly interpolated — only then can we morph vertex-by-vertex. */
+function morphCompatible(a: PathCmd[], b: PathCmd[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i]!;
+    const cb = b[i]!;
+    if (ca.cmd !== cb.cmd || ca.nums.length !== cb.nums.length) return false;
+    if (ca.cmd === "A" || ca.cmd === "a") return false;
+  }
+  return true;
+}
+
+const fmtNum = (v: number): string => {
+  const r = Number(v.toFixed(3));
+  return Object.is(r, -0) ? "0" : String(r);
+};
+
+function morphPath(a: PathCmd[], b: PathCmd[], u: number): string {
+  let s = "";
+  for (let i = 0; i < a.length; i++) {
+    const an = a[i]!.nums;
+    const bn = b[i]!.nums;
+    s += (i ? " " : "") + a[i]!.cmd;
+    for (let j = 0; j < an.length; j++) s += " " + fmtNum(an[j]! + (bn[j]! - an[j]!) * u);
+  }
+  return s;
 }
