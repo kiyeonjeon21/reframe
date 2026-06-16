@@ -125,6 +125,15 @@ export function deviceBounds(name: DevicePresetName, opts: DevicePresetOpts = {}
   return isLandscape(name, opts) ? { width: b.height, height: b.width } : { ...b };
 }
 
+/** Map a SCREEN-LOCAL point (origin = screen centre, the coords `content` is
+ *  authored in) to absolute SCENE coords, given the same `opts` passed to
+ *  `devicePreset`. For aiming a `cursor` at on-screen UI. */
+export function deviceScreenPoint(name: DevicePresetName, opts: DevicePresetOpts, local: [number, number]): [number, number] {
+  const c = deviceScreenCenter(name, opts);
+  const s = opts.scale ?? 1;
+  return [(opts.x ?? 0) + s * (c.x + local[0]), (opts.y ?? 0) + s * (c.y + local[1])];
+}
+
 /** The clipped screen group: bg + a `${id}-content` handle the caller animates. */
 function screenGroup(id: string, p: Palette, o: DevicePresetOpts, cx: number, cy: number, dims: Required<ScreenRect>, content: NodeIR[]): NodeIR {
   return group({ id: `${id}-screen`, x: cx, y: cy, clip: { kind: "rect", x: -dims.width / 2, y: -dims.height / 2, width: dims.width, height: dims.height, radius: dims.radius } }, [

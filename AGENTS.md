@@ -63,6 +63,11 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   seeded `textIn` (typewriter/cascade/rise/bounce/assemble/decode), `textLoop`
   (wave/shimmer/wobble/float → behaviors), `textOut` (shatter/fly/dissolve/fall/
   collapse), `textTypeCues` (per-glyph keypress audio). The text analog of motionPreset.
+- Cursor (`packages/core/src/cursor.ts`) — `cursor(opts)` node (arrow/dot/ring,
+  hotspot at the origin) + `cursorTo`/`cursorPath` (human arcs via motionPath) +
+  `cursorClick`/`cursorDouble` (tap + ripple + button press). `deviceScreenPoint`
+  (`devicePreset.ts`) maps screen-local UI coords → scene so the cursor clicks UI
+  inside a device. The UI-demo motion vocabulary; see `examples/scenes/product-promo.ts`.
 - Logo sting: `examples/logo-sting/` (`generate.mts` + `template.ts`); a sample
   `logo.svg` is committed.
 

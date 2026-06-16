@@ -15,7 +15,8 @@ export {
 export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan, type MotionDriver } from "./compile.js";
 export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
 export { motionPreset, PRESET_NAMES, type PresetName, type PresetRig, type PresetOpts } from "./presets.js";
-export { devicePreset, deviceScreen, deviceScreenCenter, deviceBounds, DEVICE_PRESET_NAMES, type DevicePresetName, type DevicePresetOpts } from "./devicePreset.js";
+export { devicePreset, deviceScreen, deviceScreenCenter, deviceBounds, deviceScreenPoint, DEVICE_PRESET_NAMES, type DevicePresetName, type DevicePresetOpts } from "./devicePreset.js";
+export { cursor, cursorTo, cursorPath, cursorClick, cursorDouble, type CursorStyle, type CursorOpts, type CursorToOpts, type CursorPathOpts, type CursorClickOpts } from "./cursor.js";
 export { rig, rigPose, poseTo, ikReach, humanoid, ovalPath, type Bone, type RigOpts, type Pose, type HumanoidOpts } from "./rig.js";
 export { characterPreset, CHARACTER_PRESET_NAMES, type CharacterPresetName, type CharacterPresetOpts } from "./characterPreset.js";
 export { figure, type FigureStyle, type FigureOpts, type FigurePalette } from "./figure.js";
