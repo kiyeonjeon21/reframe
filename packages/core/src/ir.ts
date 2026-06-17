@@ -81,7 +81,24 @@ export interface BaseProps {
   shadowBlur?: number; // shadow softness, px (default 0)
   shadowX?: number; // shadow offset px (glow = 0,0)
   shadowY?: number;
+  /** How this node composites with what's already drawn (default "normal"). `screen`/
+   *  `add` brighten (additive light/glow), `multiply` tints/deepens. No-op on a group. */
+  blend?: BlendMode;
 }
+
+/** Compositing modes (Canvas `globalCompositeOperation`; `add` maps to `lighter`). */
+export type BlendMode =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "lighten"
+  | "darken"
+  | "add"
+  | "color-dodge"
+  | "soft-light"
+  | "hard-light"
+  | "difference";
 
 /**
  * A paint is a solid color string OR a gradient. Coordinates are normalized to the

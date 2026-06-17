@@ -8,7 +8,7 @@ import { sampleBehavior } from "./behaviors.js";
 import { cameraMatrix } from "./camera.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
 import { isGradient } from "./gradient.js";
-import type { Anchor, ClipShape, NodeIR, Paint, PropValue } from "./ir.js";
+import type { Anchor, BlendMode, ClipShape, NodeIR, Paint, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
 import { pathBBox, pathPoint, pathTangentAngle } from "./path.js";
 
@@ -40,6 +40,8 @@ interface OpBase {
   shadowBlur?: number;
   shadowX?: number;
   shadowY?: number;
+  /** Compositing mode (discrete; present only when authored and not "normal"). */
+  blend?: BlendMode;
 }
 
 export type DisplayOp =
@@ -319,8 +321,8 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
 
   // Sample blur + drop-shadow/glow into a partial spread onto the op. Only the
   // authored effects are included → absent ⇒ no op fields ⇒ byte-identical.
-  type Fx = { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number };
-  const effectFx = (id: string, p: { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number }): Fx => {
+  type Fx = { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number; blend?: BlendMode };
+  const effectFx = (id: string, p: { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number; blend?: BlendMode }): Fx => {
     const fx: Fx = {};
     if (p.blur !== undefined) fx.blur = num(id, "blur", p.blur);
     if (p.shadowColor !== undefined) {
@@ -329,13 +331,14 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
       fx.shadowX = num(id, "shadowX", p.shadowX ?? 0);
       fx.shadowY = num(id, "shadowY", p.shadowY ?? 0);
     }
+    if (p.blend !== undefined && p.blend !== "normal") fx.blend = p.blend;
     return fx;
   };
 
   const walk = (node: NodeIR, parent: Mat2D, parentOpacity: number, clips: ClipRegion[]) => {
     const id = node.id;
     const clipSpread = clips.length > 0 ? { clips } : undefined;
-    const fx = effectFx(id, node.props as { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number });
+    const fx = effectFx(id, node.props as { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number; blend?: BlendMode });
 
     if (node.type === "line") {
       const opacity = parentOpacity * num(id, "opacity", node.props.opacity ?? 1);

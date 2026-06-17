@@ -58,6 +58,12 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   `tween(id,{blur:0})`). The renderer sets `ctx.filter`/`ctx.shadow*` after `setTransform`
   (per-op `save/restore` isolates them). Additive/golden-safe (absent → no op fields).
   No-op on `group` (composite blur is a later add). See `examples/scenes/shadow-demo.ts`.
+- Blend modes — `blend?: BlendMode` on drawable nodes selects compositing with what's
+  beneath (`screen`/`add` additive light, `multiply` tint, `overlay`/`soft-light` grade,
+  …; default `normal`). **Discrete** (a static string, not keyframed); the renderer maps
+  it to `ctx.globalCompositeOperation` after `setTransform` (`add`→`lighter`), isolated by
+  the per-op `save/restore`. Additive/golden-safe (absent/`normal` → no op field). No-op on
+  `group` (whole-subtree blend is a later add). See `examples/scenes/blend-demo.ts`.
 - Camera (`packages/core/src/camera.ts`) — a scene-level `camera` field (look-at
   `{x,y}` + `zoom` + `rotation`, defaults = identity) keyframed via `cameraTo` /
   the reserved `"camera"` tween/motionPath/behavior target. One global matrix at

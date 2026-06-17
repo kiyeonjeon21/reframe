@@ -6,7 +6,11 @@
 
 import type { CompositionIR, NodeIR, SceneIR, TimelineIR } from "./ir.js";
 
-const FX_PROPS = ["blur", "shadowColor", "shadowBlur", "shadowX", "shadowY"]; // animatable paint effects
+const FX_PROPS = ["blur", "shadowColor", "shadowBlur", "shadowX", "shadowY", "blend"]; // paint effects (blend is discrete)
+const BLEND_MODES = new Set([
+  "normal", "multiply", "screen", "overlay", "lighten", "darken",
+  "add", "color-dodge", "soft-light", "hard-light", "difference",
+]);
 const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor", "fixed", ...FX_PROPS];
 /** Animatable props of the reserved "camera" target (look-at point + zoom + rotation). */
 const CAMERA_PROPS = ["x", "y", "zoom", "rotation"];
@@ -63,6 +67,7 @@ export function validateScene(ir: SceneIR): void {
       checkPaint(`node "${node.id}" stroke`, props.stroke);
       if (typeof props.blur === "number" && props.blur < 0) problems.push(`node "${node.id}": blur must be >= 0`);
       if (typeof props.shadowBlur === "number" && props.shadowBlur < 0) problems.push(`node "${node.id}": shadowBlur must be >= 0`);
+      if (typeof props.blend === "string" && !BLEND_MODES.has(props.blend)) problems.push(`node "${node.id}": unknown blend "${props.blend}" — use ${[...BLEND_MODES].join(", ")}`);
       if (node.type === "group") {
         const clip = node.props.clip;
         if (clip) {

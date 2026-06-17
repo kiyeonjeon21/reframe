@@ -99,6 +99,7 @@ export function drawDisplayList(
       ctx.shadowOffsetX = op.shadowX ?? 0;
       ctx.shadowOffsetY = op.shadowY ?? 0;
     }
+    if (op.blend) ctx.globalCompositeOperation = mapBlend(op.blend);
 
     switch (op.type) {
       case "rect": {
@@ -216,6 +217,12 @@ export function drawDisplayList(
     }
     ctx.restore();
   }
+}
+
+/** Blend mode -> Canvas `globalCompositeOperation`. `add` is the additive-light mode,
+ *  which Canvas names `lighter`; every other mode is already a valid GCO name. */
+function mapBlend(blend: string): GlobalCompositeOperation {
+  return (blend === "add" ? "lighter" : blend) as GlobalCompositeOperation;
 }
 
 function quoteFamily(family: string): string {

@@ -194,6 +194,23 @@ rect({ id: "card", /* … */, blur: 18 }); tween("card", { blur: 0 }, { duration
 - No-op on a `group` (apply to a child; group/composite blur is a later add). See
   `examples/scenes/shadow-demo.ts`.
 
+### Blend modes (compositing)
+
+`blend` selects how a shape composites with what's already drawn beneath it — the
+primitive that makes light read.
+
+```ts
+ellipse({ id: "glow", fill: radialGradient(["#FF2D6A", "#FF2D6A00"]), blend: "screen" }) // additive light: brightens where blobs overlap
+rect({ id: "tint", fill: "#1E5BFF", blend: "multiply" })                                 // tint/deepen the layer beneath
+rect({ id: "neon", fill: linearGradient([...]), shadowColor: "#7A4DFF", blend: "screen" }) // compose with glow
+```
+
+- Modes: `normal` (default), `multiply`, `screen`, `overlay`, `lighten`, `darken`,
+  `add` (additive light), `color-dodge`, `soft-light`, `hard-light`, `difference`.
+- **Discrete**, not interpolated — set per node (a static string). Default `normal`.
+- Per-shape. A whole-group blend (composite the subtree, then blend) is a later add;
+  on a `group` the prop is a no-op. See `examples/scenes/blend-demo.ts`.
+
 ## Character rig (skeleton, poses, IK)
 
 A first-class, declarative character rig that **compiles to plain IR** (nested
