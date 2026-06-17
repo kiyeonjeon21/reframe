@@ -92,10 +92,12 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   seeded `textIn` (typewriter/cascade/rise/bounce/assemble/decode), `textLoop`
   (wave/shimmer/wobble/float → behaviors), `textOut` (shatter/fly/dissolve/fall/
   collapse), `textTypeCues` (per-glyph keypress audio). The text analog of motionPreset.
-- Photo montage (`packages/core/src/montage.ts`) — `photoMontage(images, opts)` turns a
-  list of images into a slideshow: crossfades + **seeded Ken Burns** (pan/zoom) + an
-  optional cinematic grade (vignette + scrim via gradient + blend). Returns
-  `{ nodes, timeline }` (owns its image layers, like `splitText` owns glyphs); stable
+- Photo/video montage (`packages/core/src/montage.ts`) — `photoMontage(shots, opts)` /
+  `videoMontage` (same generator) turn a list of shots — images AND video clips, mixed
+  (video detected by src extension, plays as a clip for its `hold`, audio muted by default
+  unless a shot sets `volume`) — into a slideshow: crossfades + **seeded Ken Burns**
+  (pan/zoom) + an optional cinematic grade (vignette + scrim via gradient + blend). Returns
+  `{ nodes, timeline }` (owns its image/video layers, like `splitText` owns glyphs); stable
   addresses `${id}-${i}`, labels `shot-${i}`/`cross-${i}`. Each layer uses the image
   node's `fit: "cover"` (crop-to-fill at the image's aspect, renderer-side via
   `coverRect` — no pre-cropping, any aspect); the Ken Burns keeps `scale ≥ 1` + bounded

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { compileScene } from "../src/compile.js";
 import { image, scene } from "../src/dsl.js";
 import { evaluate } from "../src/evaluate.js";
-import { photoMontage } from "../src/montage.js";
+import { photoMontage, videoMontage } from "../src/montage.js";
 import { SceneValidationError } from "../src/validate.js";
 import type { NodeIR } from "../src/ir.js";
 
@@ -77,6 +77,32 @@ describe("photoMontage", () => {
     // slide 0 held 1s, slide 1 held 5s → ~6s total
     expect(compileScene(s).duration).toBeGreaterThan(5.5);
     expect(compileScene(s).duration).toBeLessThan(6.5);
+  });
+});
+
+describe("videoMontage (mixed media)", () => {
+  it("is the same generator as photoMontage", () => {
+    expect(videoMontage).toBe(photoMontage);
+  });
+
+  it("emits video layers for video srcs and image layers for stills", () => {
+    const m = videoMontage(["a.jpg", "b.mp4", "c.png", "d.webm"], { grade: false, hold: 2 });
+    expect(m.nodes.map((n) => n.type)).toEqual(["image", "video", "image", "video"]);
+    // video layers keep fit:cover
+    expect(props(m.nodes[1]!).fit).toBe("cover");
+  });
+
+  it("a clip's start = cumulative hold; muted by default; per-shot volume honored", () => {
+    const m = videoMontage([{ src: "a.mp4", hold: 2 }, { src: "b.mp4", hold: 3, volume: 1 }], { grade: false });
+    expect(props(m.nodes[0]!).start).toBe(0);
+    expect(props(m.nodes[0]!).volume).toBe(0); // muted by default in a montage
+    expect(props(m.nodes[1]!).start).toBe(2); // begins after the first shot's hold
+    expect(props(m.nodes[1]!).volume).toBe(1);
+  });
+
+  it("is deterministic with mixed media", () => {
+    const j = () => JSON.stringify(videoMontage(["a.mp4", "b.jpg", "c.mov"], { seed: 4 }));
+    expect(j()).toBe(j());
   });
 });
 

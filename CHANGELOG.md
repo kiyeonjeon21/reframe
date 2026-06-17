@@ -8,6 +8,25 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### `videoMontage` — mixed photo + clip montages
+
+- The montage generator now mixes **images and video clips** in one cut: a video
+  src (detected by extension) plays as a clip for its `hold`, with crossfades + Ken
+  Burns + grade composing exactly as for stills. `videoMontage` is exported as the
+  clip-driven name (same generator as `photoMontage`, which also gained the ability).
+- A video shot's clip audio is **muted by default** in a montage (to avoid stacking
+  soundtracks); set a per-shot `volume` to include it. Clips begin playing at their
+  slot's start time.
+- New demo `examples/scenes/video-montage.ts` (the CC0 photos + the video-demo clip).
+
+### Changed
+
+- Capture page decodes video frames with **bounded concurrency** — a long clip's many
+  concurrent `img.decode()` calls (especially alongside image layers) could spuriously
+  fail under memory pressure; frames now decode in small batches.
+
 ## [0.6.7] - 2026-06-18
 
 ### Added
