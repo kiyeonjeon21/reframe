@@ -157,7 +157,13 @@ export function drawDisplayList(
       case "image": {
         const img = images?.get(op.src);
         if (img) {
-          ctx.drawImage(img, op.offsetX, op.offsetY, op.width, op.height);
+          if (op.fit === "cover") {
+            const [iw, ih] = intrinsicSize(img);
+            const { sx, sy, sw, sh } = coverRect(iw, ih, op.width, op.height);
+            ctx.drawImage(img, sx, sy, sw, sh, op.offsetX, op.offsetY, op.width, op.height);
+          } else {
+            ctx.drawImage(img, op.offsetX, op.offsetY, op.width, op.height);
+          }
         } else {
           // never throw: the preview reaches this while a src loads or when
           // it 404s — render an unmistakable placeholder instead
@@ -223,6 +229,27 @@ export function drawDisplayList(
  *  which Canvas names `lighter`; every other mode is already a valid GCO name. */
 function mapBlend(blend: string): GlobalCompositeOperation {
   return (blend === "add" ? "lighter" : blend) as GlobalCompositeOperation;
+}
+
+/** Center cover-crop: the source rect (in image pixels) that fills a dw×dh box at
+ *  the image's natural aspect — the larger axis is cropped equally on both sides. */
+export function coverRect(
+  iw: number,
+  ih: number,
+  dw: number,
+  dh: number,
+): { sx: number; sy: number; sw: number; sh: number } {
+  if (iw <= 0 || ih <= 0 || dw <= 0 || dh <= 0) return { sx: 0, sy: 0, sw: iw, sh: ih };
+  const s = Math.max(dw / iw, dh / ih); // scale image up so it covers the box
+  const sw = dw / s;
+  const sh = dh / s;
+  return { sx: (iw - sw) / 2, sy: (ih - sh) / 2, sw, sh };
+}
+
+/** Decoded-image natural size (HTMLImageElement → naturalWidth; ImageBitmap/Canvas → width). */
+function intrinsicSize(img: CanvasImageSource): [number, number] {
+  const a = img as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
+  return [a.naturalWidth || a.width || 0, a.naturalHeight || a.height || 0];
 }
 
 function quoteFamily(family: string): string {

@@ -8,7 +8,7 @@ import { sampleBehavior } from "./behaviors.js";
 import { cameraMatrix } from "./camera.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
 import { isGradient } from "./gradient.js";
-import type { Anchor, BlendMode, ClipShape, NodeIR, Paint, PropValue } from "./ir.js";
+import type { Anchor, BlendMode, ClipShape, ImageFit, NodeIR, Paint, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
 import { pathBBox, pathPoint, pathTangentAngle } from "./path.js";
 
@@ -94,6 +94,8 @@ export type DisplayOp =
       height: number;
       offsetX: number;
       offsetY: number;
+      /** Box-fit; present only when authored and not "fill". */
+      fit?: ImageFit;
     })
   | (OpBase & {
       type: "path";
@@ -428,6 +430,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           height,
           offsetX: -width * ax,
           offsetY: -height * ay,
+          ...(node.props.fit && node.props.fit !== "fill" ? { fit: node.props.fit } : {}),
           ...fx,
           ...clipSpread,
         });

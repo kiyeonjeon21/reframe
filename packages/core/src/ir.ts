@@ -213,7 +213,17 @@ export interface ImageProps extends BaseProps {
   src: string;
   width: number;
   height: number;
+  /**
+   * How the image maps into its width×height box. `"fill"` (default) stretches to
+   * the box (today's behavior); `"cover"` crops the image to fill the box at its
+   * natural aspect (centered) — no distortion, no pre-cropping. Discrete (not
+   * keyframed); the cover crop is done by the renderer, which knows the decoded size.
+   */
+  fit?: ImageFit;
 }
+
+/** Image box-fit mode. `cover` = crop-to-fill at the image's aspect (centered). */
+export type ImageFit = "fill" | "cover";
 
 export type NodeIR =
   | { type: "rect"; id: string; props: RectProps }

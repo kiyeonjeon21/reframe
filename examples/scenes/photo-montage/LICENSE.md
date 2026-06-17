@@ -1,8 +1,10 @@
 # photo-montage demo images — all CC0 1.0 (public domain)
 
 License verified against each file's Wikimedia Commons `LicenseShortName` field
-(via the Commons API) on 2026-06-17. Each image was center cover-cropped to
-1920×1080 and had its metadata stripped; otherwise unmodified.
+(via the Commons API) on 2026-06-17. Each image was downscaled (aspect preserved,
+no crop) to cover a 1920×1080 frame and had its metadata stripped; otherwise
+unmodified. They keep their native aspect ratios — the montage frames them with
+`fit: "cover"` at render time.
 
 | file | source | author | license |
 |---|---|---|---|

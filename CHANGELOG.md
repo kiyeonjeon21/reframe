@@ -8,6 +8,22 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Image `fit: "cover"` (auto-cover)
+
+- `fit` prop on the `image` node: `"cover"` crops the image to fill its width×height
+  box at the image's natural aspect (centered), so any-aspect photos drop in with no
+  distortion and no pre-cropping. `"fill"` (default) keeps the stretch-to-box behavior.
+- Renderer-side (`coverRect` computes the centered source rect; an 8-arg `drawImage`),
+  so the author needs no intrinsic dimensions. Discrete (not keyframed); additive and
+  byte-identical when absent or `"fill"`.
+
+### Changed
+
+- `photoMontage` now sets `fit: "cover"` on every layer — montage images no longer
+  need to be pre-cropped to the frame aspect (the demo images are now native-aspect).
+
 ## [0.6.4] - 2026-06-18
 
 ### Added

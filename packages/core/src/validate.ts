@@ -11,6 +11,7 @@ const BLEND_MODES = new Set([
   "normal", "multiply", "screen", "overlay", "lighten", "darken",
   "add", "color-dodge", "soft-light", "hard-light", "difference",
 ]);
+const IMAGE_FITS = new Set(["fill", "cover"]);
 const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor", "fixed", ...FX_PROPS];
 /** Animatable props of the reserved "camera" target (look-at point + zoom + rotation). */
 const CAMERA_PROPS = ["x", "y", "zoom", "rotation"];
@@ -19,7 +20,7 @@ export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
   line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress", ...FX_PROPS],
   text: [...COMMON_PROPS, "content", "contentDecimals", "contentThousands", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
-  image: [...COMMON_PROPS, "src", "width", "height"],
+  image: [...COMMON_PROPS, "src", "width", "height", "fit"],
   path: [...COMMON_PROPS, "d", "fill", "stroke", "strokeWidth", "progress", "originX", "originY"],
   group: COMMON_PROPS,
 };
@@ -68,6 +69,7 @@ export function validateScene(ir: SceneIR): void {
       if (typeof props.blur === "number" && props.blur < 0) problems.push(`node "${node.id}": blur must be >= 0`);
       if (typeof props.shadowBlur === "number" && props.shadowBlur < 0) problems.push(`node "${node.id}": shadowBlur must be >= 0`);
       if (typeof props.blend === "string" && !BLEND_MODES.has(props.blend)) problems.push(`node "${node.id}": unknown blend "${props.blend}" — use ${[...BLEND_MODES].join(", ")}`);
+      if (typeof props.fit === "string" && !IMAGE_FITS.has(props.fit)) problems.push(`node "${node.id}": unknown fit "${props.fit}" — use ${[...IMAGE_FITS].join(", ")}`);
       if (node.type === "group") {
         const clip = node.props.clip;
         if (clip) {

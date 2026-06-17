@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { compileScene } from "../src/compile.js";
-import { scene } from "../src/dsl.js";
+import { image, scene } from "../src/dsl.js";
 import { evaluate } from "../src/evaluate.js";
 import { photoMontage } from "../src/montage.js";
+import { SceneValidationError } from "../src/validate.js";
 import type { NodeIR } from "../src/ir.js";
 
 const size = { width: 1920, height: 1080 };
@@ -63,11 +64,41 @@ describe("photoMontage", () => {
     }
   });
 
+  it("sets fit:cover on every image layer (no pre-crop needed)", () => {
+    const m = photoMontage(imgs);
+    for (const n of m.nodes.filter((x) => x.type === "image")) {
+      expect(props(n).fit).toBe("cover");
+    }
+  });
+
   it("respects per-slide hold + ken overrides", () => {
     const m = photoMontage([{ src: "a.jpg", hold: 1, ken: "pan" }, "b.jpg"], { hold: 5 });
     const s = scene({ id: "t", size, nodes: m.nodes, timeline: m.timeline });
     // slide 0 held 1s, slide 1 held 5s → ~6s total
     expect(compileScene(s).duration).toBeGreaterThan(5.5);
     expect(compileScene(s).duration).toBeLessThan(6.5);
+  });
+});
+
+describe("image fit", () => {
+  const at = (s: ReturnType<typeof scene>, id = "im") =>
+    evaluate(compileScene(s), 0).find((o) => o.id === id) as unknown as Record<string, unknown>;
+
+  it("an authored fit:cover lands on the image op", () => {
+    const s = scene({ id: "a", size, nodes: [image({ id: "im", src: "x.jpg", x: 0, y: 0, width: 100, height: 100, fit: "cover" })] });
+    expect(at(s).fit).toBe("cover");
+  });
+
+  it('absent / "fill" adds no fit field (byte-identity guard)', () => {
+    const none = scene({ id: "a", size, nodes: [image({ id: "im", src: "x.jpg", x: 0, y: 0, width: 100, height: 100 })] });
+    const fill = scene({ id: "b", size, nodes: [image({ id: "im", src: "x.jpg", x: 0, y: 0, width: 100, height: 100, fit: "fill" })] });
+    expect(at(none).fit).toBeUndefined();
+    expect(at(fill).fit).toBeUndefined();
+  });
+
+  it("validation rejects an unknown fit", () => {
+    expect(() =>
+      scene({ id: "a", size, nodes: [image({ id: "im", src: "x.jpg", x: 0, y: 0, width: 100, height: 100, fit: "stretch" as never })] }),
+    ).toThrow(SceneValidationError);
   });
 });

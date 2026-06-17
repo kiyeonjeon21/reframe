@@ -9,10 +9,10 @@
  * a seeded PRNG (mulberry32) — same (images, opts) → identical IR; a different
  * `seed` re-frames within the same family. No Math.random / Date.
  *
- * Constraint it works around: the `image` node draws STRETCHED to width×height
- * (no object-fit). So images must already be the frame's aspect ratio; each layer
- * is sized to the frame and the Ken Burns keeps `scale >= 1` with the pan bounded
- * to the scale's slack, so an edge is never revealed.
+ * Each layer is sized to the frame and uses `fit: "cover"`, so images of ANY aspect
+ * ratio fill the frame (cropped, centered) with no distortion — no pre-cropping. The
+ * Ken Burns keeps `scale >= 1` with the pan bounded to the scale's slack, so an edge
+ * is never revealed.
  */
 
 import type { ColorStop, NodeIR, TimelineIR } from "./ir.js";
@@ -124,6 +124,7 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
         width: W,
         height: H,
         anchor: "center",
+        fit: "cover",
         scale: kA,
         opacity: i === 0 ? 1 : 0,
       }),
