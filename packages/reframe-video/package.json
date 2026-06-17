@@ -1,6 +1,6 @@
 {
   "name": "reframe-video",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Declarative motion graphics that AI can write and humans can tweak — human edits survive AI regeneration. Deterministic mp4 renders from a plain-data scene format.",
   "keywords": [
     "motion-graphics",

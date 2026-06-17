@@ -8,6 +8,8 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-06-18
+
 ### Added
 
 #### Image `fit: "cover"` (auto-cover)
@@ -304,7 +306,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.4...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.1...v0.6.2
