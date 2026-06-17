@@ -8,6 +8,8 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-06-18
+
 ### Added
 
 #### `video` source node (clips as a layer)
@@ -326,7 +328,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.5...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.6...HEAD
+[0.6.6]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.2...v0.6.3
