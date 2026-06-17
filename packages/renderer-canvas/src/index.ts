@@ -5,8 +5,41 @@
  * could port to skia-canvas later.
  */
 
-import type { CompiledScene, DisplayList, SceneIR } from "@reframe/core";
+import type { CompiledScene, DisplayList, Paint, SceneIR } from "@reframe/core";
 import { evaluate } from "@reframe/core";
+
+/** Resolve a paint into a Canvas fillStyle/strokeStyle. A string is used as-is; a
+ *  gradient is built mapped to the op's local bounding box `{x,y,w,h}` (the fill is
+ *  applied after setTransform, so this is node-local space). */
+function resolvePaint(
+  ctx: CanvasRenderingContext2D,
+  paint: Paint,
+  box: { x: number; y: number; w: number; h: number },
+): string | CanvasGradient {
+  if (typeof paint === "string") return paint;
+  const { x, y, w, h } = box;
+  let g: CanvasGradient;
+  if (paint.kind === "linear") {
+    const a = ((paint.angle ?? 0) * Math.PI) / 180;
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const half = Math.abs(dx) * (w / 2) + Math.abs(dy) * (h / 2); // span the box along the angle
+    g = ctx.createLinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half);
+  } else if (paint.kind === "radial") {
+    const cx = x + (paint.cx ?? 0.5) * w;
+    const cy = y + (paint.cy ?? 0.5) * h;
+    const r = Math.max((paint.r ?? 0.5) * Math.max(w, h), 1e-4);
+    g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  } else {
+    const cx = x + (paint.cx ?? 0.5) * w;
+    const cy = y + (paint.cy ?? 0.5) * h;
+    g = ctx.createConicGradient(((paint.angle ?? 0) * Math.PI) / 180, cx, cy);
+  }
+  for (const s of paint.stops) g.addColorStop(Math.max(0, Math.min(1, s.offset)), s.color);
+  return g;
+}
 
 /**
  * Decoded images keyed by the RAW src string from the IR (never a resolved
@@ -61,6 +94,7 @@ export function drawDisplayList(
 
     switch (op.type) {
       case "rect": {
+        const box = { x: op.offsetX, y: op.offsetY, w: op.width, h: op.height };
         ctx.beginPath();
         if (op.radius && op.radius > 0) {
           ctx.roundRect(op.offsetX, op.offsetY, op.width, op.height, op.radius);
@@ -68,17 +102,18 @@ export function drawDisplayList(
           ctx.rect(op.offsetX, op.offsetY, op.width, op.height);
         }
         if (op.fill) {
-          ctx.fillStyle = op.fill;
+          ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill();
         }
         if (op.stroke) {
-          ctx.strokeStyle = op.stroke;
+          ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.stroke();
         }
         break;
       }
       case "ellipse": {
+        const box = { x: op.offsetX, y: op.offsetY, w: op.width, h: op.height };
         ctx.beginPath();
         ctx.ellipse(
           op.offsetX + op.width / 2,
@@ -90,11 +125,11 @@ export function drawDisplayList(
           Math.PI * 2,
         );
         if (op.fill) {
-          ctx.fillStyle = op.fill;
+          ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill();
         }
         if (op.stroke) {
-          ctx.strokeStyle = op.stroke;
+          ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.stroke();
         }
@@ -133,12 +168,15 @@ export function drawDisplayList(
       }
       case "path": {
         const p = new Path2D(op.d);
+        const box = op.bbox
+          ? { x: op.bbox[0], y: op.bbox[1], w: op.bbox[2], h: op.bbox[3] }
+          : { x: 0, y: 0, w: 1, h: 1 };
         if (op.fill) {
-          ctx.fillStyle = op.fill;
+          ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill(p);
         }
         if (op.stroke && (op.strokeWidth ?? 1) > 0) {
-          ctx.strokeStyle = op.stroke;
+          ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.lineJoin = "round";
           ctx.lineCap = "round";

@@ -8,6 +8,19 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Gradients
+
+- **`fill` / `stroke` accept a gradient** (linear / radial / conic) on rect,
+  ellipse, and path, via **`linearGradient`** / **`radialGradient`** /
+  **`conicGradient`**. Coordinates are normalized to the node's bounding box
+  (0..1), so a gradient is just an angle + color stops. The renderer builds the
+  Canvas gradient in the node's local space, so animating the node's transform
+  (rotation / scale / move) sweeps the gradient with it (gradients themselves are
+  static this release). Additive and determinism-safe: a color-string fill takes
+  the exact existing path, so existing scenes render byte-identically.
+
 ## [0.6.0] - 2026-06-17
 
 ### Added

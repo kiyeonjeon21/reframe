@@ -11,6 +11,28 @@
 
 export type Pt = [number, number];
 
+/**
+ * A loose bounding box `[x, y, w, h]` from a path `d`'s coordinate extents — used
+ * only to map a gradient across the shape. Exact for M/L/C/Q/S/T paths (every
+ * number is an x/y coord, control points included); loose for the rare H/V/A.
+ */
+export function pathBBox(d: string): [number, number, number, number] {
+  const nums = d.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi);
+  if (!nums || nums.length < 2) return [0, 0, 1, 1];
+  let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+  for (let i = 0; i + 1 < nums.length; i += 2) {
+    const x = parseFloat(nums[i]!);
+    const y = parseFloat(nums[i + 1]!);
+    if (x < minx) minx = x;
+    if (x > maxx) maxx = x;
+    if (y < miny) miny = y;
+    if (y > maxy) maxy = y;
+  }
+  const w = maxx - minx;
+  const h = maxy - miny;
+  return [minx, miny, w > 0 ? w : 1, h > 0 ? h : 1];
+}
+
 /** Resolve a global u into a segment index and local t in [0,1]. */
 function locate(segCount: number, u: number): { i: number; t: number } {
   if (segCount <= 0) return { i: 0, t: 0 };

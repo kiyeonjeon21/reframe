@@ -30,12 +30,36 @@ export function validateScene(ir: SceneIR): void {
   const problems: string[] = [];
   const nodeById = new Map<string, NodeIR>();
 
+  // a fill/stroke is a color string (unchecked, as today) OR a gradient object
+  const checkPaint = (where: string, value: unknown) => {
+    if (typeof value !== "object" || value === null) return;
+    const g = value as { kind?: unknown; stops?: unknown };
+    if (g.kind !== "linear" && g.kind !== "radial" && g.kind !== "conic") {
+      problems.push(`${where}: a paint object must be a gradient with kind "linear" / "radial" / "conic"`);
+      return;
+    }
+    if (!Array.isArray(g.stops) || g.stops.length === 0) {
+      problems.push(`${where}: gradient "${g.kind}" needs at least one color stop`);
+      return;
+    }
+    g.stops.forEach((s: unknown, i: number) => {
+      const st = s as { offset?: unknown; color?: unknown };
+      if (typeof st?.color !== "string") problems.push(`${where}: gradient stop ${i} needs a color string`);
+      if (typeof st?.offset !== "number" || st.offset < 0 || st.offset > 1) {
+        problems.push(`${where}: gradient stop ${i} "offset" must be a number in 0..1`);
+      }
+    });
+  };
+
   const collect = (nodes: NodeIR[]) => {
     for (const node of nodes) {
       if (nodeById.has(node.id)) {
         problems.push(`duplicate node id "${node.id}" — every node id must be unique`);
       }
       nodeById.set(node.id, node);
+      const props = node.props as unknown as Record<string, unknown>;
+      checkPaint(`node "${node.id}" fill`, props.fill);
+      checkPaint(`node "${node.id}" stroke`, props.stroke);
       if (node.type === "group") {
         const clip = node.props.clip;
         if (clip) {
