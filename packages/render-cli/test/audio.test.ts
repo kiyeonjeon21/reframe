@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import type { AudioPlan } from "@reframe/core";
-import { buildFilterGraph } from "../src/audio/mux.js";
+import { atempoChain, buildFilterGraph } from "../src/audio/mux.js";
 import { synthAmbientPad, synthSfx } from "../src/audio/synth.js";
 import { encodeWavMono16 } from "../src/audio/wav.js";
 
@@ -55,6 +55,7 @@ describe("buildFilterGraph", () => {
       { t0: 1.5, t1: 1.85 },
       { t0: 4.0, t1: 4.12 },
     ],
+    clipAudio: [],
     warnings: [],
   };
 
@@ -73,5 +74,32 @@ describe("buildFilterGraph", () => {
     const graph = buildFilterGraph({ ...plan, bgm: null }, { cueFiles: ["a.wav", "b.wav"], bgmFile: null });
     expect(graph).toContain("amix=inputs=3");
     expect(graph).not.toContain("afade");
+  });
+
+  it("adds a clip-audio chain (trim + tempo + delay) after the cues", () => {
+    const clipPlan: AudioPlan = {
+      duration: 10, bgm: null, cues: [], duckWindows: [],
+      clipAudio: [{ nodeId: "v", src: "clip.mp4", start: 2, rate: 2, clipStart: 1.5, gain: 0.8 }],
+      warnings: [],
+    };
+    const graph = buildFilterGraph(clipPlan, {
+      cueFiles: [], bgmFile: null,
+      clipFiles: [{ audio: clipPlan.clipAudio[0]!, file: "v.wav" }],
+    });
+    expect(graph).toContain("atrim=start=1.500");
+    expect(graph).toContain("asetpts=PTS-STARTPTS");
+    expect(graph).toContain("atempo=2.0"); // rate 2 → single legal factor
+    expect(graph).toContain("volume=0.8");
+    expect(graph).toContain("adelay=2000:all=1");
+    expect(graph).toContain("amix=inputs=2"); // anchor + 1 clip
+  });
+});
+
+describe("atempoChain", () => {
+  it("omits for rate 1, single factor in range, decomposes out of range", () => {
+    expect(atempoChain(1)).toEqual([]);
+    expect(atempoChain(1.5)).toEqual(["atempo=1.5000"]);
+    expect(atempoChain(4)).toEqual(["atempo=2.0", "atempo=2.0000"]);
+    expect(atempoChain(0.25)).toEqual(["atempo=0.5", "atempo=0.5000"]);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveAudioPlan } from "../src/audio.js";
 import { compileScene } from "../src/compile.js";
-import { scene, rect, seq, par, stagger, tween, wait } from "../src/dsl.js";
+import { scene, rect, seq, par, stagger, tween, video, wait } from "../src/dsl.js";
 import type { AudioIR } from "../src/ir.js";
 
 const base = (audio?: AudioIR) =>
@@ -100,6 +100,47 @@ describe("resolveAudioPlan", () => {
     });
     const noDuck = resolveAudioPlan(base({ bgm: { file: "m.mp3", duck: false } }))!;
     expect(noDuck.bgm?.duck).toBeNull();
+  });
+});
+
+describe("clip audio (video nodes)", () => {
+  const vscene = (props: Record<string, unknown>, audio?: AudioIR) =>
+    compileScene(
+      scene({
+        id: "t",
+        size: { width: 100, height: 100 },
+        duration: 10,
+        nodes: [video({ id: "v", src: "clip.mp4", x: 0, y: 0, width: 100, height: 100, ...props })],
+        ...(audio && { audio }),
+      }),
+    );
+
+  it("emits a clipAudio entry per audible video node (default volume 1)", () => {
+    const plan = resolveAudioPlan(vscene({ start: 1, rate: 2, clipStart: 0.5 }))!;
+    expect(plan).not.toBeNull();
+    expect(plan.clipAudio).toEqual([
+      { nodeId: "v", src: "clip.mp4", start: 1, rate: 2, clipStart: 0.5, gain: 1 },
+    ]);
+    expect(plan.cues).toEqual([]);
+    expect(plan.bgm).toBeNull();
+  });
+
+  it("volume 0 mutes the clip → no entry → null plan when nothing else", () => {
+    expect(resolveAudioPlan(vscene({ volume: 0 }))).toBeNull();
+  });
+
+  it("coexists with scene cues/bgm", () => {
+    const plan = resolveAudioPlan(
+      vscene({ volume: 0.6 }, { bgm: { synth: "ambient-pad" } }),
+    )!;
+    expect(plan.clipAudio).toHaveLength(1);
+    expect(plan.clipAudio[0]!.gain).toBe(0.6);
+    expect(plan.bgm).not.toBeNull();
+  });
+
+  it("drops a clip whose start is past the scene end (with a warning)", () => {
+    const plan = resolveAudioPlan(vscene({ start: 99 }));
+    expect(plan).toBeNull(); // dropped → nothing else → null
   });
 });
 

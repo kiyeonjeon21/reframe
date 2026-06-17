@@ -21,7 +21,7 @@ export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress", ...FX_PROPS],
   text: [...COMMON_PROPS, "content", "contentDecimals", "contentThousands", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
   image: [...COMMON_PROPS, "src", "width", "height", "fit"],
-  video: [...COMMON_PROPS, "src", "width", "height", "fit", "start", "rate", "clipStart"],
+  video: [...COMMON_PROPS, "src", "width", "height", "fit", "start", "rate", "clipStart", "volume"],
   path: [...COMMON_PROPS, "d", "fill", "stroke", "strokeWidth", "progress", "originX", "originY"],
   group: COMMON_PROPS,
 };
