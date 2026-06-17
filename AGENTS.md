@@ -51,6 +51,13 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   it. Additive/golden-safe: a string fill takes the exact existing path (no new op fields);
   a gradient bypasses the string-coercing `opt()` and a path op gains a `bbox`. See
   `examples/scenes/gradient-demo.ts`.
+- Shadow / glow / blur (`packages/core/src/effects.ts`) — `blur` / `shadowColor` /
+  `shadowBlur` / `shadowX` / `shadowY` on drawable nodes (screen-pixel space), built with
+  `glow(color,blur)` / `dropShadow(color,blur,x,y)`. **Animatable scalars** (sampled via
+  `num`/`opt` → pulse a glow with `oscillate(id,"shadowBlur",…)`, pull focus with
+  `tween(id,{blur:0})`). The renderer sets `ctx.filter`/`ctx.shadow*` after `setTransform`
+  (per-op `save/restore` isolates them). Additive/golden-safe (absent → no op fields).
+  No-op on `group` (composite blur is a later add). See `examples/scenes/shadow-demo.ts`.
 - Camera (`packages/core/src/camera.ts`) — a scene-level `camera` field (look-at
   `{x,y}` + `zoom` + `rotation`, defaults = identity) keyframed via `cameraTo` /
   the reserved `"camera"` tween/motionPath/behavior target. One global matrix at

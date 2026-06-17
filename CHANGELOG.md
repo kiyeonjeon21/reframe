@@ -8,6 +8,19 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Shadow, glow & blur
+
+- **Drop shadow / outer glow / gaussian blur** on rect / ellipse / path / text /
+  image / line, via the props `blur`, `shadowColor`, `shadowBlur`, `shadowX`,
+  `shadowY` (and the **`glow`** / **`dropShadow`** helpers). Unlike gradients these
+  are scalar props, so they **animate** through the normal tween/oscillate
+  machinery — pulse a glow (`oscillate(id, "shadowBlur", …)`), pull focus
+  (`tween(id, { blur: 0 })`). Effects are in screen-pixel space (consistent light
+  direction). Additive and determinism-safe: a node with no effects renders
+  byte-identically. No-op on a group (composite blur is a later add).
+
 ## [0.6.1] - 2026-06-17
 
 ### Added

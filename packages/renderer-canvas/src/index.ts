@@ -91,6 +91,14 @@ export function drawDisplayList(
     }
     ctx.setTransform(...op.transform);
     ctx.globalAlpha = Math.max(0, Math.min(1, op.opacity));
+    // paint effects (in screen pixels; ctx.save/restore around the op resets them)
+    if (op.blur) ctx.filter = `blur(${op.blur}px)`;
+    if (op.shadowColor) {
+      ctx.shadowColor = op.shadowColor;
+      ctx.shadowBlur = op.shadowBlur ?? 0;
+      ctx.shadowOffsetX = op.shadowX ?? 0;
+      ctx.shadowOffsetY = op.shadowY ?? 0;
+    }
 
     switch (op.type) {
       case "rect": {

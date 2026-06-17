@@ -34,6 +34,12 @@ interface OpBase {
   opacity: number;
   /** Clip regions from ancestor groups (intersected by the renderer). */
   clips?: ClipRegion[];
+  /** Paint effects (screen-pixel space). Present only when authored. */
+  blur?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowX?: number;
+  shadowY?: number;
 }
 
 export type DisplayOp =
@@ -311,9 +317,25 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     return v === "" && base === undefined ? undefined : String(v);
   };
 
+  // Sample blur + drop-shadow/glow into a partial spread onto the op. Only the
+  // authored effects are included → absent ⇒ no op fields ⇒ byte-identical.
+  type Fx = { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number };
+  const effectFx = (id: string, p: { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number }): Fx => {
+    const fx: Fx = {};
+    if (p.blur !== undefined) fx.blur = num(id, "blur", p.blur);
+    if (p.shadowColor !== undefined) {
+      fx.shadowColor = str(id, "shadowColor", p.shadowColor);
+      fx.shadowBlur = num(id, "shadowBlur", p.shadowBlur ?? 0);
+      fx.shadowX = num(id, "shadowX", p.shadowX ?? 0);
+      fx.shadowY = num(id, "shadowY", p.shadowY ?? 0);
+    }
+    return fx;
+  };
+
   const walk = (node: NodeIR, parent: Mat2D, parentOpacity: number, clips: ClipRegion[]) => {
     const id = node.id;
     const clipSpread = clips.length > 0 ? { clips } : undefined;
+    const fx = effectFx(id, node.props as { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number });
 
     if (node.type === "line") {
       const opacity = parentOpacity * num(id, "opacity", node.props.opacity ?? 1);
@@ -332,6 +354,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         y2: y1 + (num(id, "y2", node.props.y2) - y1) * progress,
         stroke: str(id, "stroke", node.props.stroke),
         strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1),
+        ...fx,
         ...clipSpread,
       });
       return;
@@ -383,6 +406,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth }),
           ...(node.type === "rect" && { radius: num(id, "radius", node.props.radius ?? 0) }),
+          ...fx,
           ...clipSpread,
         });
         return;
@@ -401,6 +425,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           height,
           offsetX: -width * ax,
           offsetY: -height * ay,
+          ...fx,
           ...clipSpread,
         });
         return;
@@ -426,6 +451,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1) }),
           ...(needsBox && { bbox: pathBBox(dStr) }),
+          ...fx,
           ...clipSpread,
         });
         return;
@@ -453,6 +479,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           letterSpacing: num(id, "letterSpacing", node.props.letterSpacing ?? 0),
           align: TEXT_ALIGN[ax] ?? "left",
           baseline: TEXT_BASELINE[ay] ?? "top",
+          ...fx,
           ...clipSpread,
         });
         return;

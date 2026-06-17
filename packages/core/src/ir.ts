@@ -70,6 +70,17 @@ export interface BaseProps {
    * for HUD / titles / watermark layers. No-op when the scene has no camera.
    */
   fixed?: boolean;
+  /**
+   * Paint effects (animatable scalars, in screen pixels — not transformed by the
+   * node's rotation/scale or the camera, so a shadow keeps a consistent light
+   * direction). `shadowColor` enables a drop shadow / outer glow (`glow`/`dropShadow`
+   * helpers). No-op on a `group` (use a child; group/composite blur is a later add).
+   */
+  blur?: number; // gaussian blur of the shape, px
+  shadowColor?: string; // shadow/glow colour; presence turns the shadow on
+  shadowBlur?: number; // shadow softness, px (default 0)
+  shadowX?: number; // shadow offset px (glow = 0,0)
+  shadowY?: number;
 }
 
 /**
@@ -118,6 +129,12 @@ export interface LineProps {
   progress?: number;
   /** Pin to the screen so the scene `camera` does not move it (top-level only). */
   fixed?: boolean;
+  /** Paint effects (px, screen-space) — see BaseProps. */
+  blur?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowX?: number;
+  shadowY?: number;
 }
 
 export interface TextProps extends BaseProps {
