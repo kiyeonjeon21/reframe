@@ -8,6 +8,21 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Blend modes (compositing)
+
+- `blend?: BlendMode` on drawable nodes (rect / ellipse / text / image / path / line)
+  selects how a shape composites with what's drawn beneath it: `screen` / `add`
+  (additive light — overlaps brighten), `multiply` (tint / deepen), `overlay` /
+  `soft-light` / `hard-light` (grade), `lighten` / `darken`, `color-dodge`,
+  `difference`. Default `normal`.
+- Discrete (a static string, not keyframed). The renderer maps it to
+  `ctx.globalCompositeOperation` after `setTransform` (`add` → `lighter`), isolated by
+  the per-op `save/restore`. Additive and **byte-identical** when absent or `normal`.
+- No-op on a `group` (whole-subtree compositing is a later add).
+- New demo `examples/scenes/blend-demo.ts`.
+
 ## [0.6.2] - 2026-06-17
 
 ### Added
