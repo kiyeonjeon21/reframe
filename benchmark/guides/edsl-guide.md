@@ -317,6 +317,27 @@ scene({ size, nodes: [...m.nodes, ...titles], timeline: par(m.timeline, titleTra
 - Seeded + pure (same `(images, opts)` → identical IR). Note: image-node sources do
   not render in `reframe player` / artifacts — montage ships as mp4.
 
+## Video clips (`video`)
+
+Draw a video clip as a layer. It plays on the scene clock — at scene-time `t` it
+shows the source frame at `clipStart + max(0, t - start) * rate`.
+
+```ts
+video({ id: "clip", src: "shot.mp4", x: 960, y: 540, width: 1920, height: 1080,
+        anchor: "center", fit: "cover", start: 0, rate: 1, clipStart: 0 })
+tween("clip", { scale: 1.08 }, { duration: 5 })  // transform composes with playback (Ken Burns)
+```
+
+- Props: `src` (mp4 / mov / webm / m4v / mkv, absolute or scene-relative), `width`/`height`,
+  `fit` (`"cover"` like the image node), `start` (scene-time playback begins), `rate`
+  (speed), `clipStart` (source in-point s). Transform/opacity/effects compose as usual.
+- **Deterministic by frame extraction**: render-cli runs `ffmpeg -vf fps=<sceneFps>` to pull
+  the clip's frames, and the renderer draws frame `round(t·fps)` — no live `<video>` seek, so
+  it stays byte-identical (same machine).
+- **v1 limitations**: visual-only (the clip's own audio is not muxed — use `scene.audio`);
+  all frames are pre-decoded so keep clips short (≤~5s); like images, not rendered in
+  `reframe player` / artifacts (mp4 only). See `examples/scenes/video-demo.ts`.
+
 ## Cursor (UI demos)
 
 A vector mouse pointer that glides across the scene and clicks things — for app

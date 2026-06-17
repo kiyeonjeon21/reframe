@@ -8,6 +8,26 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### `video` source node (clips as a layer)
+
+- A `video` node draws a clip as a layer, playing on the scene clock: at scene-time
+  `t` it shows the source frame at `clipStart + max(0, t - start) * rate`. Props:
+  `src` (mp4 / mov / webm / m4v / mkv), `width`/`height`, `fit` (`"cover"` like image),
+  `start`, `rate`, `clipStart`. Transform / opacity / effects compose as usual.
+- **Deterministic by frame extraction**: render-cli runs `ffmpeg -vf fps=<sceneFps>` to
+  pull the clip's frames (`buildVideoFrameAssets`), the capture page decodes them into a
+  `VideoRegistry`, and core's pure `evaluate` computes the integer frame index
+  (`round(t·fps)`, fps from `compiled.ir.fps`) that the renderer draws — no live
+  `<video>` seek, so renders stay byte-identical (same machine). Additive / golden-safe
+  (no existing scene uses it).
+- New demo `examples/scenes/video-demo.ts` (procedural clip under
+  `examples/scenes/video-demo/`, not bundled to npm).
+- **v1 limitations**: visual-only (the clip's own audio is not muxed — use `scene.audio`);
+  all frames are pre-decoded so clips should be short; like images, video sources do not
+  render in `reframe player` / claude.ai artifacts (mp4 only).
+
 ## [0.6.5] - 2026-06-18
 
 ### Added

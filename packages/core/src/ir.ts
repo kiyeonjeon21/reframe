@@ -225,12 +225,31 @@ export interface ImageProps extends BaseProps {
 /** Image box-fit mode. `cover` = crop-to-fill at the image's aspect (centered). */
 export type ImageFit = "fill" | "cover";
 
+export interface VideoProps extends BaseProps {
+  /** Video file path (absolute, or relative to the scene file). */
+  src: string;
+  width: number;
+  height: number;
+  /** Box-fit into width×height, like the image node. `"fill"` (default) | `"cover"`. */
+  fit?: ImageFit;
+  /**
+   * Scene-time (seconds) at which playback begins. Before it, frame 0 (clipStart) shows;
+   * the node's visibility is still controlled by opacity/timeline. Default 0.
+   */
+  start?: number;
+  /** Playback speed multiplier (2 = double speed). Default 1. */
+  rate?: number;
+  /** Source in-point (seconds) shown at `start`. Default 0. */
+  clipStart?: number;
+}
+
 export type NodeIR =
   | { type: "rect"; id: string; props: RectProps }
   | { type: "ellipse"; id: string; props: EllipseProps }
   | { type: "line"; id: string; props: LineProps }
   | { type: "text"; id: string; props: TextProps }
   | { type: "image"; id: string; props: ImageProps }
+  | { type: "video"; id: string; props: VideoProps }
   | { type: "path"; id: string; props: PathProps }
   | { type: "group"; id: string; props: GroupProps; children: NodeIR[] };
 
