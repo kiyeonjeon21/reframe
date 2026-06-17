@@ -5,7 +5,7 @@
  * could port to skia-canvas later.
  */
 
-import type { CompiledScene, DisplayList, Paint, SceneIR } from "@reframe/core";
+import type { CompiledScene, DisplayList, MatteMode, Paint, SceneIR } from "@reframe/core";
 import { evaluate } from "@reframe/core";
 
 /** Resolve a paint into a Canvas fillStyle/strokeStyle. A string is used as-is; a
@@ -82,7 +82,87 @@ export function drawDisplayList(
   images?: ImageRegistry,
   videos?: VideoRegistry,
 ): void {
+  // Track-matte compositing: matte-push/sep/pop bracket a matte group's ops. The matte
+  // child and the content children render to offscreen canvases; matte-pop combines them
+  // (content kept where the matte is opaque/bright) and draws the result to the parent.
+  interface MatteFrame {
+    mode: MatteMode;
+    parent: CanvasRenderingContext2D;
+    matteCtx: CanvasRenderingContext2D;
+    phase: "matte" | "content";
+    contentCtx?: CanvasRenderingContext2D;
+  }
+  const stack: MatteFrame[] = [];
+  const target = (): CanvasRenderingContext2D => {
+    const f = stack[stack.length - 1];
+    if (!f) return ctx;
+    return f.phase === "content" && f.contentCtx ? f.contentCtx : f.matteCtx;
+  };
+  const newCtx = (): CanvasRenderingContext2D => {
+    const c = document.createElement("canvas");
+    c.width = ctx.canvas.width;
+    c.height = ctx.canvas.height;
+    return c.getContext("2d")!;
+  };
+  const composite = (f: MatteFrame): void => {
+    if (!f.contentCtx) return; // no content drawn → nothing to show
+    if (f.mode === "luma") lumaToAlpha(f.matteCtx);
+    f.contentCtx.save();
+    f.contentCtx.setTransform(1, 0, 0, 1, 0, 0);
+    f.contentCtx.globalCompositeOperation = "destination-in";
+    f.contentCtx.drawImage(f.matteCtx.canvas, 0, 0);
+    f.contentCtx.restore();
+    f.parent.save();
+    f.parent.setTransform(1, 0, 0, 1, 0, 0);
+    f.parent.globalAlpha = 1;
+    f.parent.globalCompositeOperation = "source-over";
+    f.parent.filter = "none";
+    f.parent.drawImage(f.contentCtx.canvas, 0, 0);
+    f.parent.restore();
+  };
+
   for (const op of ops) {
+    if (op.type === "matte-push") {
+      stack.push({ mode: op.mode, parent: target(), matteCtx: newCtx(), phase: "matte" });
+      continue;
+    }
+    if (op.type === "matte-sep") {
+      const f = stack[stack.length - 1];
+      if (f) { f.contentCtx = newCtx(); f.phase = "content"; }
+      continue;
+    }
+    if (op.type === "matte-pop") {
+      const f = stack.pop();
+      if (f) composite(f);
+      continue;
+    }
+    drawOp(target(), op, images, videos);
+  }
+  // best-effort flush if a sliced op list left frames open (e.g. preview overlays)
+  while (stack.length) composite(stack.pop()!);
+}
+
+/** Set each pixel's alpha to its luminance (× existing alpha) — for a luma matte. */
+function lumaToAlpha(ctx: CanvasRenderingContext2D): void {
+  const { width, height } = ctx.canvas;
+  if (width === 0 || height === 0) return;
+  const img = ctx.getImageData(0, 0, width, height);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3]! / 255;
+    const luma = 0.2126 * d[i]! + 0.7152 * d[i + 1]! + 0.0722 * d[i + 2]!;
+    d[i + 3] = Math.round(luma * a);
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function drawOp(
+  ctx: CanvasRenderingContext2D,
+  op: DisplayList[number],
+  images?: ImageRegistry,
+  videos?: VideoRegistry,
+): void {
+  {
     ctx.save();
     // ancestor-group clips: each in its own space, intersected before the op draws
     if (op.clips) {

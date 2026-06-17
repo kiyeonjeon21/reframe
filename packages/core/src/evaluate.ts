@@ -8,7 +8,7 @@ import { sampleBehavior } from "./behaviors.js";
 import { cameraMatrix } from "./camera.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
 import { isGradient } from "./gradient.js";
-import type { Anchor, BlendMode, ClipShape, ImageFit, NodeIR, Paint, PropValue } from "./ir.js";
+import type { Anchor, BlendMode, ClipShape, ImageFit, MatteMode, NodeIR, Paint, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
 import { pathBBox, pathPoint, pathTangentAngle } from "./path.js";
 
@@ -121,7 +121,12 @@ export type DisplayOp =
       strokeWidth?: number;
       /** Local-space bbox [x,y,w,h] for mapping a gradient paint (set only when one is used). */
       bbox?: [number, number, number, number];
-    });
+    })
+  // Track-matte boundary markers (emitted only for `matte` groups; the renderer brackets
+  // the matte child + content children into offscreen buffers and composites them).
+  | (OpBase & { type: "matte-push"; mode: MatteMode })
+  | (OpBase & { type: "matte-sep" })
+  | (OpBase & { type: "matte-pop" });
 
 export type DisplayList = DisplayOp[];
 
@@ -398,6 +403,15 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
       case "group": {
         // a clip on this group masks its children, in the group's own space
         const childClips = node.props.clip ? [...clips, { transform: matrix, shape: node.props.clip }] : clips;
+        // track matte: first child masks the rest (offscreen-composited by the renderer)
+        if (node.props.matte && node.children.length >= 2) {
+          ops.push({ type: "matte-push", id, transform: matrix, opacity, mode: node.props.matte, ...clipSpread });
+          walk(node.children[0]!, matrix, opacity, childClips);
+          ops.push({ type: "matte-sep", id, transform: matrix, opacity });
+          for (let i = 1; i < node.children.length; i++) walk(node.children[i]!, matrix, opacity, childClips);
+          ops.push({ type: "matte-pop", id, transform: matrix, opacity });
+          return;
+        }
         for (const child of node.children) walk(child, matrix, opacity, childClips);
         return;
       }

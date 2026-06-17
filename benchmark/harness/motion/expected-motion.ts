@@ -40,7 +40,10 @@ function opPoints(op: DisplayOp): OpPoints {
       local = [op.offsetX, op.offsetY, op.width, op.height];
       break;
     case "path":
-      // No bbox for an arbitrary `d`; treat the origin as a zero-area point.
+    case "matte-push":
+    case "matte-sep":
+    case "matte-pop":
+      // No geometry (path bbox / matte markers) — treat as a zero-area point.
       local = [0, 0, 0, 0];
       break;
     case "line": {
