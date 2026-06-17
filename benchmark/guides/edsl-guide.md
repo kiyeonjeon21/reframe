@@ -348,6 +348,28 @@ tween("clip", { scale: 1.08 }, { duration: 5 })  // transform composes with play
   sources are not rendered in `reframe player` / artifacts (mp4 only). See
   `examples/scenes/video-demo.ts`.
 
+## Track mattes (`group({ matte })`)
+
+Use one layer's alpha or luminance to mask another — video-filled text, shape /
+PNG punch-through, luma wipes. In a **matte group the FIRST child is the matte**;
+the remaining children are the masked content.
+
+```ts
+// the clip shows ONLY inside the letters (alpha matte)
+group({ id: "reveal", x: W/2, y: H/2, anchor: "center", matte: "alpha" }, [
+  text({ id: "mask", x: 0, y: 0, anchor: "center", content: "PLAY", fontSize: 300, fontWeight: 800, fill: "#fff" }),
+  video({ id: "clip", x: 0, y: 0, width: W, height: H, anchor: "center", fit: "cover", src: "shot.mp4" }),
+])
+```
+
+- `matte: "alpha"` keeps content where the matte is opaque; `"luma"` where it's bright
+  (animate a gradient/shape as the matte for a wipe). Needs ≥2 children.
+- The group's transform / opacity / clip apply as usual (a centered group scales about
+  its middle; fading the group fades the masked result). Mattes can nest.
+- Rendered by **offscreen compositing** (the matte + content draw to separate buffers,
+  combined via `destination-in`). Deterministic same-machine. See
+  `examples/scenes/matte-demo.ts`.
+
 ## Cursor (UI demos)
 
 A vector mouse pointer that glides across the scene and clicks things — for app

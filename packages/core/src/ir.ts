@@ -180,7 +180,16 @@ export type ClipShape =
 export interface GroupProps extends BaseProps {
   /** Clip the group's children to this shape (group-local coords). */
   clip?: ClipShape;
+  /**
+   * Track matte: the group's FIRST child masks the rest. `"alpha"` masks by the
+   * matte's alpha (e.g. video-filled text), `"luma"` by its luminance (e.g. a
+   * gradient wipe). Needs ≥2 children; the renderer composites it offscreen.
+   */
+  matte?: MatteMode;
 }
+
+/** Track-matte mode: mask the content by the matte's `alpha` or `luma`. */
+export type MatteMode = "alpha" | "luma";
 
 export interface PathProps extends BaseProps {
   /** SVG path data (the `d` attribute). Drawn as a true vector — crisp at any zoom. */

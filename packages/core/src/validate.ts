@@ -81,6 +81,14 @@ export function validateScene(ir: SceneIR): void {
             problems.push(`group "${node.id}" clip: width and height must be > 0`);
           }
         }
+        const matte = (node.props as { matte?: unknown }).matte;
+        if (matte !== undefined) {
+          if (matte !== "alpha" && matte !== "luma") {
+            problems.push(`group "${node.id}" matte: unknown mode "${String(matte)}" — use "alpha" or "luma"`);
+          } else if (node.children.length < 2) {
+            problems.push(`group "${node.id}" matte: needs ≥2 children (first masks the rest)`);
+          }
+        }
         collect(node.children);
       }
     }

@@ -8,6 +8,21 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Track mattes / alpha masks
+
+- `matte?: "alpha" | "luma"` on a `group`: the group's **first child masks the rest** —
+  `"alpha"` keeps content where the matte is opaque (video-filled text, shape / PNG
+  punch-through), `"luma"` where it's bright (gradient/shape wipes). Needs ≥2 children.
+- reframe's first **offscreen subtree compositing**: `evaluate` emits
+  `matte-push`/`matte-sep`/`matte-pop` boundary-marker ops (only for matte groups, so
+  existing golden DisplayLists stay byte-identical), and the renderer keeps a stack of
+  offscreen canvases, rendering the matte + content to separate buffers and combining
+  them with `destination-in` (luma runs a luminance→alpha pass first). Mattes nest; the
+  group's transform / opacity / clip apply as usual. Deterministic same-machine.
+- New demo `examples/scenes/matte-demo.ts` (video-filled "REFRAME" + an iris luma wipe).
+
 ## [0.6.8] - 2026-06-18
 
 ### Added

@@ -573,6 +573,10 @@ function opCorners(op: DisplayOp): [number, number][] {
     case "path":
       // No cheap bbox for an arbitrary `d`; mark the origin for selection.
       return [applyMat(op.transform, 0, 0)];
+    case "matte-push":
+    case "matte-sep":
+    case "matte-pop":
+      return []; // boundary markers have no geometry
   }
 }
 

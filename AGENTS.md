@@ -64,6 +64,14 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   it to `ctx.globalCompositeOperation` after `setTransform` (`add`→`lighter`), isolated by
   the per-op `save/restore`. Additive/golden-safe (absent/`normal` → no op field). No-op on
   `group` (whole-subtree blend is a later add). See `examples/scenes/blend-demo.ts`.
+- Track mattes — `GroupProps.matte?: MatteMode` (`"alpha"|"luma"`): a matte group's FIRST
+  child masks the rest (alpha = where opaque, luma = where bright). The first feature using
+  **offscreen subtree compositing**: `evaluate` emits `matte-push`/`matte-sep`/`matte-pop`
+  boundary-marker DisplayOps (only for matte groups → goldens byte-identical); the renderer
+  (`drawDisplayList`) keeps a stack of offscreen canvases, renders the matte + content to
+  separate buffers, and combines via `destination-in` (luma runs a `lumaToAlpha` pass first).
+  Needs ≥2 children (validated). Same offscreen mechanism unblocks group blur/blend later.
+  Browser-only, deterministic same-machine. See `examples/scenes/matte-demo.ts`.
 - Camera (`packages/core/src/camera.ts`) — a scene-level `camera` field (look-at
   `{x,y}` + `zoom` + `rotation`, defaults = identity) keyframed via `cameraTo` /
   the reserved `"camera"` tween/motionPath/behavior target. One global matrix at
