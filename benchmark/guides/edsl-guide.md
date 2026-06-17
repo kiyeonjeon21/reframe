@@ -172,6 +172,28 @@ ellipse({ id: "ring", /* … */ fill: "none", stroke: linearGradient(["#3AA0FF",
   gradient sweeps/stretches with it. Color-string fills still tween as today.
 - text fill and line stroke are color-only for now. See `examples/scenes/gradient-demo.ts`.
 
+## Shadow, glow & blur
+
+Drawable nodes (rect / ellipse / path / text / image / line) take animatable paint
+effects, in **screen pixels** (not transformed by the node or camera, so a shadow
+keeps a consistent light direction):
+
+```ts
+rect({ id: "card", /* … */, ...dropShadow("#000000", 64, 0, 34) })   // drop shadow
+ellipse({ id: "orb", /* … */, fill: radialGradient([...]), shadowColor: "#FFC24B", shadowBlur: 22 })
+oscillate("orb", "shadowBlur", { amplitude: 16, frequency: 0.9 })    // PULSING glow
+rect({ id: "card", /* … */, blur: 18 }); tween("card", { blur: 0 }, { duration: 1 }) // focus pull
+```
+
+- Props: `blur` (gaussian blur of the shape), `shadowColor` (turns the shadow/glow
+  on), `shadowBlur`, `shadowX`, `shadowY`. All **animatable** — `tween`/`oscillate`
+  them for pulsing glows, focus pulls, etc. (set a base value first so there's
+  something to animate from).
+- Sugar: `glow(color, blur)` (offset 0) and `dropShadow(color, blur, x, y)` return
+  a partial you spread into props (`...glow("#FFD24B", 28)`); still animatable.
+- No-op on a `group` (apply to a child; group/composite blur is a later add). See
+  `examples/scenes/shadow-demo.ts`.
+
 ## Character rig (skeleton, poses, IK)
 
 A first-class, declarative character rig that **compiles to plain IR** (nested

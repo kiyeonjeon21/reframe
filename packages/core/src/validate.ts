@@ -6,13 +6,14 @@
 
 import type { CompositionIR, NodeIR, SceneIR, TimelineIR } from "./ir.js";
 
-const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor", "fixed"];
+const FX_PROPS = ["blur", "shadowColor", "shadowBlur", "shadowX", "shadowY"]; // animatable paint effects
+const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor", "fixed", ...FX_PROPS];
 /** Animatable props of the reserved "camera" target (look-at point + zoom + rotation). */
 const CAMERA_PROPS = ["x", "y", "zoom", "rotation"];
 export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   rect: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth", "radius"],
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
-  line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress"],
+  line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress", ...FX_PROPS],
   text: [...COMMON_PROPS, "content", "contentDecimals", "contentThousands", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
   image: [...COMMON_PROPS, "src", "width", "height"],
   path: [...COMMON_PROPS, "d", "fill", "stroke", "strokeWidth", "progress", "originX", "originY"],
@@ -60,6 +61,8 @@ export function validateScene(ir: SceneIR): void {
       const props = node.props as unknown as Record<string, unknown>;
       checkPaint(`node "${node.id}" fill`, props.fill);
       checkPaint(`node "${node.id}" stroke`, props.stroke);
+      if (typeof props.blur === "number" && props.blur < 0) problems.push(`node "${node.id}": blur must be >= 0`);
+      if (typeof props.shadowBlur === "number" && props.shadowBlur < 0) problems.push(`node "${node.id}": shadowBlur must be >= 0`);
       if (node.type === "group") {
         const clip = node.props.clip;
         if (clip) {
