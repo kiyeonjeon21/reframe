@@ -1,9 +1,10 @@
 /**
- * Photo montage — a SEEDED GENERATOR that turns a list of images into a polished
- * slideshow: layered image nodes + a retimable `beat` that crossfades between
- * slides and pans/zooms each (Ken Burns), with an optional cinematic grade
- * (vignette + bottom scrim) built from gradients + blend modes. The photo analog
- * of `motionPreset` / `splitText`.
+ * Photo/video montage — a SEEDED GENERATOR that turns a list of shots (images AND
+ * video clips, mixed freely) into a polished slideshow: layered image/video nodes +
+ * a retimable `beat` that crossfades between shots and pans/zooms each (Ken Burns),
+ * with an optional cinematic grade (vignette + bottom scrim) built from gradients +
+ * blend modes. A video src plays as a clip for its `hold`. The photo analog of
+ * `motionPreset` / `splitText`. (`videoMontage` is the same generator, by intent.)
  *
  * Pure and deterministic: the per-slide Ken Burns direction / framing is chosen by
  * a seeded PRNG (mulberry32) — same (images, opts) → identical IR; a different
@@ -16,13 +17,21 @@
  */
 
 import type { ColorStop, NodeIR, TimelineIR } from "./ir.js";
-import { beat, image, par, rect, seq, tween } from "./dsl.js";
+import { beat, image, par, rect, seq, tween, video } from "./dsl.js";
 import { linearGradient, radialGradient } from "./gradient.js";
 
 export type KenBurns = "in" | "out" | "pan";
 
-/** One slide: a bare src, or a src with per-slide overrides. */
-export type MontageImage = string | { src: string; hold?: number; ken?: KenBurns };
+/** A shot is a still (image) or a video clip — detected by the src extension. */
+const VIDEO_EXT = /\.(mp4|mov|webm|m4v|mkv)$/i;
+const isVideoSrc = (src: string) => VIDEO_EXT.test(src);
+
+/**
+ * One shot: a bare src, or a src with per-shot overrides. A video src plays as a
+ * clip for its `hold`; `volume` (video shots only) is the clip-audio gain — default
+ * 0 (muted) in a montage to avoid stacking soundtracks; set it per shot to include.
+ */
+export type MontageImage = string | { src: string; hold?: number; ken?: KenBurns; volume?: number };
 
 export interface MontageOpts {
   /** Node-id prefix → stable regen addresses `${id}-${i}`. Default "shot". */
@@ -59,7 +68,7 @@ function makeRng(seed: number): () => number {
   };
 }
 
-const norm = (img: MontageImage): { src: string; hold?: number; ken?: KenBurns } =>
+const norm = (img: MontageImage): { src: string; hold?: number; ken?: KenBurns; volume?: number } =>
   typeof img === "string" ? { src: img } : img;
 
 /**
@@ -83,11 +92,14 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
 
   const nodes: NodeIR[] = [];
   const shots: TimelineIR[] = [];
+  let clock = 0; // scene-time each shot begins (drives video clip `start`)
 
   slides.forEach((slide, i) => {
     const nid = `${id}-${i}`;
     const slideHold = Math.max(0.5, slide.hold ?? hold);
     const transition = Math.min(opts.transition ?? 0.6, slideHold * 0.9);
+    const shotStart = clock;
+    clock += slideHold;
 
     // Seeded framing (draw in a fixed order → deterministic).
     const kind: KenBurns = slide.ken ?? (["in", "out", "pan"] as const)[Math.floor(rand() * 3)] ?? "in";
@@ -115,19 +127,11 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
       yB = cy + dy * (kB - 1) * (H / 2) * panFrac;
     }
 
+    const box = { id: nid, src: slide.src, x: xA, y: yA, width: W, height: H, anchor: "center" as const, fit: "cover" as const, scale: kA, opacity: i === 0 ? 1 : 0 };
     nodes.push(
-      image({
-        id: nid,
-        src: slide.src,
-        x: xA,
-        y: yA,
-        width: W,
-        height: H,
-        anchor: "center",
-        fit: "cover",
-        scale: kA,
-        opacity: i === 0 ? 1 : 0,
-      }),
+      isVideoSrc(slide.src)
+        ? video({ ...box, start: shotStart, volume: slide.volume ?? 0 }) // clips muted by default in a montage
+        : image(box),
     );
 
     const ken = tween(
@@ -187,3 +191,11 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
 
   return { nodes, timeline: beat("montage", { nodes: nodes.map((n) => n.id) }, [seq(...shots)]) };
 }
+
+/**
+ * Same as `photoMontage`, named for clip-driven montages — shots may be images or
+ * video clips (mixed freely; a video src plays for its `hold`, muted by default).
+ *
+ *   videoMontage(["intro.jpg", "shot-a.mp4", { src: "shot-b.mp4", volume: 1 }], { seed: 3 })
+ */
+export const videoMontage = photoMontage;

@@ -291,14 +291,16 @@ const T = splitText("MOTION IS DATA", { id: "t", x: 960, y: 470, fontSize: 130 }
 Every effect is seeded (same `seed` → identical) and pure keyframes. To time a
 `textLoop` window, add up the `textIn` beat length (≈ `(n-1)·stagger + glyphDur`).
 
-## Photo montage (`photoMontage`)
+## Photo / video montage (`photoMontage` / `videoMontage`)
 
-Turn a list of images into a polished slideshow — crossfades + seeded Ken Burns
+Turn a list of shots into a polished slideshow — crossfades + seeded Ken Burns
 (pan/zoom) + an optional cinematic grade (vignette + bottom scrim via gradients +
-blend) — without hand-wiring each move. The photo analog of `motionPreset`.
+blend) — without hand-wiring each move. Shots may be images AND video clips, mixed
+freely (a video src, by extension, plays as a clip for its `hold`). `videoMontage`
+is the same generator, named for clip-driven cuts. The photo analog of `motionPreset`.
 
 ```ts
-const m = photoMontage(["a.jpg", "b.jpg", "c.jpg"], {
+const m = videoMontage(["a.jpg", { src: "b.mp4", volume: 1 }, "c.jpg"], {
   id: "shot", size: { width: 1920, height: 1080 },
   hold: 3.4, transition: 0.7, zoom: 1.16, seed: 7,
 });
@@ -306,16 +308,20 @@ scene({ size, nodes: [...m.nodes, ...titles], timeline: par(m.timeline, titleTra
 ```
 
 - Returns `{ nodes, timeline }` (like `splitText` owns its glyph nodes). `nodes` are
-  the stacked image layers (+ `${id}-vignette` / `${id}-scrim` grade overlays);
+  the stacked image/video layers (+ `${id}-vignette` / `${id}-scrim` grade overlays);
   `timeline` is a retimable `beat("montage", …)`. Stable addresses: `${id}-${i}`,
   labels `shot-${i}` / `cross-${i}`.
-- **Any-aspect photos work** — each layer uses `fit: "cover"`, so the renderer
-  crops to fill the frame at the image's aspect (no pre-cropping, no distortion).
+- **Any-aspect media works** — each layer uses `fit: "cover"`, so the renderer
+  crops to fill the frame at the source's aspect (no pre-cropping, no distortion).
   The Ken Burns keeps `scale ≥ 1` with the pan bounded to its slack, so an edge is
   never revealed.
-- Per-slide overrides: `{ src, hold?, ken? }` where `ken` is `"in" | "out" | "pan"`.
-- Seeded + pure (same `(images, opts)` → identical IR). Note: image-node sources do
-  not render in `reframe player` / artifacts — montage ships as mp4.
+- Per-shot overrides: `{ src, hold?, ken?, volume? }` where `ken` is `"in" | "out" |
+  "pan"`. A **video** shot plays as a clip from its slot's start; its audio is **muted
+  by default** in a montage — set `volume` (per shot) to include it, or add a `scene.audio`
+  bed.
+- Seeded + pure (same `(shots, opts)` → identical IR). Note: image/video sources do
+  not render in `reframe player` / artifacts — montage ships as mp4. See
+  `examples/scenes/video-montage.ts`.
 
 ## Video clips (`video`)
 

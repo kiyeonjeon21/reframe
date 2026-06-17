@@ -13,11 +13,29 @@ let canvas: HTMLCanvasElement | null = null;
 const images = new Map<string, CanvasImageSource>();
 const videoFrames = new Map<string, CanvasImageSource[]>();
 
-const decode = (dataUrl: string): Promise<HTMLImageElement> => {
+async function decode(dataUrl: string, label = ""): Promise<HTMLImageElement> {
   const img = new Image();
   img.src = dataUrl;
-  return img.decode().then(() => img);
-};
+  try {
+    await img.decode();
+    return img;
+  } catch (e) {
+    throw new Error(`decode failed for ${label} (len=${dataUrl.length}): ${String(e)}`);
+  }
+}
+
+/** Decode a list with bounded concurrency — many concurrent decodes (a long clip's
+ *  frames) can spuriously fail under memory pressure, so cap the in-flight count. */
+async function decodeAll(urls: string[], label: string): Promise<HTMLImageElement[]> {
+  const out: HTMLImageElement[] = new Array(urls.length);
+  const LIMIT = 8;
+  for (let base = 0; base < urls.length; base += LIMIT) {
+    const batch = urls.slice(base, base + LIMIT);
+    const decoded = await Promise.all(batch.map((u, j) => decode(u, `${label}#${base + j}`)));
+    for (let j = 0; j < decoded.length; j++) out[base + j] = decoded[j]!;
+  }
+  return out;
+}
 
 const videos: VideoRegistry = {
   frame(src, index) {
@@ -42,14 +60,14 @@ window.__reframe = {
     document.body.appendChild(canvas);
     ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) throw new Error("could not create 2d context");
-    await Promise.all([
-      ...Object.entries(assets).map(async ([src, dataUrl]) => {
-        images.set(src, await decode(dataUrl));
+    await Promise.all(
+      Object.entries(assets).map(async ([src, dataUrl]) => {
+        images.set(src, await decode(dataUrl, `image ${src}`));
       }),
-      ...Object.entries(videoAssets).map(async ([src, frames]) => {
-        videoFrames.set(src, await Promise.all(frames.map(decode)));
-      }),
-    ]);
+    );
+    for (const [src, frames] of Object.entries(videoAssets)) {
+      videoFrames.set(src, await decodeAll(frames, `video ${src}`));
+    }
     return { duration: compiled.duration, fps: ir.fps ?? 30 };
   },
   renderFrame(t: number): string {
