@@ -23,6 +23,7 @@ import type {
   StateOverride,
   TextProps,
   TimelineIR,
+  VideoProps,
 } from "./ir.js";
 import { compileScene } from "./compile.js";
 import { validateComposition, validateScene } from "./validate.js";
@@ -89,6 +90,11 @@ export function text(props: { id: string } & TextProps): NodeIR {
 export function image(props: { id: string } & ImageProps): NodeIR {
   const { id, ...rest } = props;
   return { type: "image", id, props: rest };
+}
+
+export function video(props: { id: string } & VideoProps): NodeIR {
+  const { id, ...rest } = props;
+  return { type: "video", id, props: rest };
 }
 
 export function path(props: { id: string } & PathProps): NodeIR {

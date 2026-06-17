@@ -50,11 +50,21 @@ export interface ImageRegistry {
   get(src: string): CanvasImageSource | undefined;
 }
 
+/**
+ * Decoded video frames keyed by the RAW src string + frame index. A video is
+ * rendered as a frame sequence (extracted at the scene fps): `frame(src, i)`
+ * returns the i-th source frame, clamped to the available range by the consumer.
+ */
+export interface VideoRegistry {
+  frame(src: string, index: number): CanvasImageSource | undefined;
+}
+
 export function renderFrame(
   ctx: CanvasRenderingContext2D,
   compiled: CompiledScene,
   t: number,
   images?: ImageRegistry,
+  videos?: VideoRegistry,
 ): void {
   const { size, background } = compiled.ir;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -63,13 +73,14 @@ export function renderFrame(
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, size.width, size.height);
   }
-  drawDisplayList(ctx, evaluate(compiled, t), images);
+  drawDisplayList(ctx, evaluate(compiled, t), images, videos);
 }
 
 export function drawDisplayList(
   ctx: CanvasRenderingContext2D,
   ops: DisplayList,
   images?: ImageRegistry,
+  videos?: VideoRegistry,
 ): void {
   for (const op of ops) {
     ctx.save();
@@ -155,30 +166,11 @@ export function drawDisplayList(
         break;
       }
       case "image": {
-        const img = images?.get(op.src);
-        if (img) {
-          if (op.fit === "cover") {
-            const [iw, ih] = intrinsicSize(img);
-            const { sx, sy, sw, sh } = coverRect(iw, ih, op.width, op.height);
-            ctx.drawImage(img, sx, sy, sw, sh, op.offsetX, op.offsetY, op.width, op.height);
-          } else {
-            ctx.drawImage(img, op.offsetX, op.offsetY, op.width, op.height);
-          }
-        } else {
-          // never throw: the preview reaches this while a src loads or when
-          // it 404s — render an unmistakable placeholder instead
-          ctx.fillStyle = "#2A2A30";
-          ctx.fillRect(op.offsetX, op.offsetY, op.width, op.height);
-          ctx.strokeStyle = "#FF00FF";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(op.offsetX, op.offsetY, op.width, op.height);
-          ctx.beginPath();
-          ctx.moveTo(op.offsetX, op.offsetY);
-          ctx.lineTo(op.offsetX + op.width, op.offsetY + op.height);
-          ctx.moveTo(op.offsetX + op.width, op.offsetY);
-          ctx.lineTo(op.offsetX, op.offsetY + op.height);
-          ctx.stroke();
-        }
+        drawRaster(ctx, images?.get(op.src), op);
+        break;
+      }
+      case "video": {
+        drawRaster(ctx, videos?.frame(op.src, op.frame), op);
         break;
       }
       case "path": {
@@ -250,6 +242,38 @@ export function coverRect(
 function intrinsicSize(img: CanvasImageSource): [number, number] {
   const a = img as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
   return [a.naturalWidth || a.width || 0, a.naturalHeight || a.height || 0];
+}
+
+/** Draw a decoded raster (image / video frame) into the op's box with its fit; when the
+ *  source is missing render an unmistakable placeholder instead of throwing. Shared by
+ *  the `image` and `video` cases. */
+function drawRaster(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource | undefined,
+  op: { offsetX: number; offsetY: number; width: number; height: number; fit?: string },
+): void {
+  if (img) {
+    if (op.fit === "cover") {
+      const [iw, ih] = intrinsicSize(img);
+      const { sx, sy, sw, sh } = coverRect(iw, ih, op.width, op.height);
+      ctx.drawImage(img, sx, sy, sw, sh, op.offsetX, op.offsetY, op.width, op.height);
+    } else {
+      ctx.drawImage(img, op.offsetX, op.offsetY, op.width, op.height);
+    }
+    return;
+  }
+  // never throw: the preview reaches this while a src loads or when it 404s
+  ctx.fillStyle = "#2A2A30";
+  ctx.fillRect(op.offsetX, op.offsetY, op.width, op.height);
+  ctx.strokeStyle = "#FF00FF";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(op.offsetX, op.offsetY, op.width, op.height);
+  ctx.beginPath();
+  ctx.moveTo(op.offsetX, op.offsetY);
+  ctx.lineTo(op.offsetX + op.width, op.offsetY + op.height);
+  ctx.moveTo(op.offsetX + op.width, op.offsetY);
+  ctx.lineTo(op.offsetX, op.offsetY + op.height);
+  ctx.stroke();
 }
 
 function quoteFamily(family: string): string {

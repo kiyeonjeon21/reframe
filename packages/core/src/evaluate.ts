@@ -98,6 +98,19 @@ export type DisplayOp =
       fit?: ImageFit;
     })
   | (OpBase & {
+      type: "video";
+      /** Raw src string as authored in the IR — consumers resolve it. */
+      src: string;
+      width: number;
+      height: number;
+      offsetX: number;
+      offsetY: number;
+      /** Source frame index at scene-time t (renderer clamps to the extracted count). */
+      frame: number;
+      /** Box-fit; present only when authored and not "fill". */
+      fit?: ImageFit;
+    })
+  | (OpBase & {
       type: "path";
       /** SVG path data, drawn via Path2D. */
       d: string;
@@ -430,6 +443,34 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           height,
           offsetX: -width * ax,
           offsetY: -height * ay,
+          ...(node.props.fit && node.props.fit !== "fill" ? { fit: node.props.fit } : {}),
+          ...fx,
+          ...clipSpread,
+        });
+        return;
+      }
+      case "video": {
+        const width = num(id, "width", node.props.width);
+        const height = num(id, "height", node.props.height);
+        const [ax, ay] = ANCHOR_FACTORS[node.props.anchor ?? "top-left"];
+        // pure source-frame index at scene-time t (renderer clamps to extracted count)
+        const fps = compiled.ir.fps ?? 30;
+        const start = node.props.start ?? 0;
+        const rate = node.props.rate ?? 1;
+        const clipStart = node.props.clipStart ?? 0;
+        const srcT = clipStart + Math.max(0, t - start) * rate;
+        const frame = Math.max(0, Math.round(srcT * fps));
+        ops.push({
+          type: "video",
+          id,
+          transform: matrix,
+          opacity,
+          src: str(id, "src", node.props.src),
+          width,
+          height,
+          offsetX: -width * ax,
+          offsetY: -height * ay,
+          frame,
           ...(node.props.fit && node.props.fit !== "fill" ? { fit: node.props.fit } : {}),
           ...fx,
           ...clipSpread,

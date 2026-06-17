@@ -6,6 +6,7 @@ import { chromium, type Page } from "playwright";
 import type { SceneIR } from "@reframe/core";
 import { fontFaceCss } from "./fonts.js";
 import { buildImageAssets } from "./images.js";
+import { buildVideoFrameAssets, resolveTiming } from "./videos.js";
 import { VCLOCK_SOURCE } from "./vclock.js";
 import "./reframeGlobal.js";
 
@@ -70,9 +71,12 @@ export async function captureIr(
   opts: { fps?: number; duration?: number; framesDir: string; sceneDir?: string },
 ): Promise<CaptureResult> {
   await mkdir(opts.framesDir, { recursive: true });
-  // resolve + read image assets BEFORE the browser launches — a missing
+  const sceneDir = opts.sceneDir ?? process.cwd();
+  // resolve + read image/video assets BEFORE the browser launches — a missing
   // file fails here with the tried paths, not as an opaque page error
-  const assets = await buildImageAssets(ir, opts.sceneDir ?? process.cwd());
+  const assets = await buildImageAssets(ir, sceneDir);
+  const { fps, duration } = resolveTiming(ir, opts);
+  const videoAssets = await buildVideoFrameAssets(ir, sceneDir, fps, duration);
   const bundle = await browserBundle();
 
   return withPage(ir.size, async (page) => {
@@ -81,13 +85,12 @@ export async function captureIr(
     );
     await injectFonts(page);
     await page.addScriptTag({ content: bundle });
-    const info = await page.evaluate(
-      ([sceneIr, imageAssets]) => window.__reframe.init(sceneIr as never, imageAssets as never),
-      [ir, assets] as unknown[],
+    await page.evaluate(
+      ([sceneIr, imageAssets, vAssets]) =>
+        window.__reframe.init(sceneIr as never, imageAssets as never, vAssets as never),
+      [ir, assets, videoAssets] as unknown[],
     );
 
-    const fps = opts.fps ?? info.fps;
-    const duration = opts.duration ?? info.duration;
     const frameCount = Math.max(1, Math.round(duration * fps));
     for (let f = 0; f < frameCount; f++) {
       const dataUrl = await page.evaluate((t) => window.__reframe.renderFrame(t), f / fps);

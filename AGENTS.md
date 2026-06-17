@@ -103,6 +103,15 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   don't render in `player`/artifacts → mp4 only. Demo: `examples/scenes/photo-montage.ts`
   (CC0 images under `examples/scenes/photo-montage/`, NOT bundled to npm). The photo
   analog of motionPreset.
+- Video clip (`video` node, `packages/core/src/ir.ts` + `render-cli/src/videos.ts`) — draw a
+  clip as a layer; plays on the scene clock (`frame = round((clipStart + max(0,t-start)*rate)*fps)`,
+  computed purely in `evaluate` from `compiled.ir.fps`). Deterministic by **frame extraction**:
+  render-cli runs `ffmpeg -vf fps=<sceneFps>` (`buildVideoFrameAssets`), the capture page decodes
+  them into a `VideoRegistry`, and the renderer draws `frame` via the shared `drawRaster` (cover
+  like image) — NOT a live `<video>` seek, so byte-identical (same machine). Props src/width/height/
+  fit/start/rate/clipStart. **v1 visual-only** (no clip audio — use `scene.audio`); pre-decodes all
+  frames so keep clips short; not in `player`/artifacts (mp4 only). Demo:
+  `examples/scenes/video-demo.ts` (procedural clip under `examples/scenes/video-demo/`, not npm-bundled).
 - Cursor (`packages/core/src/cursor.ts`) — `cursor(opts)` node (arrow/dot/ring,
   hotspot at the origin) + `cursorTo`/`cursorPath` (human arcs via motionPath) +
   `cursorClick`/`cursorDouble` (tap + ripple + button press). `deviceScreenPoint`

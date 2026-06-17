@@ -36,6 +36,7 @@ function opPoints(op: DisplayOp): OpPoints {
     case "rect":
     case "ellipse":
     case "image":
+    case "video":
       local = [op.offsetX, op.offsetY, op.width, op.height];
       break;
     case "path":

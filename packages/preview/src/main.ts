@@ -551,7 +551,8 @@ function opCorners(op: DisplayOp): [number, number][] {
   switch (op.type) {
     case "rect":
     case "ellipse":
-    case "image": {
+    case "image":
+    case "video": {
       const { offsetX: x, offsetY: y, width: w, height: h } = op;
       return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]].map(([px, py]) =>
         applyMat(op.transform, px!, py!),
