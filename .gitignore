@@ -18,3 +18,7 @@ refs/*.mov
 refs/*.mp4
 .env
 .claude/settings.local.json
+
+# Playwright MCP scratch + stray preview screenshots
+.playwright-mcp/
+preview-device-presets.png
