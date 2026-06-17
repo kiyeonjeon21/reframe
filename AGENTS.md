@@ -106,7 +106,12 @@ overlay documents hold human edits at those addresses. Full contract:
 Only `packages/reframe-video` is published; the other packages are `private`
 and inlined into it by the build (esbuild + `REFRAME_PACKAGED`). To cut a
 release: bump `packages/reframe-video/package.json` `version`, commit, then push
-a matching `v<version>` tag. The `.github/workflows/publish.yml` action builds
+a matching `v<version>` tag.
+
+**Version-bump policy (pre-1.0): default to a PATCH bump (the `z` in `x.y.z`).**
+While `0.y.z`, ship features AND fixes as patch bumps (`0.6.0` → `0.6.1` → `0.6.2`).
+Only bump the MINOR (`y`) for a deliberate milestone or a breaking change to the IR
+/ overlay schema; keep MAJOR at `0` until 1.0. So most releases just increment `z`. The `.github/workflows/publish.yml` action builds
 and runs `npm publish` with the `NPM_TOKEN` repo secret. Manual fallback:
 `pnpm --filter reframe-video build && cd packages/reframe-video && npm publish`.
 Never commit `.env` (it holds `NPM_TOKEN`; it is gitignored).
