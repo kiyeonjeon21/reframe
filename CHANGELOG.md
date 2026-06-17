@@ -8,6 +8,8 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-06-17
+
 ### Added
 
 #### Shadow, glow & blur
@@ -249,7 +251,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/kiyeonjeon21/reframe/compare/v0.4.0...v0.5.0
