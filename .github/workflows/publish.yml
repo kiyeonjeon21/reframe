@@ -13,7 +13,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # create the GitHub Release on a tag push
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -39,3 +39,27 @@ jobs:
         working-directory: packages/reframe-video
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Only on a tag push (a real release), and only after npm publish succeeds.
+      # Notes are the CHANGELOG section for this version; the title gets the first
+      # "#### <theme>" heading as a subtitle when present. Idempotent (skips if the
+      # release already exists, so re-runs don't fail).
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" {flag=1; next}
+            flag && /^## \[/ {exit}
+            flag {print}
+          ' CHANGELOG.md > /tmp/notes.md
+          [ -s /tmp/notes.md ] || echo "See CHANGELOG.md." > /tmp/notes.md
+          THEME=$(grep -m1 '^#### ' /tmp/notes.md | sed 's/^#### //')
+          TITLE="$GITHUB_REF_NAME"
+          [ -n "$THEME" ] && TITLE="$GITHUB_REF_NAME — $THEME"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists, skipping"
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$TITLE" --notes-file /tmp/notes.md
+          fi
