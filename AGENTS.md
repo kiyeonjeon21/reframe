@@ -42,6 +42,13 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   (`packages/core/src/interpolate.ts`).
 - `motionPath(target, points, opts)` — Catmull-Rom curve driving x/y (+ tangent
   `autoRotate`); holds the end. Pure math in `packages/core/src/path.ts`.
+- Camera (`packages/core/src/camera.ts`) — a scene-level `camera` field (look-at
+  `{x,y}` + `zoom` + `rotation`, defaults = identity) keyframed via `cameraTo` /
+  the reserved `"camera"` tween/motionPath/behavior target. One global matrix at
+  the root of `evaluate`'s walk (`hasCamera` gates it → no-camera scenes stay
+  byte-identical); a top-level node's `fixed:true` pins it to the screen (HUD).
+  A node literally named `"camera"` keeps node semantics (back-compat). See
+  `examples/scenes/camera-demo.ts`.
 - Character rig (`packages/core/src/rig.ts`) — `humanoid(opts)` / `rig(boneTree,
   opts)` compile a declarative skeleton to a NodeIR group tree (joints =
   `${id}-${name}`, the **stable regen addresses**); FK posing via `poseTo(id,
