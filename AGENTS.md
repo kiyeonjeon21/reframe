@@ -92,6 +92,16 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   seeded `textIn` (typewriter/cascade/rise/bounce/assemble/decode), `textLoop`
   (wave/shimmer/wobble/float → behaviors), `textOut` (shatter/fly/dissolve/fall/
   collapse), `textTypeCues` (per-glyph keypress audio). The text analog of motionPreset.
+- Photo montage (`packages/core/src/montage.ts`) — `photoMontage(images, opts)` turns a
+  list of images into a slideshow: crossfades + **seeded Ken Burns** (pan/zoom) + an
+  optional cinematic grade (vignette + scrim via gradient + blend). Returns
+  `{ nodes, timeline }` (owns its image layers, like `splitText` owns glyphs); stable
+  addresses `${id}-${i}`, labels `shot-${i}`/`cross-${i}`. The `image` node draws
+  stretched (no object-fit) so photos must be pre-cropped to the frame aspect; the Ken
+  Burns keeps `scale ≥ 1` + bounded pan so no edge shows. Pure/seeded. Image sources
+  don't render in `player`/artifacts → mp4 only. Demo: `examples/scenes/photo-montage.ts`
+  (CC0 images under `examples/scenes/photo-montage/`, NOT bundled to npm). The photo
+  analog of motionPreset.
 - Cursor (`packages/core/src/cursor.ts`) — `cursor(opts)` node (arrow/dot/ring,
   hotspot at the origin) + `cursorTo`/`cursorPath` (human arcs via motionPath) +
   `cursorClick`/`cursorDouble` (tap + ripple + button press). `deviceScreenPoint`

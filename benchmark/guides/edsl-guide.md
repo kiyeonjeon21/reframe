@@ -289,6 +289,31 @@ const T = splitText("MOTION IS DATA", { id: "t", x: 960, y: 470, fontSize: 130 }
 Every effect is seeded (same `seed` → identical) and pure keyframes. To time a
 `textLoop` window, add up the `textIn` beat length (≈ `(n-1)·stagger + glyphDur`).
 
+## Photo montage (`photoMontage`)
+
+Turn a list of images into a polished slideshow — crossfades + seeded Ken Burns
+(pan/zoom) + an optional cinematic grade (vignette + bottom scrim via gradients +
+blend) — without hand-wiring each move. The photo analog of `motionPreset`.
+
+```ts
+const m = photoMontage(["a.jpg", "b.jpg", "c.jpg"], {
+  id: "shot", size: { width: 1920, height: 1080 },
+  hold: 3.4, transition: 0.7, zoom: 1.16, seed: 7,
+});
+scene({ size, nodes: [...m.nodes, ...titles], timeline: par(m.timeline, titleTrack) });
+```
+
+- Returns `{ nodes, timeline }` (like `splitText` owns its glyph nodes). `nodes` are
+  the stacked image layers (+ `${id}-vignette` / `${id}-scrim` grade overlays);
+  `timeline` is a retimable `beat("montage", …)`. Stable addresses: `${id}-${i}`,
+  labels `shot-${i}` / `cross-${i}`.
+- **Images must be the frame's aspect ratio** — the `image` node draws stretched
+  (no object-fit), so cover-crop your photos to `size` first. The Ken Burns keeps
+  `scale ≥ 1` with the pan bounded to its slack, so an edge is never revealed.
+- Per-slide overrides: `{ src, hold?, ken? }` where `ken` is `"in" | "out" | "pan"`.
+- Seeded + pure (same `(images, opts)` → identical IR). Note: image-node sources do
+  not render in `reframe player` / artifacts — montage ships as mp4.
+
 ## Cursor (UI demos)
 
 A vector mouse pointer that glides across the scene and clicks things — for app

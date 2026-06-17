@@ -8,6 +8,24 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Photo montage generator
+
+- **`photoMontage(images, opts)`** — turns a list of images into a polished
+  slideshow: crossfades + seeded Ken Burns (pan/zoom) + an optional cinematic grade
+  (vignette + bottom scrim, built from gradients + blend modes). The photo analog of
+  `motionPreset` / `splitText`.
+- Returns `{ nodes, timeline }` (owns its image layers, like `splitText` owns glyphs).
+  Stable regen addresses: node ids `${id}-${i}` (+ `${id}-vignette` / `${id}-scrim`),
+  labels `shot-${i}` / `cross-${i}`. Per-slide overrides `{ src, hold?, ken? }` with
+  `ken` ∈ `"in" | "out" | "pan"`. Seeded + pure (same `(images, opts)` → identical IR).
+- Sizes each layer to the frame and keeps the Ken Burns `scale ≥ 1` with the pan
+  bounded to its slack, so an image edge is never revealed (the `image` node draws
+  stretched — images must be pre-cropped to the frame aspect).
+- New demo `examples/scenes/photo-montage.ts` over six CC0 travel photos
+  (`examples/scenes/photo-montage/`, provenance in its `LICENSE.md`; not bundled to npm).
+
 ## [0.6.3] - 2026-06-17
 
 ### Added
