@@ -8,6 +8,21 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Video clip audio
+
+- The `video` node now muxes a clip's **own audio track** into the output (it was
+  visual-only in 0.6.6). Audio is placed at the node's `start`, trimmed from
+  `clipStart`, sped by `rate`, and scaled by a new `volume` prop (default 1; `0`
+  mutes); it mixes with `scene.audio` cues/bgm.
+- `AudioPlan` gains a `clipAudio[]` (one entry per audible video node, anchored to
+  its numeric `start`); `resolveAudioPlan` / `resolveCompositionAudioPlan` populate it.
+  render-cli probes each clip with `ffprobe`, extracts its track, and adds an
+  `atrim → atempo → volume → adelay` chain into the existing `amix` (a clip with no
+  audio stream, or `volume: 0`, is skipped). Determinism stays same-machine.
+- The `video-demo` clip now carries a synthesized tone so the demo plays sound.
+
 ## [0.6.6] - 2026-06-18
 
 ### Added

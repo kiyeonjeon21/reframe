@@ -9,7 +9,7 @@
 
 import type { CompiledScene } from "./compile.js";
 import type { CompiledComposition } from "./composeComposition.js";
-import type { SfxName } from "./ir.js";
+import type { NodeIR, SceneIR, SfxName } from "./ir.js";
 
 /** Nominal cue lengths (s) for duck-window math; file cues use a default. */
 export const SFX_DURATION: Record<SfxName, number> = {
@@ -31,6 +31,20 @@ export interface ResolvedCue {
     | { kind: "file"; path: string };
 }
 
+/** A video node's own audio track, placed on the scene clock. */
+export interface ClipAudio {
+  nodeId: string;
+  src: string;
+  /** Scene-time (s) the clip's audio begins. */
+  start: number;
+  /** Playback speed (atempo). */
+  rate: number;
+  /** Source in-point (s) — audio is trimmed to begin here. */
+  clipStart: number;
+  /** Linear gain. */
+  gain: number;
+}
+
 export interface AudioPlan {
   duration: number;
   bgm: {
@@ -43,15 +57,44 @@ export interface AudioPlan {
   cues: ResolvedCue[];
   /** Merged [t0, t1] cue windows the bed should duck under. */
   duckWindows: { t0: number; t1: number }[];
+  /** Video clip soundtracks to mux in (a clip with no audio stream is skipped at render). */
+  clipAudio: ClipAudio[];
   warnings: string[];
+}
+
+/** Walk video nodes → clip-audio entries (skipping muted, default volume 1). */
+function collectClipAudio(ir: SceneIR, duration: number, warnings: string[]): ClipAudio[] {
+  const out: ClipAudio[] = [];
+  const walk = (nodes: NodeIR[]) => {
+    for (const node of nodes) {
+      if (node.type === "video") {
+        const gain = node.props.volume ?? 1;
+        const start = node.props.start ?? 0;
+        if (gain <= 0) continue;
+        if (start >= duration) {
+          warnings.push(`video "${node.id}": start ${start.toFixed(2)}s past the scene end — audio dropped`);
+          continue;
+        }
+        out.push({ nodeId: node.id, src: node.props.src, start, rate: node.props.rate ?? 1, clipStart: node.props.clipStart ?? 0, gain });
+      }
+      if (node.type === "group") walk(node.children);
+    }
+  };
+  walk(ir.nodes);
+  return out;
 }
 
 export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
   const audio = compiled.ir.audio;
-  if (!audio || (!audio.bgm && (audio.cues ?? []).length === 0)) return null;
-
   const warnings: string[] = [];
   const duration = compiled.duration;
+  const clipAudio = collectClipAudio(compiled.ir, duration, warnings);
+  if (!audio || (!audio.bgm && (audio.cues ?? []).length === 0)) {
+    // a scene with only video-clip audio still gets a plan
+    return clipAudio.length === 0
+      ? null
+      : { duration, bgm: null, cues: [], duckWindows: [], clipAudio, warnings };
+  }
 
   const cues: ResolvedCue[] = [];
   for (const [index, cue] of (audio.cues ?? []).entries()) {
@@ -93,6 +136,7 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
     bgm: resolveBgm(audio.bgm),
     cues,
     duckWindows: mergeDuckWindows(cues, duration),
+    clipAudio,
     warnings,
   };
 }
@@ -141,6 +185,7 @@ export function resolveCompositionAudioPlan(comp: CompiledComposition): AudioPla
   const duration = comp.duration;
   const warnings: string[] = [];
   const cues: ResolvedCue[] = [];
+  const clipAudio: ClipAudio[] = [];
 
   for (const placement of comp.scenes) {
     const plan = resolveAudioPlan(placement.compiled);
@@ -153,6 +198,11 @@ export function resolveCompositionAudioPlan(comp: CompiledComposition): AudioPla
       const t = cue.t + placement.start;
       if (t >= duration) continue;
       cues.push({ ...cue, t });
+    }
+    for (const clip of plan.clipAudio) {
+      const start = clip.start + placement.start;
+      if (start >= duration) continue;
+      clipAudio.push({ ...clip, start });
     }
   }
 
@@ -177,7 +227,7 @@ export function resolveCompositionAudioPlan(comp: CompiledComposition): AudioPla
     });
   }
 
-  if (!audio?.bgm && cues.length === 0) return null;
+  if (!audio?.bgm && cues.length === 0 && clipAudio.length === 0) return null;
   cues.sort((a, b) => a.t - b.t);
 
   return {
@@ -185,6 +235,7 @@ export function resolveCompositionAudioPlan(comp: CompiledComposition): AudioPla
     bgm: resolveBgm(audio?.bgm),
     cues,
     duckWindows: mergeDuckWindows(cues, duration),
+    clipAudio,
     warnings,
   };
 }

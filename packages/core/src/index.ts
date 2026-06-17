@@ -36,6 +36,7 @@ export {
   SFX_DURATION,
   type AudioPlan,
   type ResolvedCue,
+  type ClipAudio,
 } from "./audio.js";
 export {
   evaluate,

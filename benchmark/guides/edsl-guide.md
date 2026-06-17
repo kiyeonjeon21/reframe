@@ -324,19 +324,23 @@ shows the source frame at `clipStart + max(0, t - start) * rate`.
 
 ```ts
 video({ id: "clip", src: "shot.mp4", x: 960, y: 540, width: 1920, height: 1080,
-        anchor: "center", fit: "cover", start: 0, rate: 1, clipStart: 0 })
+        anchor: "center", fit: "cover", start: 0, rate: 1, clipStart: 0, volume: 1 })
 tween("clip", { scale: 1.08 }, { duration: 5 })  // transform composes with playback (Ken Burns)
 ```
 
 - Props: `src` (mp4 / mov / webm / m4v / mkv, absolute or scene-relative), `width`/`height`,
   `fit` (`"cover"` like the image node), `start` (scene-time playback begins), `rate`
-  (speed), `clipStart` (source in-point s). Transform/opacity/effects compose as usual.
+  (speed), `clipStart` (source in-point s), `volume` (clip-audio gain, default 1; `0` mutes).
+  Transform/opacity/effects compose as usual.
 - **Deterministic by frame extraction**: render-cli runs `ffmpeg -vf fps=<sceneFps>` to pull
   the clip's frames, and the renderer draws frame `round(t·fps)` — no live `<video>` seek, so
   it stays byte-identical (same machine).
-- **v1 limitations**: visual-only (the clip's own audio is not muxed — use `scene.audio`);
-  all frames are pre-decoded so keep clips short (≤~5s); like images, not rendered in
-  `reframe player` / artifacts (mp4 only). See `examples/scenes/video-demo.ts`.
+- **Clip audio**: the clip's own audio track is muxed into the output, placed at `start`
+  (trimmed from `clipStart`, sped by `rate`, scaled by `volume`), mixed with `scene.audio`.
+  A clip with no audio stream is skipped; set `volume: 0` to drop a clip's sound.
+- **Limitations**: all frames are pre-decoded so keep clips short (≤~5s); like images, video
+  sources are not rendered in `reframe player` / artifacts (mp4 only). See
+  `examples/scenes/video-demo.ts`.
 
 ## Cursor (UI demos)
 

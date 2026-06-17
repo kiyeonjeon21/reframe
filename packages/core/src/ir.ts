@@ -241,6 +241,11 @@ export interface VideoProps extends BaseProps {
   rate?: number;
   /** Source in-point (seconds) shown at `start`. Default 0. */
   clipStart?: number;
+  /**
+   * Linear gain for the clip's own audio track, muxed into the output at `start`
+   * (trimmed from `clipStart`, sped by `rate`). Default 1; `0` mutes the clip.
+   */
+  volume?: number;
 }
 
 export type NodeIR =

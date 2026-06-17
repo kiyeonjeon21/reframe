@@ -12,14 +12,27 @@ import { spawn } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AudioPlan } from "@reframe/core";
+import type { AudioPlan, ClipAudio } from "@reframe/core";
 
 const FORMAT = "aformat=sample_rates=44100:channel_layouts=stereo";
+
+/** Decompose a playback rate into ffmpeg-legal `atempo` factors (each 0.5–2.0). */
+export function atempoChain(rate: number): string[] {
+  if (!(rate > 0) || rate === 1) return [];
+  const out: string[] = [];
+  let r = rate;
+  while (r > 2) { out.push("atempo=2.0"); r /= 2; }
+  while (r < 0.5) { out.push("atempo=0.5"); r /= 0.5; }
+  out.push(`atempo=${r.toFixed(4)}`);
+  return out;
+}
 
 export interface MuxInputs {
   /** Audio file per cue, same order as plan.cues. */
   cueFiles: string[];
   bgmFile: string | null;
+  /** Extracted clip audio (only clips that HAVE an audio stream), placed after cues. */
+  clipFiles?: { audio: ClipAudio; file: string }[];
 }
 
 export function buildFilterGraph(plan: AudioPlan, inputs: MuxInputs): string {
@@ -58,6 +71,17 @@ export function buildFilterGraph(plan: AudioPlan, inputs: MuxInputs): string {
     inputIndex++;
   });
 
+  (inputs.clipFiles ?? []).forEach(({ audio }, i) => {
+    const chain: string[] = [];
+    if (audio.clipStart > 0) chain.push(`atrim=start=${audio.clipStart.toFixed(3)}`, "asetpts=PTS-STARTPTS");
+    chain.push(...atempoChain(audio.rate), FORMAT, `volume=${audio.gain}`);
+    const delayMs = Math.round(audio.start * 1000);
+    if (delayMs > 0) chain.push(`adelay=${delayMs}:all=1`);
+    lines.push(`[${inputIndex}:a]${chain.join(",")}[k${i}]`);
+    mixIn.push(`[k${i}]`);
+    inputIndex++;
+  });
+
   lines.push(
     `${mixIn.join("")}amix=inputs=${mixIn.length}:duration=first:normalize=0,` +
       `alimiter=limit=0.891,aresample=async=1:first_pts=0[aout]`,
@@ -80,6 +104,7 @@ export async function muxAudio(
       "-i", videoIn,
       ...(plan.bgm && inputs.bgmFile ? ["-i", inputs.bgmFile] : []),
       ...inputs.cueFiles.flatMap((f) => ["-i", f]),
+      ...(inputs.clipFiles ?? []).flatMap((c) => ["-i", c.file]),
       "-filter_complex_script", graphFile,
       "-map", "0:v",
       "-map", "[aout]",
