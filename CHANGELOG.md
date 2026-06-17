@@ -8,6 +8,8 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-06-18
+
 ### Added
 
 #### Video clip audio
@@ -343,7 +345,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.6...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.7...HEAD
+[0.6.7]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.3...v0.6.4
