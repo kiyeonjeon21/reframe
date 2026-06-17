@@ -43,6 +43,14 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   (`packages/core/src/interpolate.ts`).
 - `motionPath(target, points, opts)` — Catmull-Rom curve driving x/y (+ tangent
   `autoRotate`); holds the end. Pure math in `packages/core/src/path.ts`.
+- Gradients (`packages/core/src/gradient.ts`) — `fill`/`stroke` on rect/ellipse/path
+  accept a `Gradient` (`Paint = string | Gradient`) via `linearGradient`/`radialGradient`/
+  `conicGradient`. Coords are normalized to the node's bbox (0..1); the renderer
+  (`renderer-canvas` `resolvePaint`) builds the Canvas gradient in node-local space.
+  **Static** (not keyframed) — animate the NODE's transform and the gradient sweeps with
+  it. Additive/golden-safe: a string fill takes the exact existing path (no new op fields);
+  a gradient bypasses the string-coercing `opt()` and a path op gains a `bbox`. See
+  `examples/scenes/gradient-demo.ts`.
 - Camera (`packages/core/src/camera.ts`) — a scene-level `camera` field (look-at
   `{x,y}` + `zoom` + `rotation`, defaults = identity) keyframed via `cameraTo` /
   the reserved `"camera"` tween/motionPath/behavior target. One global matrix at

@@ -72,11 +72,28 @@ export interface BaseProps {
   fixed?: boolean;
 }
 
+/**
+ * A paint is a solid color string OR a gradient. Coordinates are normalized to the
+ * node's bounding box (0..1, SVG `objectBoundingBox` style) so a gradient is just an
+ * angle + stops, size-independent. Applied in node-local space, so animating the
+ * node's transform (rotation/scale) moves the gradient with it. Build with
+ * `linearGradient`/`radialGradient`/`conicGradient` (`gradient.ts`).
+ */
+export interface ColorStop {
+  offset: number; // 0..1 along the gradient
+  color: string;
+}
+export type Gradient =
+  | { kind: "linear"; angle?: number; stops: ColorStop[] } // angle deg: 0 = L→R, 90 = T→B
+  | { kind: "radial"; cx?: number; cy?: number; r?: number; stops: ColorStop[] } // centre/radius 0..1 of the box
+  | { kind: "conic"; angle?: number; cx?: number; cy?: number; stops: ColorStop[] };
+export type Paint = string | Gradient;
+
 export interface RectProps extends BaseProps {
   width: number;
   height: number;
-  fill?: string;
-  stroke?: string;
+  fill?: Paint;
+  stroke?: Paint;
   strokeWidth?: number;
   radius?: number; // corner radius
 }
@@ -84,8 +101,8 @@ export interface RectProps extends BaseProps {
 export interface EllipseProps extends BaseProps {
   width: number;
   height: number;
-  fill?: string;
-  stroke?: string;
+  fill?: Paint;
+  stroke?: Paint;
   strokeWidth?: number;
 }
 
@@ -134,8 +151,8 @@ export interface GroupProps extends BaseProps {
 export interface PathProps extends BaseProps {
   /** SVG path data (the `d` attribute). Drawn as a true vector — crisp at any zoom. */
   d: string;
-  fill?: string;
-  stroke?: string;
+  fill?: Paint;
+  stroke?: Paint;
   strokeWidth?: number;
   /**
    * 0..1 — fraction of the OUTLINE drawn, for a self-drawing "draw-on" effect

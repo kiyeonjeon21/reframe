@@ -150,6 +150,28 @@ scene({
 
 See `examples/scenes/camera-demo.ts`.
 
+## Gradients (fill / stroke)
+
+`fill` and `stroke` on **rect / ellipse / path** accept a gradient as well as a
+color string. Coordinates are normalized to the node's bounding box (0..1), so a
+gradient is just an angle + stops:
+
+```ts
+rect({ id: "card", x, y, width: 300, height: 300, anchor: "center",
+  fill: linearGradient(["#FF5C3A", "#FFC24B"], { angle: 60 }) })   // 0=L→R, 90=T→B
+ellipse({ id: "orb", /* … */ fill: radialGradient(["#9B7CFF", "#221A4A"], { cx: 0.4, cy: 0.4, r: 0.6 }) })
+path({ id: "star", d, fill: conicGradient(["#00C2A8", "#3AA0FF", "#7C5CFF", "#00C2A8"], { angle: -90 }) })
+ellipse({ id: "ring", /* … */ fill: "none", stroke: linearGradient(["#3AA0FF", "#46E5A0"]), strokeWidth: 10 })
+```
+
+- `linearGradient(stops, { angle })`, `radialGradient(stops, { cx, cy, r })`,
+  `conicGradient(stops, { angle, cx, cy })`. `stops` is a color array (even offsets)
+  or `[{ offset, color }]`. `cx/cy/r` are 0..1 of the box (centre defaults to 0.5).
+- **Gradients are static** (not keyframed). The gradient lives in the node's local
+  space, so **animate the NODE** (`tween(id, { rotation: 360 })`, scale, move) and the
+  gradient sweeps/stretches with it. Color-string fills still tween as today.
+- text fill and line stroke are color-only for now. See `examples/scenes/gradient-demo.ts`.
+
 ## Character rig (skeleton, poses, IK)
 
 A first-class, declarative character rig that **compiles to plain IR** (nested

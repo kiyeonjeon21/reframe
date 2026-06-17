@@ -7,9 +7,10 @@
 import { sampleBehavior } from "./behaviors.js";
 import { cameraMatrix } from "./camera.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
-import type { Anchor, ClipShape, NodeIR, PropValue } from "./ir.js";
+import { isGradient } from "./gradient.js";
+import type { Anchor, ClipShape, NodeIR, Paint, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
-import { pathPoint, pathTangentAngle } from "./path.js";
+import { pathBBox, pathPoint, pathTangentAngle } from "./path.js";
 
 /** Canvas-style 2D affine matrix [a, b, c, d, e, f]. */
 export type Mat2D = [number, number, number, number, number, number];
@@ -42,8 +43,8 @@ export type DisplayOp =
       height: number;
       offsetX: number;
       offsetY: number;
-      fill?: string;
-      stroke?: string;
+      fill?: Paint;
+      stroke?: Paint;
       strokeWidth?: number;
       radius?: number;
     })
@@ -53,8 +54,8 @@ export type DisplayOp =
       height: number;
       offsetX: number;
       offsetY: number;
-      fill?: string;
-      stroke?: string;
+      fill?: Paint;
+      stroke?: Paint;
       strokeWidth?: number;
     })
   | (OpBase & {
@@ -92,9 +93,11 @@ export type DisplayOp =
       d: string;
       /** 0..1 fraction of the stroke outline drawn (draw-on). */
       progress: number;
-      fill?: string;
-      stroke?: string;
+      fill?: Paint;
+      stroke?: Paint;
       strokeWidth?: number;
+      /** Local-space bbox [x,y,w,h] for mapping a gradient paint (set only when one is used). */
+      bbox?: [number, number, number, number];
     });
 
 export type DisplayList = DisplayOp[];
@@ -363,8 +366,11 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         const height = num(id, "height", node.props.height);
         const [ax, ay] = ANCHOR_FACTORS[node.props.anchor ?? "top-left"];
         const strokeWidth = num(id, "strokeWidth", node.props.strokeWidth ?? 1);
-        const fill = opt(id, "fill", node.props.fill);
-        const stroke = opt(id, "stroke", node.props.stroke);
+        // a gradient paint passes through as-is; a color string samples (animatable) via opt()
+        const fillP = node.props.fill;
+        const strokeP = node.props.stroke;
+        const fill = isGradient(fillP) ? fillP : opt(id, "fill", fillP);
+        const stroke = isGradient(strokeP) ? strokeP : opt(id, "stroke", strokeP);
         ops.push({
           type: node.type,
           id,
@@ -404,17 +410,22 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         // (already in `matrix`) pivot around the art's centre, not (0,0).
         const ox = num(id, "originX", node.props.originX ?? 0);
         const oy = num(id, "originY", node.props.originY ?? 0);
-        const fill = opt(id, "fill", node.props.fill);
-        const stroke = opt(id, "stroke", node.props.stroke);
+        const fillP = node.props.fill;
+        const strokeP = node.props.stroke;
+        const fill = isGradient(fillP) ? fillP : opt(id, "fill", fillP);
+        const stroke = isGradient(strokeP) ? strokeP : opt(id, "stroke", strokeP);
+        const dStr = str(id, "d", node.props.d);
+        const needsBox = isGradient(fill) || isGradient(stroke); // gradient maps to the path's bbox
         ops.push({
           type: "path",
           id,
           transform: ox === 0 && oy === 0 ? matrix : multiply(matrix, [1, 0, 0, 1, -ox, -oy]),
           opacity,
-          d: str(id, "d", node.props.d),
+          d: dStr,
           progress: Math.max(0, Math.min(1, num(id, "progress", node.props.progress ?? 1))),
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1) }),
+          ...(needsBox && { bbox: pathBBox(dStr) }),
           ...clipSpread,
         });
         return;
