@@ -10,6 +10,15 @@ versions may change them.
 
 ### Added
 
+#### CLI
+
+- **`reframe player <scene> [-o out.html]`** — bundle a scene into one
+  self-contained HTML file that plays the motion live in any browser (and pastes
+  straight into a Claude.ai Artifact): an esbuild IIFE of the core + canvas
+  renderer + the scene driving a `<canvas>` rAF loop, with the Inter fonts
+  inlined. Visual-only (audio cues and image-node sources stay in the mp4 render
+  path).
+
 #### Camera
 
 - **`camera`** — a first-class, keyframable scene viewport. Add a top-level
