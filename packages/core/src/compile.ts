@@ -56,6 +56,8 @@ export interface CompiledScene {
   labelTimes: Map<string, LabelSpan>;
   /** The subset of label spans that come from beat nodes — keyed by beat name. */
   beatTimes: Map<string, LabelSpan>;
+  /** True iff the scene declares or animates a `camera` (gates the camera matrix). */
+  hasCamera: boolean;
 }
 
 const key = (target: string, prop: string) => `${target}.${prop}`;
@@ -125,6 +127,19 @@ export function compileScene(ir: SceneIR): CompiledScene {
         initialValues.set(key(id, prop), value);
       }
     }
+  }
+  // Reserved "camera" pseudo-target: seed base look-at/zoom/rotation so a
+  // tween("camera",…) can chain from a known value (currentValue() has no default
+  // for zoom/x/y) and so evaluate samples a defined base. Skipped when a node
+  // squats the id "camera" (that node wins, for back-compat) — so its own base
+  // values are untouched and existing scenes stay byte-identical.
+  const cameraIsNode = nodeById.has("camera");
+  if (!cameraIsNode) {
+    const cam = ir.camera ?? {};
+    initialValues.set(key("camera", "x"), cam.x ?? ir.size.width / 2);
+    initialValues.set(key("camera", "y"), cam.y ?? ir.size.height / 2);
+    initialValues.set(key("camera", "zoom"), cam.zoom ?? 1);
+    initialValues.set(key("camera", "rotation"), cam.rotation ?? 0);
   }
 
   const segments = new Map<string, PropertySegment[]>();
@@ -300,6 +315,16 @@ export function compileScene(ir: SceneIR): CompiledScene {
   for (const list of segments.values()) list.sort((a, b) => a.t0 - b.t0);
   for (const list of motionPaths.values()) list.sort((a, b) => a.t0 - b.t0);
 
+  // A camera is "active" iff the scene declares or animates one AND no node squats
+  // the id "camera" (legacy hand-rolled "camera" groups keep their node semantics).
+  // Only then does evaluate apply the camera matrix — keeps no-camera scenes
+  // byte-identical.
+  const hasCamera =
+    !cameraIsNode &&
+    (ir.camera !== undefined ||
+      motionPaths.has("camera") ||
+      [...segments.keys()].some((k) => k.startsWith("camera.")));
+
   return {
     ir,
     duration: ir.duration ?? inferredEnd,
@@ -310,5 +335,6 @@ export function compileScene(ir: SceneIR): CompiledScene {
     nodeOrder,
     labelTimes,
     beatTimes,
+    hasCamera,
   };
 }

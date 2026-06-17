@@ -5,6 +5,7 @@
  */
 
 import { sampleBehavior } from "./behaviors.js";
+import { cameraMatrix } from "./camera.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
 import type { Anchor, ClipShape, NodeIR, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
@@ -159,6 +160,19 @@ const ANCHOR_FACTORS: Record<Anchor, [number, number]> = {
 
 const TEXT_ALIGN: Record<number, TextAlign> = { 0: "left", 0.5: "center", 1: "right" };
 const TEXT_BASELINE: Record<number, TextBaseline> = { 0: "top", 0.5: "middle", 1: "bottom" };
+
+/** Render a numeric content value, optionally with thousands separators (deterministic, locale-free). */
+function formatNumber(value: number, decimals: number, thousands: boolean): string {
+  const fixed = value.toFixed(decimals);
+  if (!thousands) return fixed;
+  const neg = fixed.startsWith("-");
+  const body = neg ? fixed.slice(1) : fixed;
+  const dot = body.indexOf(".");
+  const intPart = dot === -1 ? body : body.slice(0, dot);
+  const frac = dot === -1 ? "" : body.slice(dot);
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return (neg ? "-" : "") + grouped + frac;
+}
 
 /** 0 outside the behavior's [from, until] window, with a linear ramp at each bound. */
 function behaviorEnvelope(b: { from?: number; until?: number; ramp?: number }, t: number): number {
@@ -417,7 +431,10 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           id,
           transform: matrix,
           opacity,
-          content: typeof raw === "number" ? raw.toFixed(decimals) : raw,
+          content:
+            typeof raw === "number"
+              ? formatNumber(raw, decimals, node.props.contentThousands === true)
+              : raw,
           fontFamily: str(id, "fontFamily", node.props.fontFamily),
           fontSize: num(id, "fontSize", node.props.fontSize),
           fontWeight: num(id, "fontWeight", node.props.fontWeight ?? 400),
@@ -432,6 +449,24 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     }
   };
 
-  for (const node of compiled.ir.nodes) walk(node, IDENTITY, 1, []);
+  // The camera is one global transform at the root of the walk, so it moves the
+  // whole scene; a top-level `fixed` node opts out (screen-pinned HUD/titles).
+  // When the scene has no camera, the root is IDENTITY exactly as before — the
+  // determinism/golden contract stays byte-identical.
+  const cameraRoot = compiled.hasCamera
+    ? cameraMatrix(
+        {
+          x: num("camera", "x", compiled.ir.size.width / 2),
+          y: num("camera", "y", compiled.ir.size.height / 2),
+          zoom: num("camera", "zoom", 1),
+          rotation: num("camera", "rotation", 0),
+        },
+        compiled.ir.size,
+      )
+    : IDENTITY;
+  for (const node of compiled.ir.nodes) {
+    const root = compiled.hasCamera && node.props.fixed ? IDENTITY : cameraRoot;
+    walk(node, root, 1, []);
+  }
   return ops;
 }

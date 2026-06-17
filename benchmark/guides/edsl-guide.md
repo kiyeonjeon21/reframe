@@ -121,6 +121,35 @@ bound — e.g. a pulse only during the hold:
 `oscillate("title", "scale", { amplitude: 0.04, frequency: 1.2 }, { from: 1.5, until: 3.5 })`.
 Omit the window to run for the whole scene.
 
+## Camera (one keyframable viewport)
+
+A scene-level camera moves the whole scene at once: a look-at point + zoom +
+rotation, animated over the timeline. Add it as a top-level `camera` field and
+keyframe it with `cameraTo` (or by tweening the reserved target `"camera"`):
+
+```ts
+scene({
+  // ...
+  camera: { x: W/2, y: H/2, zoom: 1, rotation: 0 }, // (x,y) = scene point centred in frame; defaults = frame centre, zoom 1, rot 0 (= no camera)
+  timeline: seq(
+    cameraTo({ x: 300, y: 400, zoom: 4 }, { duration: 1.5, ease: "easeInOutCubic", label: "push-in" }), // zoom into a detail
+    cameraTo({ x: 800, y: 200, zoom: 2, rotation: -5 }, { duration: 1.2 }),                              // pan + slight bank
+    cameraTo({ x: W/2, y: H/2, zoom: 1, rotation: 0 }, { duration: 1.6 }),                               // pull back
+  ),
+})
+```
+
+- `cameraTo(props, { duration?, ease?, label? })` keyframes the camera; it is a
+  `tween` on the `"camera"` target, so `motionPath("camera", pts, …)` (pan along
+  a curve) and `oscillate/wiggle("camera", "rotation"|"x"|…)` (handheld drift)
+  also work.
+- **Pin HUD/titles to the screen** with `fixed: true` on a TOP-LEVEL node — the
+  camera won't move it (for overlays, watermarks, captions).
+- Defaults are the identity, so a scene without a camera is unchanged. Don't name
+  a node `"camera"` if you use the scene camera (the id can't be both).
+
+See `examples/scenes/camera-demo.ts`.
+
 ## Character rig (skeleton, poses, IK)
 
 A first-class, declarative character rig that **compiles to plain IR** (nested

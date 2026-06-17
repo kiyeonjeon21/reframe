@@ -14,6 +14,7 @@ export {
 } from "./compose.js";
 export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan, type MotionDriver } from "./compile.js";
 export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
+export { cameraTo, cameraMatrix, CAMERA_ID, CAMERA_PROPS } from "./camera.js";
 export { motionPreset, PRESET_NAMES, type PresetName, type PresetRig, type PresetOpts } from "./presets.js";
 export { devicePreset, deviceScreen, deviceScreenCenter, deviceBounds, deviceScreenPoint, DEVICE_PRESET_NAMES, type DevicePresetName, type DevicePresetOpts } from "./devicePreset.js";
 export { cursor, cursorTo, cursorPath, cursorClick, cursorDouble, type CursorStyle, type CursorOpts, type CursorToOpts, type CursorPathOpts, type CursorClickOpts } from "./cursor.js";

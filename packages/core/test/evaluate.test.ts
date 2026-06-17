@@ -48,6 +48,29 @@ describe("evaluate", () => {
     expect(contentAt(1)).toBe("90");
   });
 
+  it("groups numeric content with thousands separators when asked", () => {
+    const s = scene({
+      id: "t",
+      size: { width: 100, height: 100 },
+      nodes: [
+        text({ id: "n", x: 0, y: 0, content: 0, contentThousands: true, fontFamily: "Inter", fontSize: 12 }),
+      ],
+      timeline: tween("n", { content: 384400 }, { duration: 1, ease: "linear" }),
+    });
+    const c = compileScene(s);
+    const contentAt = (t: number) => (evaluate(c, t)[0] as { content: string }).content;
+    expect(contentAt(0.25)).toBe("96,100");
+    expect(contentAt(1)).toBe("384,400");
+    // no separator without the flag (default behavior unchanged)
+    const plain = scene({
+      id: "t2",
+      size: { width: 100, height: 100 },
+      nodes: [text({ id: "n", x: 0, y: 0, content: 384400, fontFamily: "Inter", fontSize: 12 })],
+      timeline: tween("n", { content: 384400 }, { duration: 1 }),
+    });
+    expect((evaluate(compileScene(plain), 1)[0] as { content: string }).content).toBe("384400");
+  });
+
   it("composes behaviors additively on top of timeline values", () => {
     const s = scene({
       id: "t",

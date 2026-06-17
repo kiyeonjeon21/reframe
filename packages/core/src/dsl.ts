@@ -6,6 +6,7 @@
 import type {
   AudioIR,
   BehaviorIR,
+  CameraIR,
   CompositionIR,
   CompositionSceneEntry,
   Ease,
@@ -33,6 +34,7 @@ export interface SceneInput {
   duration?: number;
   background?: string;
   nodes: NodeIR[];
+  camera?: CameraIR;
   states?: Record<string, StateOverride>;
   initial?: string;
   timeline?: TimelineIR;

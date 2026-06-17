@@ -6,12 +6,14 @@
 
 import type { CompositionIR, NodeIR, SceneIR, TimelineIR } from "./ir.js";
 
-const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor"];
+const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor", "fixed"];
+/** Animatable props of the reserved "camera" target (look-at point + zoom + rotation). */
+const CAMERA_PROPS = ["x", "y", "zoom", "rotation"];
 export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   rect: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth", "radius"],
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
   line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress"],
-  text: [...COMMON_PROPS, "content", "contentDecimals", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
+  text: [...COMMON_PROPS, "content", "contentDecimals", "contentThousands", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
   image: [...COMMON_PROPS, "src", "width", "height"],
   path: [...COMMON_PROPS, "d", "fill", "stroke", "strokeWidth", "progress", "originX", "originY"],
   group: COMMON_PROPS,
@@ -51,6 +53,16 @@ export function validateScene(ir: SceneIR): void {
   collect(ir.nodes);
 
   const checkProps = (where: string, nodeId: string, props: Record<string, unknown>) => {
+    // "camera" addresses the scene camera ONLY when no node squats the id (a node
+    // named "camera" wins, for back-compat with hand-rolled pseudo-cameras).
+    if (nodeId === "camera" && !nodeById.has("camera")) {
+      for (const key of Object.keys(props)) {
+        if (!CAMERA_PROPS.includes(key)) {
+          problems.push(`${where}: "${key}" is not a camera prop — valid props: ${CAMERA_PROPS.join(", ")}`);
+        }
+      }
+      return;
+    }
     const node = nodeById.get(nodeId);
     if (!node) {
       problems.push(
@@ -121,12 +133,15 @@ export function validateScene(ir: SceneIR): void {
         break;
       case "motionPath": {
         const node = nodeById.get(tl.target);
-        if (!node) {
-          problems.push(
-            `${path}: motionPath targets unknown node "${tl.target}" — known ids: ${[...nodeById.keys()].join(", ")}`,
-          );
-        } else if (node.type === "line") {
-          problems.push(`${path}: motionPath cannot target a line (no x/y) — "${tl.target}"`);
+        const isSceneCamera = tl.target === "camera" && !node;
+        if (!isSceneCamera) {
+          if (!node) {
+            problems.push(
+              `${path}: motionPath targets unknown node "${tl.target}" — known ids: ${[...nodeById.keys()].join(", ")}`,
+            );
+          } else if (node.type === "line") {
+            problems.push(`${path}: motionPath cannot target a line (no x/y) — "${tl.target}"`);
+          }
         }
         if (tl.points.length < 1) problems.push(`${path}: motionPath "${tl.target}" needs at least 1 point`);
         if (tl.duration !== undefined && tl.duration <= 0) {
@@ -172,6 +187,19 @@ export function validateScene(ir: SceneIR): void {
 
   if (ir.duration !== undefined && ir.duration <= 0) {
     problems.push("scene duration must be > 0");
+  }
+
+  if (ir.camera) {
+    if (nodeById.has("camera")) {
+      problems.push(`camera: a node is already named "camera" — rename that node or drop the scene camera (the id "camera" can't be both)`);
+    }
+    for (const [key, value] of Object.entries(ir.camera)) {
+      if (!CAMERA_PROPS.includes(key)) {
+        problems.push(`camera: "${key}" is not a camera prop — valid props: ${CAMERA_PROPS.join(", ")}`);
+      } else if (typeof value !== "number") {
+        problems.push(`camera.${key} must be a number`);
+      }
+    }
   }
 
   const SFX_NAMES = ["whoosh", "pop", "tick", "rise", "shimmer", "thud"];

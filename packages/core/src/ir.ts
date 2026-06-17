@@ -65,6 +65,11 @@ export interface BaseProps {
   skewX?: number;
   skewY?: number;
   anchor?: Anchor;
+  /**
+   * Pin a TOP-LEVEL node to the screen so the scene `camera` does not move it —
+   * for HUD / titles / watermark layers. No-op when the scene has no camera.
+   */
+  fixed?: boolean;
 }
 
 export interface RectProps extends BaseProps {
@@ -94,6 +99,8 @@ export interface LineProps {
   opacity?: number;
   /** 0..1 — how much of the line is drawn (for draw-on effects). */
   progress?: number;
+  /** Pin to the screen so the scene `camera` does not move it (top-level only). */
+  fixed?: boolean;
 }
 
 export interface TextProps extends BaseProps {
@@ -101,6 +108,8 @@ export interface TextProps extends BaseProps {
   content: string | number;
   /** Decimal places when content is numeric (default 0). */
   contentDecimals?: number;
+  /** Group the integer part with thousands separators (e.g. 35,786). */
+  contentThousands?: boolean;
   fontFamily: string;
   fontSize: number;
   fontWeight?: number;
@@ -296,6 +305,20 @@ export interface AudioIR {
   cues?: AudioCueIR[];
 }
 
+/**
+ * The scene camera: a viewport over the whole scene. `(x,y)` is the scene point
+ * centered in frame (defaults to the frame centre), `zoom` scales about it,
+ * `rotation` (degrees) turns about it. Defaults (`x=W/2, y=H/2, zoom=1, rotation=0`)
+ * are the identity. Animate it by tweening the reserved target `"camera"`
+ * (or the `cameraTo` helper); pin layers out of it with a node's `fixed` flag.
+ */
+export interface CameraIR {
+  x?: number;
+  y?: number;
+  zoom?: number;
+  rotation?: number;
+}
+
 export interface SceneIR {
   version: 1;
   id: string;
@@ -306,6 +329,8 @@ export interface SceneIR {
   duration?: number;
   background?: string;
   nodes: NodeIR[];
+  /** A viewport over the scene, keyframable via the reserved target "camera". */
+  camera?: CameraIR;
   states?: Record<string, StateOverride>;
   /** State applied at t=0. */
   initial?: string;

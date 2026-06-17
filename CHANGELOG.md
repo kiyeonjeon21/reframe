@@ -8,6 +8,25 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Camera
+
+- **`camera`** — a first-class, keyframable scene viewport. Add a top-level
+  `camera: { x, y, zoom, rotation }` (look-at semantics: `(x,y)` is the scene
+  point centred in frame; defaults are the identity) and animate it with
+  **`cameraTo(props, opts)`** — a `tween` on the reserved `"camera"` target, so
+  `motionPath("camera", …)` (pan along a curve) and `oscillate`/`wiggle` on the
+  camera (handheld drift) work too. One global matrix is applied at the root of
+  the render walk, so it moves the whole scene; clips compose correctly.
+- **`fixed: true`** on a top-level node pins it to the screen (the camera does
+  not move it) — for HUD / titles / watermarks.
+- Additive and determinism-safe: a scene without a camera renders byte-identically
+  (the camera path is skipped). A node named `"camera"` keeps its node semantics
+  for back-compat; the scene camera and such a node can't be combined.
+- **`contentThousands`** on text — group the integer part of a numeric counter
+  with thousands separators (e.g. `35,786`).
+
 ## [0.5.0] - 2026-06-17
 
 ### Added
