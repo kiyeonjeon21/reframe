@@ -96,9 +96,10 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   list of images into a slideshow: crossfades + **seeded Ken Burns** (pan/zoom) + an
   optional cinematic grade (vignette + scrim via gradient + blend). Returns
   `{ nodes, timeline }` (owns its image layers, like `splitText` owns glyphs); stable
-  addresses `${id}-${i}`, labels `shot-${i}`/`cross-${i}`. The `image` node draws
-  stretched (no object-fit) so photos must be pre-cropped to the frame aspect; the Ken
-  Burns keeps `scale ≥ 1` + bounded pan so no edge shows. Pure/seeded. Image sources
+  addresses `${id}-${i}`, labels `shot-${i}`/`cross-${i}`. Each layer uses the image
+  node's `fit: "cover"` (crop-to-fill at the image's aspect, renderer-side via
+  `coverRect` — no pre-cropping, any aspect); the Ken Burns keeps `scale ≥ 1` + bounded
+  pan so no edge shows. Pure/seeded. Image sources
   don't render in `player`/artifacts → mp4 only. Demo: `examples/scenes/photo-montage.ts`
   (CC0 images under `examples/scenes/photo-montage/`, NOT bundled to npm). The photo
   analog of motionPreset.

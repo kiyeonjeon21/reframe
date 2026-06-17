@@ -47,9 +47,11 @@ Factories return plain data. Every node needs a unique `id`.
   same structure (e.g. both 4-cubic ovals). Arcs (`A`) can't morph (their 0/1
   flags aren't interpolable) and incompatible shapes snap at the midpoint; build
   morph targets from `M/L/C/Q/Z` only.
-- `image({ id, src, x, y, width, height, opacity?, rotation?, scale?, anchor? })` —
-  `src` is a file path, absolute or relative to the scene file; drawn stretched
-  to `width`×`height` (png/jpg/webp). `src` switches discretely (no crossfade) —
+- `image({ id, src, x, y, width, height, fit?, opacity?, rotation?, scale?, anchor? })` —
+  `src` is a file path, absolute or relative to the scene file (png/jpg/webp).
+  `fit` controls how it maps into `width`×`height`: `"fill"` (default) stretches;
+  `"cover"` crops to fill the box at the image's natural aspect, centered (no
+  distortion — drop in any-aspect photos). `src` switches discretely (no crossfade) —
   for hard-cut frame sequences stack image nodes and step their `opacity`; for
   a dissolve, crossfade two nodes' opacity.
 - `group({ id, x, y, opacity?, rotation?, scale?, anchor? }, children)` — children's
@@ -307,9 +309,10 @@ scene({ size, nodes: [...m.nodes, ...titles], timeline: par(m.timeline, titleTra
   the stacked image layers (+ `${id}-vignette` / `${id}-scrim` grade overlays);
   `timeline` is a retimable `beat("montage", …)`. Stable addresses: `${id}-${i}`,
   labels `shot-${i}` / `cross-${i}`.
-- **Images must be the frame's aspect ratio** — the `image` node draws stretched
-  (no object-fit), so cover-crop your photos to `size` first. The Ken Burns keeps
-  `scale ≥ 1` with the pan bounded to its slack, so an edge is never revealed.
+- **Any-aspect photos work** — each layer uses `fit: "cover"`, so the renderer
+  crops to fill the frame at the image's aspect (no pre-cropping, no distortion).
+  The Ken Burns keeps `scale ≥ 1` with the pan bounded to its slack, so an edge is
+  never revealed.
 - Per-slide overrides: `{ src, hold?, ken? }` where `ken` is `"in" | "out" | "pan"`.
 - Seeded + pure (same `(images, opts)` → identical IR). Note: image-node sources do
   not render in `reframe player` / artifacts — montage ships as mp4.
