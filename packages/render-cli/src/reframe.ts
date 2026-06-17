@@ -35,6 +35,9 @@ const RENDER_CLI = PACKAGED
 const LABELS = PACKAGED
   ? join(ROOT, "dist", "labels.js")
   : join(ROOT, "packages", "render-cli", "src", "labels.ts");
+const PLAYER = PACKAGED
+  ? join(ROOT, "dist", "player.js")
+  : join(ROOT, "packages", "render-cli", "src", "player.ts");
 const ANALYZE = PACKAGED
   ? join(ROOT, "dist", "analyze.js")
   : join(ROOT, "benchmark", "harness", "motion", "analyze.ts");
@@ -51,6 +54,8 @@ usage:
   ${CMD} logo <logo.svg|brand-slug> ["Name"] [--motion <preset>] [--energy 0..1] [--seed N] [-o out.mp4]
                                  animate a logo into a sting (presets: draw-bloom, punch-in,
                                  rise-settle, slide-bank, reveal-orbit, spin-forge)
+  ${CMD} player <scene.ts|.json> [-o out.html]  bundle a scene into one self-contained HTML
+                                 player (plays live in any browser or a Claude.ai artifact; visual only)
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
@@ -205,6 +210,25 @@ async function main() {
       if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
       process.exit(
         await (PACKAGED ? run(process.execPath, [LABELS, inputPath]) : run("npx", ["tsx", LABELS, inputPath])),
+      );
+    }
+
+    case "player": {
+      const input = rest[0];
+      if (!input || input.startsWith("-")) fail(`player needs a scene file\n\n${USAGE}`);
+      const inputPath = userPath(input);
+      if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
+      const oIdx = rest.indexOf("-o");
+      const outBase = PACKAGED ? join(USER_CWD, "out") : join(ROOT, "out");
+      const outPath =
+        oIdx >= 0 && rest[oIdx + 1]
+          ? userPath(rest[oIdx + 1]!)
+          : join(outBase, `${basename(input).replace(/\.[^.]+$/, "")}.html`);
+      await mkdir(dirname(outPath), { recursive: true });
+      process.exit(
+        await (PACKAGED
+          ? run(process.execPath, [PLAYER, inputPath, outPath])
+          : run("npx", ["tsx", PLAYER, inputPath, outPath])),
       );
     }
 
