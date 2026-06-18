@@ -1,7 +1,10 @@
 # Contributing to reframe
 
 Thanks for your interest. reframe is early alpha, so issues, ideas, and PRs are
-all welcome. By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+all welcome. By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md),
+and by opening a pull request you agree to the [Contributor License Agreement](CLA.md)
+for your contribution (a standard CLA so the project's licensing stays flexible — it
+does not affect your right to use reframe under its MIT license).
 
 ## Dev setup
 
@@ -34,7 +37,8 @@ release). Read it before larger changes. Scene syntax lives in
 
 1. Fork and branch from `main`.
 2. Make the change with tests; run `pnpm test` and `pnpm typecheck`.
-3. Open a PR describing the change and why. CI runs typecheck + tests.
+3. Open a PR describing the change and why. CI runs typecheck + tests. Opening a
+   PR confirms you agree to the [CLA](CLA.md).
 
 Maintainers handle releases (tag-triggered npm publish); contributors don't need
 to bump versions.
