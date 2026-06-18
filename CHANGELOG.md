@@ -8,6 +8,21 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.17] - 2026-06-18
+
+### Added
+
+#### z-sort occlusion
+
+- **`camera.zSort`** — opt-in depth-ordered paint (requires `perspective`). When `true`, siblings
+  at each level are drawn far→near (larger world `z` first) so nearer nodes occlude farther ones
+  without hand-ordering the tree; the order re-sorts every frame as depth animates. A `fixed` HUD
+  stays on top, and a track-matte group keeps its child order (the first child is the mask). It's a
+  stable sort, so equal-depth siblings keep their authored order. Off by default ⇒ paint stays
+  array order ⇒ **byte-identical** (golden-safe). Gotcha documented: under `zSort` a full-screen
+  background rect at `z: 0` is the nearest plane and paints on top — use the scene `background` or a
+  far `z`. Demo: `examples/scenes/zsort-demo.ts`.
+
 ## [0.6.16] - 2026-06-18
 
 ### Added
@@ -516,7 +531,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.16...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.17...HEAD
+[0.6.17]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.16...v0.6.17
 [0.6.16]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.13...v0.6.14
