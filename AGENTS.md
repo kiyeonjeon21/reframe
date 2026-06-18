@@ -118,6 +118,12 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   seeded `textIn` (typewriter/cascade/rise/bounce/assemble/decode), `textLoop`
   (wave/shimmer/wobble/float → behaviors), `textOut` (shatter/fly/dissolve/fall/
   collapse), `textTypeCues` (per-glyph keypress audio). The text analog of motionPreset.
+- Authoring ergonomics — `text` `prefix`/`suffix` wrap a numeric count-up so `$2.4M`/`+32%`
+  read from ONE node (`packages/core/src/evaluate.ts` text case; golden-safe). Layout helpers
+  `row`/`column`/`grid` (`packages/core/src/layout.ts`) return evenly-spaced coordinates to
+  spread into node `x`/`y` (a row of cards, a grid of tiles) — pure math, no nodes. Both
+  added after a fresh-user reproducibility test flagged hand-positioned affixes + absolute-only
+  layout as the main friction.
 - Photo/video montage (`packages/core/src/montage.ts`) — `photoMontage(shots, opts)` /
   `videoMontage` (same generator) turn a list of shots — images AND video clips, mixed
   (video detected by src extension, plays as a clip for its `hold`, audio muted by default

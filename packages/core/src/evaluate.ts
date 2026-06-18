@@ -608,15 +608,17 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           0,
           Math.round(num(id, "contentDecimals", node.props.contentDecimals ?? 0)),
         );
+        const body =
+          typeof raw === "number"
+            ? formatNumber(raw, decimals, node.props.contentThousands === true)
+            : raw;
         ops.push({
           type: "text",
           id,
           transform: projDraw(matrix, 0, 0),
           opacity,
-          content:
-            typeof raw === "number"
-              ? formatNumber(raw, decimals, node.props.contentThousands === true)
-              : raw,
+          // static affixes wrap the (possibly counting-up) body; absent ⇒ body unchanged
+          content: (node.props.prefix ?? "") + body + (node.props.suffix ?? ""),
           fontFamily: str(id, "fontFamily", node.props.fontFamily),
           fontSize: num(id, "fontSize", node.props.fontSize),
           fontWeight: num(id, "fontWeight", node.props.fontWeight ?? 400),

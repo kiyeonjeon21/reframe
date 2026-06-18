@@ -177,6 +177,11 @@ export interface TextProps extends BaseProps {
   contentDecimals?: number;
   /** Group the integer part with thousands separators (e.g. 35,786). */
   contentThousands?: boolean;
+  /** Static affixes wrapped around the rendered content — so a count-up can read
+   *  "$2.4M" or "+32%" from ONE node (prefix `"$"`, suffix `"M"`) instead of three
+   *  hand-positioned ones. Absent ⇒ no change. */
+  prefix?: string;
+  suffix?: string;
   fontFamily: string;
   fontSize: number;
   fontWeight?: number;
