@@ -135,7 +135,10 @@ Expressive eases for a premium feel: `easeIn/Out/InOutBack` (overshoots past the
 target then settles — a pop/snap), `easeIn/Out/InOutElastic` (rings around the
 target — a playful spring), `easeIn/Out/InOutBounce` (drops and bounces to rest).
 A logo or card "popping" in usually wants `easeOutBack`; a stamp landing,
-`easeOutBounce`.
+`easeOutBounce`. Physical springs settle to rest within the tween's duration:
+`spring` (a natural settle), `springBouncy` (rings more), `springStiff` (snappy,
+barely overshoots) — or tune your own with `{ spring: { stiffness, damping, velocity } }`
+(damping ratio = `damping / (2·√stiffness)`; lower ⇒ bouncier).
 Scene duration is inferred from the timeline. For a **static frame** you can omit
 `timeline` entirely (or set scene `duration: <seconds>`) — a still defaults to a 1s
 render; no throwaway `wait` is needed.
