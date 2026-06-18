@@ -47,7 +47,7 @@ export default scene({
     // captions (one per beat — text content can't tween)
     text({ id: "cap1", x: CX, y: 96, anchor: "center", content: "the AI wrote this logo", fontFamily: "Inter", fontSize: 34, fontWeight: 700, fill: INK, opacity: 0 }),
     text({ id: "cap2", x: CX, y: 96, anchor: "center", content: "you change three things", fontFamily: "Inter", fontSize: 34, fontWeight: 700, fill: INK, opacity: 0 }),
-    text({ id: "cap3", x: CX, y: 96, anchor: "center", content: "new layout. your three edits stayed.", fontFamily: "Inter", fontSize: 34, fontWeight: 700, fill: INK, opacity: 0 }),
+    text({ id: "cap3", x: CX, y: 96, anchor: "center", content: "new layout. your three edits survived.", fontFamily: "Inter", fontSize: 34, fontWeight: 700, fill: INK, opacity: 0 }),
 
     // three travelling edit tags
     tagPill("t-col", 1250, 416, "your colour"), tagText("t-col-x", 1250, 416, "your colour"),
@@ -108,7 +108,7 @@ export default scene({
       tween("pill-x", { opacity: 1 }, { duration: 0.35 }),
     ),
     wait(0.8),
-    // ── 4 · the SAME nodes rebuild into a new layout; the blue/copy/watermark stay ──
+    // ── 4 · the SAME nodes rebuild into a new layout (the tags detach during the chaos) ──
     par(
       tween("pill", { opacity: 0 }, { duration: 0.4, label: "rebuild" }),
       tween("pill-x", { opacity: 0 }, { duration: 0.4 }),
@@ -119,16 +119,23 @@ export default scene({
       tween("wordmark", { x: 84, y: -12, scale: 1.18 }, { duration: 0.8, ease: "easeInOutCubic" }),
       seq(wait(0.25), tween("underline", { width: 540, opacity: 1 }, { duration: 0.6, ease: "easeOutCubic" })),
       tween("tagNew", { x: 84, y: 96, scale: 1.05 }, { duration: 0.8, ease: "easeInOutCubic" }),
-      // the three tags travel to where YOUR edits landed in the new design
+      // all three tags fade out, then reposition INVISIBLY to the new edit spots
+      ...["t-col", "t-col-x", "t-cop", "t-cop-x", "t-wm", "t-wm-x"].map((id) =>
+        tween(id, { opacity: 0 }, { duration: 0.3 })),
       tween("t-col", { x: 470, y: 412 }, { duration: 0.8, ease: "easeInOutCubic" }),
       tween("t-col-x", { x: 470, y: 412 }, { duration: 0.8, ease: "easeInOutCubic" }),
       tween("t-cop", { x: 1330, y: 648 }, { duration: 0.8, ease: "easeInOutCubic" }),
       tween("t-cop-x", { x: 1330, y: 648 }, { duration: 0.8, ease: "easeInOutCubic" }),
-      // watermark tag stays in its corner
     ),
-    tween("cap3", { opacity: 1 }, { duration: 0.4, ease: "easeOutCubic", label: "stayed" }),
-    wait(2.2),
-    // ── 5 · clear → end card ──
+    // ── 5 · the three edits re-pin on the new layout — each one still yours (1·2·3) ──
+    par(
+      tween("cap3", { opacity: 1 }, { duration: 0.4, ease: "easeOutCubic", label: "stayed" }),
+      par(tween("t-col", { opacity: 1 }, { duration: 0.3, ease: "easeOutBack" }), tween("t-col-x", { opacity: 1 }, { duration: 0.3 })),
+      seq(wait(0.22), par(tween("t-cop", { opacity: 1 }, { duration: 0.3, ease: "easeOutBack" }), tween("t-cop-x", { opacity: 1 }, { duration: 0.3 }))),
+      seq(wait(0.44), par(tween("t-wm", { opacity: 1 }, { duration: 0.3, ease: "easeOutBack" }), tween("t-wm-x", { opacity: 1 }, { duration: 0.3 }))),
+    ),
+    wait(2.0),
+    // ── 6 · clear → end card ──
     par(
       ...["lockup", "wm", "cap3", "t-col", "t-col-x", "t-cop", "t-cop-x", "t-wm", "t-wm-x"].map((id) =>
         tween(id, { opacity: 0 }, { duration: 0.5, ease: "easeInQuad" })),
