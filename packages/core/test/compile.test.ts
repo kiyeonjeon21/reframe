@@ -135,3 +135,28 @@ describe("validation", () => {
     ).toThrowError(/duplicate node id "a"/);
   });
 });
+
+describe("static scene duration", () => {
+  // A still (no animation) must still get a positive duration so it renders a frame —
+  // before this fallback, an absent/empty timeline left duration 0/undefined and the
+  // CLI crashed (compiled.duration.toFixed of undefined).
+  it("a scene with no timeline gets the default still duration", () => {
+    const s = scene({ id: "t", size: { width: 100, height: 100 }, nodes: [box("a")] });
+    expect(compileScene(s).duration).toBe(1);
+  });
+
+  it("a scene whose timeline produces no spans falls back to the still duration", () => {
+    const s = scene({
+      id: "t",
+      size: { width: 100, height: 100 },
+      nodes: [box("a")],
+      timeline: seq(),
+    });
+    expect(compileScene(s).duration).toBe(1);
+  });
+
+  it("an explicit scene duration still wins over the fallback", () => {
+    const s = scene({ id: "t", size: { width: 100, height: 100 }, nodes: [box("a")], duration: 4 });
+    expect(compileScene(s).duration).toBe(4);
+  });
+});

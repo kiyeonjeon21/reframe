@@ -8,6 +8,27 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.14] - 2026-06-18
+
+### Fixed
+
+#### Onboarding ergonomics (surfaced by a fresh-agent dogfood of the directing loop)
+
+- **`reframe render scene.ts -o out`** no longer fails with a cryptic ffmpeg "Invalid argument"
+  muxer error. An `-o` value with no file extension is now treated as a **directory** (matching the
+  docs' "mp4 into `out/`"): the dir is created and the file is written as `<dir>/<scene>.mp4`.
+- **Static frames don't need a throwaway timeline.** A scene with no `timeline` (or one that
+  produces no animated spans) now renders as a 1s still instead of crashing on an
+  undefined duration. Set scene `duration` to override. Golden-safe: animated scenes always infer
+  `> 0`, so the fallback only fires when nothing animates.
+
+### Changed
+
+- Guides: clarified that **text alignment is the `anchor` prop** (no separate `align`), that the
+  `diff --mode grid` overlay is **full-resolution** (printed numbers are exact scene pixels), and
+  that `diff`/`blend` are noisy over large soft gradients/glows (tune those by eye with `--mode
+  side`).
+
 ## [0.6.13] - 2026-06-18
 
 ### Added
@@ -465,7 +486,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.13...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.14...HEAD
+[0.6.14]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.13...v0.6.14
 [0.6.13]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.12...v0.6.13
 [0.6.12]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.11...v0.6.12
 [0.6.11]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.10...v0.6.11

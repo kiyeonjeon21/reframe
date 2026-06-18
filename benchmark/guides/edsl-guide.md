@@ -68,6 +68,9 @@ Factories return plain data. Every node needs a unique `id`.
 `"top-left"` (default) | `"top-center"` | `"top-right"` | `"center-left"` |
 `"center"` | `"center-right"` | `"bottom-left"` | `"bottom-center"` | `"bottom-right"`.
 Example: a bar that grows upward = `anchor: "bottom-left"` + animate `height`.
+**Text alignment is `anchor`, not a separate `align` prop:** the anchor's horizontal
+half sets the text align — `"…-left"` left-aligns, `"…-center"`/`"center"` centers,
+`"…-right"` right-aligns (a right-aligned wordmark in a corner = `anchor: "bottom-right"`).
 Font: use `fontFamily: "Inter"` (weights 400/700/800 are available).
 
 ### Layout helpers (evenly spacing things)
@@ -133,7 +136,9 @@ target then settles — a pop/snap), `easeIn/Out/InOutElastic` (rings around the
 target — a playful spring), `easeIn/Out/InOutBounce` (drops and bounces to rest).
 A logo or card "popping" in usually wants `easeOutBack`; a stamp landing,
 `easeOutBounce`.
-Scene duration is inferred from the timeline.
+Scene duration is inferred from the timeline. For a **static frame** you can omit
+`timeline` entirely (or set scene `duration: <seconds>`) — a still defaults to a 1s
+render; no throwaway `wait` is needed.
 
 ## Behaviors: continuous motion during holds
 
