@@ -35,6 +35,9 @@ const RENDER_CLI = PACKAGED
 const LABELS = PACKAGED
   ? join(ROOT, "dist", "labels.js")
   : join(ROOT, "packages", "render-cli", "src", "labels.ts");
+const DIFF = PACKAGED
+  ? join(ROOT, "dist", "diff.js")
+  : join(ROOT, "packages", "render-cli", "src", "diff.ts");
 const PLAYER = PACKAGED
   ? join(ROOT, "dist", "player.js")
   : join(ROOT, "packages", "render-cli", "src", "player.ts");
@@ -61,7 +64,8 @@ usage:
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
-  ${CMD} guide [--regen]         print the scene-authoring guide (for you or your AI)
+  ${CMD} diff <ref-image> [<scene.ts>] [--t S] [--mode side|blend|diff|grid]  compare/measure a render against a reference image
+  ${CMD} guide [--regen|--directing]  print a guide (--regen: stable-address contract; --directing: high-end workflow)
   ${CMD} demo                    run the edit-survival demo (3 mp4s into out/)
 `;
 
@@ -400,14 +404,32 @@ async function main() {
       );
     }
 
+    case "diff": {
+      const input = rest[0];
+      if (!input || input.startsWith("-")) {
+        fail(`usage: ${CMD} diff <ref-image> [<scene.ts>] [--t <sec>] [--mode side|blend|diff|grid] [-o out.png]`);
+      }
+      // user-relative paths for the ref, the scene (first bare arg after ref), and -o
+      let seenScene = false;
+      const args = rest.map((a, i) => {
+        if (i === 0) return userPath(a);
+        if (rest[i - 1] === "-o") return userPath(a);
+        if (!a.startsWith("-") && rest[i - 1] !== "--t" && rest[i - 1] !== "--mode" && !seenScene) {
+          seenScene = true;
+          return userPath(a);
+        }
+        return a;
+      });
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [DIFF, ...args]) : run("npx", ["tsx", DIFF, ...args])),
+      );
+    }
+
     case "guide": {
-      const file = rest.includes("--regen")
-        ? PACKAGED
-          ? join(ROOT, "guides", "regen-contract.md")
-          : join(ROOT, "docs", "regen-contract.md")
-        : PACKAGED
-          ? join(ROOT, "guides", "edsl-guide.md")
-          : join(ROOT, "benchmark", "guides", "edsl-guide.md");
+      const which = rest.includes("--regen") ? "regen" : rest.includes("--directing") ? "directing" : "edsl";
+      const repoFile = { regen: join(ROOT, "docs", "regen-contract.md"), directing: join(ROOT, "benchmark", "guides", "directing-guide.md"), edsl: join(ROOT, "benchmark", "guides", "edsl-guide.md") };
+      const pkgFile = { regen: join(ROOT, "guides", "regen-contract.md"), directing: join(ROOT, "guides", "directing-guide.md"), edsl: join(ROOT, "guides", "edsl-guide.md") };
+      const file = (PACKAGED ? pkgFile : repoFile)[which];
       const { readFile } = await import("node:fs/promises");
       process.stdout.write(await readFile(file, "utf8"));
       return;
