@@ -403,6 +403,18 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
   const dPersp = persp ? num("camera", "perspective", 0) : 0;
   const vx = persp ? compiled.ir.size.width / 2 : 0;
   const vy = persp ? compiled.ir.size.height / 2 : 0;
+  // Depth of field (only meaningful with perspective, since depth lives in the
+  // projection path). `aperture` 0 ⇒ off ⇒ leaf ops keep their exact authored fx ⇒
+  // byte-identical. A drawn op at depth `d` gains aperture·|d−focus| blur on top of
+  // any authored blur; the focal plane stays sharp, near/far layers soften.
+  const aperture = persp ? num("camera", "aperture", 0) : 0;
+  const focus = persp ? num("camera", "focus", 0) : 0;
+  const dofFx = (fx: Fx, depth: number, project: boolean): Fx => {
+    if (!project || aperture <= 0) return fx;
+    const extra = aperture * Math.abs(depth - focus);
+    if (extra <= 0) return fx;
+    return { ...fx, blur: z0((fx.blur ?? 0) + extra) };
+  };
 
   // `zAcc` = accumulated parent depth; `project` = this subtree gets perspective
   // (false under a fixed HUD — perspective is part of the camera).
@@ -429,7 +441,8 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         y2: y1 + (num(id, "y2", node.props.y2) - y1) * progress,
         stroke: str(id, "stroke", node.props.stroke),
         strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1),
-        ...fx,
+        // a line carries no z of its own — DOF uses the inherited subtree depth
+        ...dofFx(fx, zAcc, project),
         ...clipSpread,
       });
       return;
@@ -473,6 +486,10 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
       const tilted = rotX !== 0 || rotY !== 0 ? tiltSkew(m, rotX, rotY, hw, hh, dPersp) : m;
       return projectDepth(tilted, depth, vx, vy, dPersp);
     };
+    // leaf draw ops fold depth-of-field blur into their fx (group composites don't —
+    // their children already soften individually at their own depths). aperture 0 ⇒
+    // leafFx === fx ⇒ byte-identical.
+    const leafFx = dofFx(fx, depth, project);
 
     switch (node.type) {
       case "group": {
@@ -521,7 +538,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth }),
           ...(node.type === "rect" && { radius: num(id, "radius", node.props.radius ?? 0) }),
-          ...fx,
+          ...leafFx,
           ...clipSpread,
         });
         return;
@@ -541,7 +558,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           offsetX: -width * ax,
           offsetY: -height * ay,
           ...(node.props.fit && node.props.fit !== "fill" ? { fit: node.props.fit } : {}),
-          ...fx,
+          ...leafFx,
           ...clipSpread,
         });
         return;
@@ -569,7 +586,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           offsetY: -height * ay,
           frame,
           ...(node.props.fit && node.props.fit !== "fill" ? { fit: node.props.fit } : {}),
-          ...fx,
+          ...leafFx,
           ...clipSpread,
         });
         return;
@@ -596,7 +613,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth: num(id, "strokeWidth", node.props.strokeWidth ?? 1) }),
           ...(needsBox && { bbox: pathBBox(dStr) }),
-          ...fx,
+          ...leafFx,
           ...clipSpread,
         });
         return;
@@ -626,7 +643,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           letterSpacing: num(id, "letterSpacing", node.props.letterSpacing ?? 0),
           align: TEXT_ALIGN[ax] ?? "left",
           baseline: TEXT_BASELINE[ay] ?? "top",
-          ...fx,
+          ...leafFx,
           ...clipSpread,
         });
         return;

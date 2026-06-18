@@ -458,6 +458,17 @@ export interface CameraIR {
    * focal pull). A node BEHIND the camera (`perspective + z <= 0`) is culled.
    */
   perspective?: number;
+  /**
+   * Depth of field (requires `perspective`). `aperture` is the blur strength —
+   * screen-pixels of gaussian blur added per unit of depth away from the focal
+   * plane; absent / 0 ⇒ no DOF (byte-identical). `focus` is the in-focus depth
+   * (same units as a node's world `z`, default 0 = the camera plane). A drawn op
+   * at depth `d` gains `aperture · |d − focus|` blur on top of any authored blur,
+   * so far (and near) layers soften while the focal plane stays sharp. Both are
+   * keyframable — animate `focus` for a rack focus, `aperture` for an iris pull.
+   */
+  focus?: number;
+  aperture?: number;
 }
 
 export interface SceneIR {
