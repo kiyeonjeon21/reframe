@@ -72,6 +72,14 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   separate buffers, and combines via `destination-in` (luma runs a `lumaToAlpha` pass first).
   Needs ≥2 children (validated). Same offscreen mechanism unblocks group blur/blend later.
   Browser-only, deterministic same-machine. See `examples/scenes/matte-demo.ts`.
+- Group effects — `blur` / `shadowColor`(+`shadowBlur`/`shadowX`/`shadowY`) / `blend` on a
+  **group** now apply to the whole subtree as ONE composite (focus-pull a multi-node lockup,
+  one silhouette shadow under a multi-shape mark, blend a group against the bg as a single
+  layer — overlaps composite together, not per child). Reuses the matte offscreen mechanism:
+  `evaluate` emits `group-fx-push`/`group-fx-pop` markers (only when a group sets one of these
+  → goldens byte-identical); `drawDisplayList` renders the subtree offscreen and draws it back
+  once with `ctx.filter`/`ctx.shadow*`/`globalCompositeOperation`. Group blur is animatable
+  (`tween(group,{blur})`), wraps a matte group, and nests. See `examples/scenes/group-fx-demo.ts`.
 - Camera (`packages/core/src/camera.ts`) — a scene-level `camera` field (look-at
   `{x,y}` + `zoom` + `rotation`, defaults = identity) keyframed via `cameraTo` /
   the reserved `"camera"` tween/motionPath/behavior target. One global matrix at

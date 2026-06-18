@@ -43,7 +43,9 @@ function opPoints(op: DisplayOp): OpPoints {
     case "matte-push":
     case "matte-sep":
     case "matte-pop":
-      // No geometry (path bbox / matte markers) — treat as a zero-area point.
+    case "group-fx-push":
+    case "group-fx-pop":
+      // No geometry (path bbox / matte + group-fx markers) — treat as a zero-area point.
       local = [0, 0, 0, 0];
       break;
     case "line": {

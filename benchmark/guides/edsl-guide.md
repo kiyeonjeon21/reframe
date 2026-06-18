@@ -193,8 +193,8 @@ rect({ id: "card", /* … */, blur: 18 }); tween("card", { blur: 0 }, { duration
   something to animate from).
 - Sugar: `glow(color, blur)` (offset 0) and `dropShadow(color, blur, x, y)` return
   a partial you spread into props (`...glow("#FFD24B", 28)`); still animatable.
-- No-op on a `group` (apply to a child; group/composite blur is a later add). See
-  `examples/scenes/shadow-demo.ts`.
+- On a `group` these apply to the whole subtree as one composite (focus pull / one
+  silhouette shadow) — see "Group effects" below. `examples/scenes/shadow-demo.ts`.
 
 ### Blend modes (compositing)
 
@@ -210,8 +210,8 @@ rect({ id: "neon", fill: linearGradient([...]), shadowColor: "#7A4DFF", blend: "
 - Modes: `normal` (default), `multiply`, `screen`, `overlay`, `lighten`, `darken`,
   `add` (additive light), `color-dodge`, `soft-light`, `hard-light`, `difference`.
 - **Discrete**, not interpolated — set per node (a static string). Default `normal`.
-- Per-shape. A whole-group blend (composite the subtree, then blend) is a later add;
-  on a `group` the prop is a no-op. See `examples/scenes/blend-demo.ts`.
+- Per-shape, or on a `group` to blend the whole composited subtree against the bg as one
+  layer (see "Group effects" below). See `examples/scenes/blend-demo.ts`.
 
 ## Character rig (skeleton, poses, IK)
 
@@ -369,6 +369,28 @@ group({ id: "reveal", x: W/2, y: H/2, anchor: "center", matte: "alpha" }, [
 - Rendered by **offscreen compositing** (the matte + content draw to separate buffers,
   combined via `destination-in`). Deterministic same-machine. See
   `examples/scenes/matte-demo.ts`.
+
+## Group effects (blur / shadow / blend on a whole group)
+
+The paint effects (`blur`, `shadowColor`/`shadowBlur`/`shadowX`/`shadowY`, `blend`) also
+work on a **group** — there they apply to the whole subtree as ONE composite layer, not per
+child. The classic uses: a depth-of-field **focus pull** on a multi-node lockup, a single
+**silhouette drop shadow** under a multi-shape mark, and a group that **blends against the
+background** as one layer (so its own overlaps composite together).
+
+```ts
+// the whole lockup sharpens as one image (animate the GROUP's blur)
+group({ id: "lockup", x: 0, y: 0, blur: 20 }, [ card, dot, label ])
+// timeline: tween("lockup", { blur: 0 }, { duration: 1.1, ease: "easeInOutCubic" })
+
+group({ id: "mark", x: 0, y: 0, ...dropShadow("#000", 40, 0, 26) }, [ shapeA, shapeB, dot ]) // one shadow
+group({ id: "burst", x, y, blend: "screen" }, [ disc1, disc2, disc3 ])                        // one screen layer
+```
+
+- Group `blur` is **animatable** (`tween(group, { blur })`); shadow scalars too.
+- Same **offscreen compositing** as mattes (the subtree renders to a buffer, drawn back once
+  with the effect). It wraps a matte group and nests. The effects are screen-pixel space.
+  See `examples/scenes/group-fx-demo.ts`.
 
 ## Cursor (UI demos)
 

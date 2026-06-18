@@ -82,20 +82,37 @@ export function drawDisplayList(
   images?: ImageRegistry,
   videos?: VideoRegistry,
 ): void {
-  // Track-matte compositing: matte-push/sep/pop bracket a matte group's ops. The matte
-  // child and the content children render to offscreen canvases; matte-pop combines them
-  // (content kept where the matte is opaque/bright) and draws the result to the parent.
+  // Offscreen subtree compositing. Two boundary-marker kinds share one stack of
+  // offscreen buffers:
+  //  - track matte (matte-push/sep/pop): the matte child and the content children render to
+  //    separate buffers; pop keeps content where the matte is opaque/bright (destination-in).
+  //  - group effects (group-fx-push/pop): the whole subtree renders to one buffer; pop draws
+  //    it back with the group's blur / shadow / blend applied once to the composite.
   interface MatteFrame {
+    kind: "matte";
     mode: MatteMode;
     parent: CanvasRenderingContext2D;
     matteCtx: CanvasRenderingContext2D;
     phase: "matte" | "content";
     contentCtx?: CanvasRenderingContext2D;
   }
-  const stack: MatteFrame[] = [];
+  interface FxFrame {
+    kind: "fx";
+    parent: CanvasRenderingContext2D;
+    ctx: CanvasRenderingContext2D;
+    blur: number | undefined;
+    shadowColor: string | undefined;
+    shadowBlur: number | undefined;
+    shadowX: number | undefined;
+    shadowY: number | undefined;
+    blend: string | undefined;
+  }
+  type Frame = MatteFrame | FxFrame;
+  const stack: Frame[] = [];
   const target = (): CanvasRenderingContext2D => {
     const f = stack[stack.length - 1];
     if (!f) return ctx;
+    if (f.kind === "fx") return f.ctx;
     return f.phase === "content" && f.contentCtx ? f.contentCtx : f.matteCtx;
   };
   const newCtx = (): CanvasRenderingContext2D => {
@@ -104,31 +121,58 @@ export function drawDisplayList(
     c.height = ctx.canvas.height;
     return c.getContext("2d")!;
   };
-  const composite = (f: MatteFrame): void => {
-    if (!f.contentCtx) return; // no content drawn → nothing to show
-    if (f.mode === "luma") lumaToAlpha(f.matteCtx);
-    f.contentCtx.save();
-    f.contentCtx.setTransform(1, 0, 0, 1, 0, 0);
-    f.contentCtx.globalCompositeOperation = "destination-in";
-    f.contentCtx.drawImage(f.matteCtx.canvas, 0, 0);
-    f.contentCtx.restore();
+  const composite = (f: Frame): void => {
+    if (f.kind === "matte") {
+      if (!f.contentCtx) return; // no content drawn → nothing to show
+      if (f.mode === "luma") lumaToAlpha(f.matteCtx);
+      f.contentCtx.save();
+      f.contentCtx.setTransform(1, 0, 0, 1, 0, 0);
+      f.contentCtx.globalCompositeOperation = "destination-in";
+      f.contentCtx.drawImage(f.matteCtx.canvas, 0, 0);
+      f.contentCtx.restore();
+      f.parent.save();
+      f.parent.setTransform(1, 0, 0, 1, 0, 0);
+      f.parent.globalAlpha = 1;
+      f.parent.globalCompositeOperation = "source-over";
+      f.parent.filter = "none";
+      f.parent.drawImage(f.contentCtx.canvas, 0, 0);
+      f.parent.restore();
+      return;
+    }
+    // fx: draw the subtree buffer back with the group's composite effect (screen-space,
+    // applied once to the whole group; opacity is already baked into the child ops).
     f.parent.save();
     f.parent.setTransform(1, 0, 0, 1, 0, 0);
     f.parent.globalAlpha = 1;
-    f.parent.globalCompositeOperation = "source-over";
-    f.parent.filter = "none";
-    f.parent.drawImage(f.contentCtx.canvas, 0, 0);
+    f.parent.globalCompositeOperation = f.blend ? mapBlend(f.blend) : "source-over";
+    f.parent.filter = f.blur ? `blur(${f.blur}px)` : "none";
+    if (f.shadowColor) {
+      f.parent.shadowColor = f.shadowColor;
+      f.parent.shadowBlur = f.shadowBlur ?? 0;
+      f.parent.shadowOffsetX = f.shadowX ?? 0;
+      f.parent.shadowOffsetY = f.shadowY ?? 0;
+    }
+    f.parent.drawImage(f.ctx.canvas, 0, 0);
     f.parent.restore();
   };
 
   for (const op of ops) {
+    if (op.type === "group-fx-push") {
+      stack.push({ kind: "fx", parent: target(), ctx: newCtx(), blur: op.blur, shadowColor: op.shadowColor, shadowBlur: op.shadowBlur, shadowX: op.shadowX, shadowY: op.shadowY, blend: op.blend });
+      continue;
+    }
+    if (op.type === "group-fx-pop") {
+      const f = stack.pop();
+      if (f) composite(f);
+      continue;
+    }
     if (op.type === "matte-push") {
-      stack.push({ mode: op.mode, parent: target(), matteCtx: newCtx(), phase: "matte" });
+      stack.push({ kind: "matte", mode: op.mode, parent: target(), matteCtx: newCtx(), phase: "matte" });
       continue;
     }
     if (op.type === "matte-sep") {
       const f = stack[stack.length - 1];
-      if (f) { f.contentCtx = newCtx(); f.phase = "content"; }
+      if (f && f.kind === "matte") { f.contentCtx = newCtx(); f.phase = "content"; }
       continue;
     }
     if (op.type === "matte-pop") {
