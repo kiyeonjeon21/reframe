@@ -151,6 +151,10 @@ export function compileScene(ir: SceneIR): CompiledScene {
     // distance, and seeding it would not change evaluate (it reads it only when
     // hasPerspective). A dolly (tween camera.perspective) chains from this base.
     if (cam.perspective !== undefined) initialValues.set(key("camera", "perspective"), cam.perspective);
+    // Depth of field bases (read only when hasPerspective). Seed so a static
+    // focus/aperture resolves and a rack focus / iris pull chains from it.
+    if (cam.focus !== undefined) initialValues.set(key("camera", "focus"), cam.focus);
+    if (cam.aperture !== undefined) initialValues.set(key("camera", "aperture"), cam.aperture);
   }
 
   const segments = new Map<string, PropertySegment[]>();

@@ -215,6 +215,12 @@ scene({
 - A node needs a base value to tween (`rotateY: 0` on the card before tweening it to 360).
 - A tilted **group** foreshortens its whole subtree (cos folds into children). Clips project
   by the group's depth. A `fixed` HUD ignores depth (perspective is part of the camera).
+- **Depth of field** (needs `perspective`): add `camera.aperture` (blur px per unit depth) and
+  `camera.focus` (the in-focus `z`, default 0). A layer at depth `d` softens by
+  `aperture·|d − focus|` while the focal plane stays sharp; keyframe `focus` for a **rack focus**,
+  `aperture` for an iris pull. Absent/`0` ⇒ no blur. HUD/UI text should be `fixed` so it stays
+  crisp (a `fixed` node opts out of DOF too). It feeds the same `blur` op, so it composes with an
+  authored `blur`.
 - **Limits (honest):** `rotateX`/`rotateY` are an affine approximation (cos-foreshorten +
   keystone skew) — a single rotated quad is really a trapezoid Canvas 2D can't draw, so it
   reads as a flip/tilt, not a pixel-true 3D face (that needs WebGL). Depth positioning

@@ -8,6 +8,20 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.16] - 2026-06-18
+
+### Added
+
+#### Depth of field (z-blur)
+
+- **`camera.aperture` + `camera.focus`** — a lens depth-of-field layered on the 2.5D perspective.
+  With perspective active, a drawn layer at depth `d` gains `aperture · |d − focus|` screen-pixels of
+  blur on top of any authored blur, so the focal plane stays sharp while near/far layers soften.
+  Both are keyframable: animate `focus` for a **rack focus**, `aperture` for an iris pull. The blur
+  feeds the existing `blur` op field, so the **renderer is untouched**; a `fixed` HUD node opts out
+  of DOF (it's out of the camera). Gated by perspective and `aperture > 0`, so non-perspective and
+  no-aperture scenes stay **byte-identical** (golden-safe). Demo: `examples/scenes/dof-demo.ts`.
+
 ## [0.6.15] - 2026-06-18
 
 ### Added
@@ -502,7 +516,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.15...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.16...HEAD
+[0.6.16]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.13...v0.6.14
 [0.6.13]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.12...v0.6.13

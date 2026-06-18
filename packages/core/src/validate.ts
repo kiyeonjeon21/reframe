@@ -14,7 +14,7 @@ const BLEND_MODES = new Set([
 const IMAGE_FITS = new Set(["fill", "cover"]);
 const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "z", "rotateX", "rotateY", "anchor", "fixed", ...FX_PROPS];
 /** Animatable props of the reserved "camera" target (look-at + zoom + rotation + perspective). */
-const CAMERA_PROPS = ["x", "y", "zoom", "rotation", "perspective"];
+const CAMERA_PROPS = ["x", "y", "zoom", "rotation", "perspective", "focus", "aperture"];
 export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   rect: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth", "radius"],
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
@@ -243,6 +243,8 @@ export function validateScene(ir: SceneIR): void {
         problems.push(`camera.${key} must be a number`);
       } else if (key === "perspective" && value <= 0) {
         problems.push(`camera.perspective must be > 0 (focal distance in px) — drop it to disable perspective`);
+      } else if (key === "aperture" && value < 0) {
+        problems.push(`camera.aperture must be >= 0 (blur px per unit depth) — 0 disables depth of field`);
       }
     }
   }
