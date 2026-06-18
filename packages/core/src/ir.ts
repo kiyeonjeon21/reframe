@@ -64,6 +64,20 @@ export interface BaseProps {
   /** Shear angles in degrees (default 0) — a 2.5D lean. No true perspective. */
   skewX?: number;
   skewY?: number;
+  /**
+   * Projected depth + 3D tilt. ONLY take effect when the scene sets
+   * `camera.perspective` (the activation switch); otherwise inert (absent ⇒
+   * byte-identical). `z` places the node in front of (`-z`) or behind (`+z`) the
+   * focal plane — the renderer scales it about the vanishing point (parallax,
+   * dolly, depth convergence; exact in 2D affine). `rotateX`/`rotateY` (degrees)
+   * tilt the node about its horizontal/vertical axis for card-flips and leaning
+   * planes — an affine APPROXIMATION (cos foreshorten + keystone skew), not a
+   * pixel-true trapezoid (a single rotated quad under perspective is non-affine,
+   * which Canvas 2D can't draw; that needs WebGL). See `camera.perspective`.
+   */
+  z?: number;
+  rotateX?: number;
+  rotateY?: number;
   anchor?: Anchor;
   /**
    * Pin a TOP-LEVEL node to the screen so the scene `camera` does not move it —
@@ -413,6 +427,15 @@ export interface CameraIR {
   y?: number;
   zoom?: number;
   rotation?: number;
+  /**
+   * Focal distance in px — the perspective activation switch. Absent ⇒ no
+   * projection (nodes' `z`/`rotateX`/`rotateY` are inert, scene byte-identical).
+   * When set, nodes project about the vanishing point (the camera look-at, or
+   * screen centre): depth factor `p = perspective / (perspective + z)`. Smaller =
+   * stronger perspective; larger = flatter. Keyframable (animate it for a dolly /
+   * focal pull). A node BEHIND the camera (`perspective + z <= 0`) is culled.
+   */
+  perspective?: number;
 }
 
 export interface SceneIR {

@@ -87,6 +87,16 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   byte-identical); a top-level node's `fixed:true` pins it to the screen (HUD).
   A node literally named `"camera"` keeps node semantics (back-compat). See
   `examples/scenes/camera-demo.ts`.
+- Projected 2.5D perspective (`evaluate.ts` `projectDepth`/`tiltSkew`) — `z` (depth) +
+  `rotateX`/`rotateY` (3D tilt) on any node, switched on by `camera.perspective` (focal
+  distance). Projection is a pure step in `evaluate` (`p = perspective/(perspective+z)` about
+  the frame centre) that collapses to the existing `Mat2D` → **renderer untouched**, gated by
+  `hasPerspective` so no-perspective scenes stay byte-identical. Gives vanishing-point depth,
+  parallax (pan the camera), card flips (`rotateY`), perspective text (per-glyph `z`), dolly
+  (animate `camera.perspective`). A tilted GROUP foreshortens its subtree; clips project by the
+  group depth; `fixed` HUD opts out. **Affine approximation** for rotated quads (cos + keystone
+  skew, not a true trapezoid — that's WebGL); depth positioning is exact; paint order unchanged
+  (`z` ≠ z-index). See `examples/scenes/perspective-cards.ts`.
 - Character rig (`packages/core/src/rig.ts`) — `humanoid(opts)` / `rig(boneTree,
   opts)` compile a declarative skeleton to a NodeIR group tree (joints =
   `${id}-${name}`, the **stable regen addresses**); FK posing via `poseTo(id,

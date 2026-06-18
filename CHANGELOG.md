@@ -8,6 +8,29 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Projected 2.5D perspective (depth, card flips, dolly)
+
+- New animatable props: `z` (depth), `rotateX` / `rotateY` (3D tilt) on any node, and
+  `camera.perspective` (focal distance, the activation switch). Set `camera.perspective`
+  and nodes project about the optical centre with `p = perspective / (perspective + z)`:
+  vanishing-point depth, **parallax** (a camera pan moves near layers more than far ones),
+  **card flips** (`rotateY`), perspective text (per-glyph `z`), and **dolly** (animate
+  `camera.perspective`).
+- All math is a pure step in `evaluate()` that projects down to the existing 2D affine
+  matrix — **the Canvas renderer is untouched**, so renders stay byte-identical-deterministic
+  and portable. Gated by a `hasPerspective` flag: a scene without `camera.perspective` takes
+  the exact prior path, so existing golden DisplayLists are unchanged. A tilted group
+  foreshortens its whole subtree; clips project by their group's depth; a `fixed` HUD opts out
+  of depth (perspective is part of the camera).
+- **Honest limit:** a single rotated quad under perspective is a real trapezoid Canvas 2D
+  can't draw exactly; `rotateX`/`rotateY` are an affine approximation (cos-foreshorten +
+  keystone skew) — convincing for flips/tilts, not pixel-true. Depth positioning (parallax,
+  convergence, dolly) is exact. Paint order stays array order (`z` does not reorder draws).
+- New demo `examples/scenes/perspective-cards.ts` (parallax depth field + card flip +
+  perspective text + dolly).
+
 ## [0.6.10] - 2026-06-18
 
 ### Added

@@ -19,8 +19,8 @@ import { tween } from "./dsl.js";
 
 /** Reserved timeline/behavior target id for the camera. */
 export const CAMERA_ID = "camera";
-/** The animatable camera props (look-at point + zoom + rotation). */
-export const CAMERA_PROPS = ["x", "y", "zoom", "rotation"] as const;
+/** The animatable camera props (look-at point + zoom + rotation + perspective). */
+export const CAMERA_PROPS = ["x", "y", "zoom", "rotation", "perspective"] as const;
 
 /**
  * The camera's affine matrix: `T(W/2,H/2) · R(rotation) · S(zoom) · T(-x,-y)`,

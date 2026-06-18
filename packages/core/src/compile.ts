@@ -58,6 +58,8 @@ export interface CompiledScene {
   beatTimes: Map<string, LabelSpan>;
   /** True iff the scene declares or animates a `camera` (gates the camera matrix). */
   hasCamera: boolean;
+  /** True iff the scene sets/animates `camera.perspective` (gates depth projection). */
+  hasPerspective: boolean;
 }
 
 const key = (target: string, prop: string) => `${target}.${prop}`;
@@ -140,6 +142,10 @@ export function compileScene(ir: SceneIR): CompiledScene {
     initialValues.set(key("camera", "y"), cam.y ?? ir.size.height / 2);
     initialValues.set(key("camera", "zoom"), cam.zoom ?? 1);
     initialValues.set(key("camera", "rotation"), cam.rotation ?? 0);
+    // Only seed perspective when declared — there's no sensible default focal
+    // distance, and seeding it would not change evaluate (it reads it only when
+    // hasPerspective). A dolly (tween camera.perspective) chains from this base.
+    if (cam.perspective !== undefined) initialValues.set(key("camera", "perspective"), cam.perspective);
   }
 
   const segments = new Map<string, PropertySegment[]>();
@@ -325,6 +331,13 @@ export function compileScene(ir: SceneIR): CompiledScene {
       motionPaths.has("camera") ||
       [...segments.keys()].some((k) => k.startsWith("camera.")));
 
+  // Perspective projection is "active" iff the scene declares or animates
+  // camera.perspective (and no node squats "camera"). Gates the depth-projection
+  // path in evaluate — scenes without it stay byte-identical.
+  const hasPerspective =
+    !cameraIsNode &&
+    (ir.camera?.perspective !== undefined || segments.has("camera.perspective"));
+
   return {
     ir,
     duration: ir.duration ?? inferredEnd,
@@ -336,5 +349,6 @@ export function compileScene(ir: SceneIR): CompiledScene {
     labelTimes,
     beatTimes,
     hasCamera,
+    hasPerspective,
   };
 }

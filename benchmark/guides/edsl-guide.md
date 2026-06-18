@@ -152,6 +152,44 @@ scene({
 
 See `examples/scenes/camera-demo.ts`.
 
+## Depth & perspective (projected 2.5D)
+
+Add `camera.perspective` (a focal distance in px) to switch on depth. Then any node's
+`z` (depth) and `rotateX`/`rotateY` (3D tilt) take effect: nodes project about the frame
+centre by `p = perspective / (perspective + z)` — further back = smaller and pulled toward
+the optical centre. It's a pure step in `evaluate()` projected onto the normal 2D matrix, so
+renders stay deterministic and the Canvas renderer is unchanged.
+
+```ts
+scene({
+  camera: { x: W/2, y: H/2, perspective: 900 },   // focal distance — the switch (absent = no depth)
+  nodes: [
+    rect({ id: "near", x: 700, y: 540, width: 220, height: 300, anchor: "center", fill: "#6EA8FF", z: 0 }),
+    rect({ id: "far",  x: 960, y: 540, width: 220, height: 300, anchor: "center", fill: "#8C7BFF", z: 500 }), // smaller, nearer centre
+    rect({ id: "hero", x: 960, y: 800, width: 300, height: 200, anchor: "center", fill: "#FF5C7A", rotateY: 0 }),
+  ],
+  timeline: seq(
+    cameraTo({ x: W/2 + 200 }, { duration: 2, ease: "easeInOutCubic" }),   // PAN → parallax (near slides more than far)
+    tween("hero", { rotateY: 360 }, { duration: 1.4, ease: "easeInOutCubic" }), // CARD FLIP (rotateY)
+    cameraTo({ perspective: 2400 }, { duration: 1.6 }),                    // DOLLY (animate the focal length)
+  ),
+})
+```
+
+- **Parallax** falls out for free — pan the camera and near (`z` small) layers shift more
+  than far ones. **Dolly** = keyframe `camera.perspective`. **Perspective text** = give each
+  `splitText` glyph an increasing `z` so the word recedes.
+- A node needs a base value to tween (`rotateY: 0` on the card before tweening it to 360).
+- A tilted **group** foreshortens its whole subtree (cos folds into children). Clips project
+  by the group's depth. A `fixed` HUD ignores depth (perspective is part of the camera).
+- **Limits (honest):** `rotateX`/`rotateY` are an affine approximation (cos-foreshorten +
+  keystone skew) — a single rotated quad is really a trapezoid Canvas 2D can't draw, so it
+  reads as a flip/tilt, not a pixel-true 3D face (that needs WebGL). Depth positioning
+  (parallax, convergence, dolly) IS exact. `z` does NOT reorder drawing — paint stays array
+  order, so order your nodes back-to-front yourself. No GPU 3D, no z-buffer.
+
+See `examples/scenes/perspective-cards.ts`.
+
 ## Gradients (fill / stroke)
 
 `fill` and `stroke` on **rect / ellipse / path** accept a gradient as well as a

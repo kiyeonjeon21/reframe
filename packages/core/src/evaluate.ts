@@ -148,6 +148,40 @@ function multiply(m: Mat2D, n: Mat2D): Mat2D {
   ];
 }
 
+const DEG = Math.PI / 180;
+/** Collapse -0 → +0 so a projected matrix is byte-stable in the golden JSON round-trip. */
+const z0 = (x: number): number => (x === 0 ? 0 : x);
+
+/**
+ * Perspective projection of a world matrix at accumulated depth `z` about the
+ * vanishing point `(vx,vy)`, focal distance `d`. Factor `p = d/(d+z)` scales the
+ * whole drawn shape about the VP — parallax, vanishing-point convergence, dolly,
+ * all EXACT in 2D affine. `z=0 ⇒ p=1 ⇒` exact passthrough (no -0). A node behind
+ * the camera (`d+z<=0`) collapses to the VP (`p≈0`, invisible) instead of mirroring.
+ */
+function projectDepth(m: Mat2D, z: number, vx: number, vy: number, d: number): Mat2D {
+  if (z === 0) return m;
+  const p = d + z > 0 ? d / (d + z) : 1e-6;
+  return [
+    z0(m[0] * p), z0(m[1] * p), z0(m[2] * p), z0(m[3] * p),
+    z0(vx + (m[4] - vx) * p), z0(vy + (m[5] - vy) * p),
+  ];
+}
+
+/**
+ * Keystone shear for a `rotateX`/`rotateY` card-flip — the AFFINE APPROXIMATION
+ * of perspective on a single quad (a true rotated quad is a non-affine trapezoid
+ * Canvas 2D can't draw). cos-foreshortening is folded into scaleX/scaleY by the
+ * caller; this adds the depth shear so the near edge grows: shear ∝ sin(angle)·
+ * half-extent/d. Zero extent (text/path) ⇒ no shear, just the cos foreshorten.
+ */
+function tiltSkew(m: Mat2D, rotXdeg: number, rotYdeg: number, hw: number, hh: number, d: number): Mat2D {
+  const ky = (Math.sin(rotYdeg * DEG) * hw) / d; // rotateY leans the vertical edges
+  const kx = (Math.sin(rotXdeg * DEG) * hh) / d; // rotateX leans the horizontal edges
+  if (ky === 0 && kx === 0) return m;
+  return multiply(m, [1, kx, ky, 1, 0, 0]);
+}
+
 /**
  * The node's local affine matrix: Translate(x,y) ∘ Rotate ∘ Skew ∘ Scale, around
  * the anchor. `scaleX/scaleY` are per-axis multipliers on `scale`; `skewX/skewY`
@@ -360,7 +394,19 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     return fx;
   };
 
-  const walk = (node: NodeIR, parent: Mat2D, parentOpacity: number, clips: ClipRegion[]) => {
+  // Perspective projection (gated by hasPerspective so non-perspective scenes take
+  // the exact current path and stay byte-identical). Projection runs in POST-camera
+  // screen space, where the vanishing point is always the frame centre — the camera
+  // already maps its look-at there, so depth converges to the optical centre. `d` =
+  // focal distance (smaller ⇒ stronger perspective).
+  const persp = compiled.hasPerspective;
+  const dPersp = persp ? num("camera", "perspective", 0) : 0;
+  const vx = persp ? compiled.ir.size.width / 2 : 0;
+  const vy = persp ? compiled.ir.size.height / 2 : 0;
+
+  // `zAcc` = accumulated parent depth; `project` = this subtree gets perspective
+  // (false under a fixed HUD — perspective is part of the camera).
+  const walk = (node: NodeIR, parent: Mat2D, parentOpacity: number, clips: ClipRegion[], zAcc: number, project: boolean) => {
     const id = node.id;
     const clipSpread = clips.length > 0 ? { clips } : undefined;
     const fx = effectFx(id, node.props as { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number; blend?: BlendMode });
@@ -374,7 +420,8 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
       ops.push({
         type: "line",
         id,
-        transform: parent,
+        // a line carries no z/rotate of its own — it just inherits the subtree's depth
+        transform: project ? projectDepth(parent, zAcc, vx, vy, dPersp) : parent,
         opacity,
         x1,
         y1,
@@ -390,6 +437,22 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
 
     const opacity = parentOpacity * num(id, "opacity", node.props.opacity ?? 1);
     if (opacity <= 0) return;
+    // depth + 3D tilt — only when this subtree is perspective-projected. cos-foreshortening
+    // folds into scaleX/scaleY (so a tilted GROUP foreshortens its whole subtree); the keystone
+    // shear + vanishing-point convergence are applied per drawn op below. When `project` is
+    // false this is the exact prior computation ⇒ byte-identical.
+    let effScaleX = num(id, "scaleX", node.props.scaleX ?? 1);
+    let effScaleY = num(id, "scaleY", node.props.scaleY ?? 1);
+    let depth = zAcc;
+    let rotX = 0;
+    let rotY = 0;
+    if (project) {
+      rotX = num(id, "rotateX", node.props.rotateX ?? 0);
+      rotY = num(id, "rotateY", node.props.rotateY ?? 0);
+      depth = zAcc + num(id, "z", node.props.z ?? 0);
+      if (rotY !== 0) effScaleX *= Math.abs(Math.cos(rotY * DEG));
+      if (rotX !== 0) effScaleY *= Math.abs(Math.cos(rotX * DEG));
+    }
     const matrix = multiply(
       parent,
       localMatrix(
@@ -397,17 +460,26 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         num(id, "y", node.props.y),
         num(id, "rotation", node.props.rotation ?? 0),
         num(id, "scale", node.props.scale ?? 1),
-        num(id, "scaleX", node.props.scaleX ?? 1),
-        num(id, "scaleY", node.props.scaleY ?? 1),
+        effScaleX,
+        effScaleY,
         num(id, "skewX", node.props.skewX ?? 0),
         num(id, "skewY", node.props.skewY ?? 0),
       ),
     );
+    // A drawn op's final transform: keystone shear (per-op half-extent) + VP projection.
+    // Identity when `project` is false. Groups pass the un-projected `matrix` to children.
+    const projDraw = (m: Mat2D, hw: number, hh: number): Mat2D => {
+      if (!project) return m;
+      const tilted = rotX !== 0 || rotY !== 0 ? tiltSkew(m, rotX, rotY, hw, hh, dPersp) : m;
+      return projectDepth(tilted, depth, vx, vy, dPersp);
+    };
 
     switch (node.type) {
       case "group": {
-        // a clip on this group masks its children, in the group's own space
-        const childClips = node.props.clip ? [...clips, { transform: matrix, shape: node.props.clip }] : clips;
+        // a clip on this group masks its children, in the group's own space — projected
+        // by this group's depth so clip + perspective combine (parallax-window case).
+        const clipTf = projDraw(matrix, 0, 0);
+        const childClips = node.props.clip ? [...clips, { transform: clipTf, shape: node.props.clip }] : clips;
         // group-level composite effects (blur / shadow / blend on the GROUP) wrap the whole
         // subtree: render it offscreen, then draw it back once with the effect applied. Absent
         // ⇒ no markers ⇒ byte-identical. Wraps the matte sequence too (fx of a masked group).
@@ -416,12 +488,12 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         // track matte: first child masks the rest (offscreen-composited by the renderer)
         if (node.props.matte && node.children.length >= 2) {
           ops.push({ type: "matte-push", id, transform: matrix, opacity, mode: node.props.matte, ...clipSpread });
-          walk(node.children[0]!, matrix, opacity, childClips);
+          walk(node.children[0]!, matrix, opacity, childClips, depth, project);
           ops.push({ type: "matte-sep", id, transform: matrix, opacity });
-          for (let i = 1; i < node.children.length; i++) walk(node.children[i]!, matrix, opacity, childClips);
+          for (let i = 1; i < node.children.length; i++) walk(node.children[i]!, matrix, opacity, childClips, depth, project);
           ops.push({ type: "matte-pop", id, transform: matrix, opacity });
         } else {
-          for (const child of node.children) walk(child, matrix, opacity, childClips);
+          for (const child of node.children) walk(child, matrix, opacity, childClips, depth, project);
         }
         if (hasFx) ops.push({ type: "group-fx-pop", id, transform: matrix, opacity });
         return;
@@ -440,7 +512,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         ops.push({
           type: node.type,
           id,
-          transform: matrix,
+          transform: projDraw(matrix, width / 2, height / 2),
           opacity,
           width,
           height,
@@ -461,7 +533,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         ops.push({
           type: "image",
           id,
-          transform: matrix,
+          transform: projDraw(matrix, width / 2, height / 2),
           opacity,
           src: str(id, "src", node.props.src),
           width,
@@ -488,7 +560,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         ops.push({
           type: "video",
           id,
-          transform: matrix,
+          transform: projDraw(matrix, width / 2, height / 2),
           opacity,
           src: str(id, "src", node.props.src),
           width,
@@ -516,7 +588,8 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         ops.push({
           type: "path",
           id,
-          transform: ox === 0 && oy === 0 ? matrix : multiply(matrix, [1, 0, 0, 1, -ox, -oy]),
+          // origin-shift in local space, then project (no per-op extent → cos + VP only)
+          transform: projDraw(ox === 0 && oy === 0 ? matrix : multiply(matrix, [1, 0, 0, 1, -ox, -oy]), 0, 0),
           opacity,
           d: dStr,
           progress: Math.max(0, Math.min(1, num(id, "progress", node.props.progress ?? 1))),
@@ -538,7 +611,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         ops.push({
           type: "text",
           id,
-          transform: matrix,
+          transform: projDraw(matrix, 0, 0),
           opacity,
           content:
             typeof raw === "number"
@@ -576,7 +649,9 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     : IDENTITY;
   for (const node of compiled.ir.nodes) {
     const root = compiled.hasCamera && node.props.fixed ? IDENTITY : cameraRoot;
-    walk(node, root, 1, []);
+    // a fixed HUD opts out of perspective too (the vanishing point is part of the camera)
+    const project = persp && !(node.props.fixed && compiled.hasCamera);
+    walk(node, root, 1, [], 0, project);
   }
   return ops;
 }
