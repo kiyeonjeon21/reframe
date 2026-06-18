@@ -8,6 +8,8 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.12] - 2026-06-18
+
 ### Added
 
 #### On-ramp ergonomics (from a fresh-user test)
@@ -445,7 +447,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.11...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.12...HEAD
+[0.6.12]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.11...v0.6.12
 [0.6.11]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.10...v0.6.11
 [0.6.10]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.9...v0.6.10
 [0.6.9]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.8...v0.6.9
