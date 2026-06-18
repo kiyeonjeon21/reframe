@@ -74,7 +74,8 @@ export interface BaseProps {
    * Paint effects (animatable scalars, in screen pixels — not transformed by the
    * node's rotation/scale or the camera, so a shadow keeps a consistent light
    * direction). `shadowColor` enables a drop shadow / outer glow (`glow`/`dropShadow`
-   * helpers). No-op on a `group` (use a child; group/composite blur is a later add).
+   * helpers). On a `group` these apply to the WHOLE subtree as one composite (the
+   * renderer renders it offscreen, then draws it back with the effect once).
    */
   blur?: number; // gaussian blur of the shape, px
   shadowColor?: string; // shadow/glow colour; presence turns the shadow on
@@ -82,7 +83,8 @@ export interface BaseProps {
   shadowX?: number; // shadow offset px (glow = 0,0)
   shadowY?: number;
   /** How this node composites with what's already drawn (default "normal"). `screen`/
-   *  `add` brighten (additive light/glow), `multiply` tints/deepens. No-op on a group. */
+   *  `add` brighten (additive light/glow), `multiply` tints/deepens. On a `group` the
+   *  whole subtree composites as one layer (offscreen) — true group blend. */
   blend?: BlendMode;
 }
 

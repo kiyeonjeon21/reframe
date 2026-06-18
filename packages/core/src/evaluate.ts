@@ -126,7 +126,12 @@ export type DisplayOp =
   // the matte child + content children into offscreen buffers and composites them).
   | (OpBase & { type: "matte-push"; mode: MatteMode })
   | (OpBase & { type: "matte-sep" })
-  | (OpBase & { type: "matte-pop" });
+  | (OpBase & { type: "matte-pop" })
+  // Group composite-effect boundary markers (emitted only for a group with blur / shadow /
+  // blend on the group itself; the renderer renders the subtree to an offscreen buffer and
+  // draws it back with the effect applied to the whole group — see OpBase blur/shadow/blend).
+  | (OpBase & { type: "group-fx-push" })
+  | (OpBase & { type: "group-fx-pop" });
 
 export type DisplayList = DisplayOp[];
 
@@ -403,6 +408,11 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
       case "group": {
         // a clip on this group masks its children, in the group's own space
         const childClips = node.props.clip ? [...clips, { transform: matrix, shape: node.props.clip }] : clips;
+        // group-level composite effects (blur / shadow / blend on the GROUP) wrap the whole
+        // subtree: render it offscreen, then draw it back once with the effect applied. Absent
+        // ⇒ no markers ⇒ byte-identical. Wraps the matte sequence too (fx of a masked group).
+        const hasFx = fx.blur !== undefined || fx.shadowColor !== undefined || fx.blend !== undefined;
+        if (hasFx) ops.push({ type: "group-fx-push", id, transform: matrix, opacity, ...fx, ...clipSpread });
         // track matte: first child masks the rest (offscreen-composited by the renderer)
         if (node.props.matte && node.children.length >= 2) {
           ops.push({ type: "matte-push", id, transform: matrix, opacity, mode: node.props.matte, ...clipSpread });
@@ -410,9 +420,10 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ops.push({ type: "matte-sep", id, transform: matrix, opacity });
           for (let i = 1; i < node.children.length; i++) walk(node.children[i]!, matrix, opacity, childClips);
           ops.push({ type: "matte-pop", id, transform: matrix, opacity });
-          return;
+        } else {
+          for (const child of node.children) walk(child, matrix, opacity, childClips);
         }
-        for (const child of node.children) walk(child, matrix, opacity, childClips);
+        if (hasFx) ops.push({ type: "group-fx-pop", id, transform: matrix, opacity });
         return;
       }
       case "rect":

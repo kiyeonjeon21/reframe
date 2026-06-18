@@ -8,6 +8,23 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Group composite effects (blur / shadow / blend on a whole group)
+
+- `blur` / `shadowColor` (+`shadowBlur`/`shadowX`/`shadowY`) / `blend` on a `group` now
+  apply to the **whole subtree as one composite layer** — a true focus pull on a
+  multi-node lockup, a single silhouette drop shadow under a multi-shape mark, and a group
+  that blends against the background as one layer (overlaps composite together, not per
+  child). Previously these were no-ops on a group.
+- Reuses the offscreen subtree compositing from track mattes: `evaluate` emits
+  `group-fx-push`/`group-fx-pop` boundary-marker ops (only when a group sets one of these
+  effects, so existing golden DisplayLists stay byte-identical), and the renderer renders
+  the subtree to an offscreen canvas and draws it back once with the effect applied. The
+  group blur is **animatable** (`tween(group, { blur })`), wraps a matte group's sequence,
+  and nests. Deterministic same-machine.
+- New demo `examples/scenes/group-fx-demo.ts` (focus-pull lockup + group shadow + screen-blended burst).
+
 ## [0.6.9] - 2026-06-18
 
 ### Added

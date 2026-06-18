@@ -576,6 +576,8 @@ function opCorners(op: DisplayOp): [number, number][] {
     case "matte-push":
     case "matte-sep":
     case "matte-pop":
+    case "group-fx-push":
+    case "group-fx-pop":
       return []; // boundary markers have no geometry
   }
 }
