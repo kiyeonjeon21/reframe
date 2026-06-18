@@ -293,6 +293,10 @@ export interface VideoProps extends BaseProps {
    * (trimmed from `clipStart`, sped by `rate`). Default 1; `0` mutes the clip.
    */
   volume?: number;
+  /** Fade the clip audio in over N seconds from `start` (default 0 = hard in). */
+  fadeIn?: number;
+  /** Stereo balance for the clip audio: -1 full left, 0 centre, +1 full right. */
+  pan?: number;
 }
 
 export type NodeIR =
@@ -419,6 +423,12 @@ export interface AudioCueIR {
   file?: string;
   /** Linear gain, default 1. */
   gain?: number;
+  /** Fade the cue in over N seconds from its start (default 0 = hard in). */
+  fadeIn?: number;
+  /** Fade the cue out over N seconds before its end (default 0 = hard out). */
+  fadeOut?: number;
+  /** Stereo balance: -1 full left, 0 centre (default), +1 full right. */
+  pan?: number;
   /** Synth parameter overrides (seed, duration, …) — numbers only. */
   params?: Record<string, number>;
 }

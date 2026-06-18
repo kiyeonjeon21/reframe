@@ -119,7 +119,7 @@ describe("clip audio (video nodes)", () => {
     const plan = resolveAudioPlan(vscene({ start: 1, rate: 2, clipStart: 0.5 }))!;
     expect(plan).not.toBeNull();
     expect(plan.clipAudio).toEqual([
-      { nodeId: "v", src: "clip.mp4", start: 1, rate: 2, clipStart: 0.5, gain: 1 },
+      { nodeId: "v", src: "clip.mp4", start: 1, rate: 2, clipStart: 0.5, gain: 1, fadeIn: 0, pan: 0 },
     ]);
     expect(plan.cues).toEqual([]);
     expect(plan.bgm).toBeNull();

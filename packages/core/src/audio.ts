@@ -26,6 +26,12 @@ export interface ResolvedCue {
   t: number;
   gain: number;
   duration: number;
+  /** Fade in over N seconds from the cue start (0 = none). */
+  fadeIn: number;
+  /** Fade out over N seconds before the cue end (0 = none). */
+  fadeOut: number;
+  /** Stereo balance: -1 left … 0 centre … +1 right. */
+  pan: number;
   source:
     | { kind: "sfx"; name: SfxName; params: Record<string, number> }
     | { kind: "file"; path: string };
@@ -43,6 +49,10 @@ export interface ClipAudio {
   clipStart: number;
   /** Linear gain. */
   gain: number;
+  /** Fade in over N seconds from the clip's `start` (0 = none). */
+  fadeIn: number;
+  /** Stereo balance: -1 left … 0 centre … +1 right. */
+  pan: number;
 }
 
 export interface AudioPlan {
@@ -75,7 +85,7 @@ function collectClipAudio(ir: SceneIR, duration: number, warnings: string[]): Cl
           warnings.push(`video "${node.id}": start ${start.toFixed(2)}s past the scene end — audio dropped`);
           continue;
         }
-        out.push({ nodeId: node.id, src: node.props.src, start, rate: node.props.rate ?? 1, clipStart: node.props.clipStart ?? 0, gain });
+        out.push({ nodeId: node.id, src: node.props.src, start, rate: node.props.rate ?? 1, clipStart: node.props.clipStart ?? 0, gain, fadeIn: node.props.fadeIn ?? 0, pan: node.props.pan ?? 0 });
       }
       if (node.type === "group") walk(node.children);
     }
@@ -124,6 +134,9 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
       t,
       gain: cue.gain ?? 1,
       duration: cueDuration,
+      fadeIn: cue.fadeIn ?? 0,
+      fadeOut: cue.fadeOut ?? 0,
+      pan: cue.pan ?? 0,
       source: cue.sfx
         ? { kind: "sfx", name: cue.sfx, params: cue.params ?? {} }
         : { kind: "file", path: cue.file! },
@@ -221,6 +234,9 @@ export function resolveCompositionAudioPlan(comp: CompiledComposition): AudioPla
       t,
       gain: cue.gain ?? 1,
       duration: cueDuration,
+      fadeIn: cue.fadeIn ?? 0,
+      fadeOut: cue.fadeOut ?? 0,
+      pan: cue.pan ?? 0,
       source: cue.sfx
         ? { kind: "sfx", name: cue.sfx, params: cue.params ?? {} }
         : { kind: "file", path: cue.file! },

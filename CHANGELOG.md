@@ -8,6 +8,19 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.18] - 2026-06-18
+
+### Added
+
+#### Audio mixing: fades + stereo pan
+
+- **Cue `fadeIn` / `fadeOut` / `pan`** and **video-clip `fadeIn` / `pan`** — `fadeIn`/`fadeOut` are
+  seconds (`afade`), `pan` is stereo balance (-1 left … 0 centre … +1 right). They let a sound cue
+  ramp in/out and sit left or right in the field, and a clip's audio fade in and be placed in the
+  stereo image. Both flow through the deterministic AudioPlan into the ffmpeg filter chain; absent /
+  zero ⇒ the chain is **byte-identical** to before (additive). Note: clip *fade-out* and clip-driven
+  bed ducking are not included — a clip has no fixed length in the plan (cue ducking already exists).
+
 ## [0.6.17] - 2026-06-18
 
 ### Added
@@ -531,7 +544,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.17...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.18...HEAD
+[0.6.18]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.17...v0.6.18
 [0.6.17]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.16...v0.6.17
 [0.6.16]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.14...v0.6.15

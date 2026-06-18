@@ -48,8 +48,8 @@ describe("buildFilterGraph", () => {
       duck: { depth: 0.5, attack: 0.05, release: 0.25 },
     },
     cues: [
-      { t: 1.5, gain: 0.9, duration: 0.35, source: { kind: "sfx", name: "whoosh", params: {} } },
-      { t: 4.0, gain: 0.7, duration: 0.12, source: { kind: "sfx", name: "pop", params: {} } },
+      { t: 1.5, gain: 0.9, duration: 0.35, fadeIn: 0, fadeOut: 0, pan: 0, source: { kind: "sfx", name: "whoosh", params: {} } },
+      { t: 4.0, gain: 0.7, duration: 0.12, fadeIn: 0, fadeOut: 0, pan: 0, source: { kind: "sfx", name: "pop", params: {} } },
     ],
     duckWindows: [
       { t0: 1.5, t1: 1.85 },
@@ -79,7 +79,7 @@ describe("buildFilterGraph", () => {
   it("adds a clip-audio chain (trim + tempo + delay) after the cues", () => {
     const clipPlan: AudioPlan = {
       duration: 10, bgm: null, cues: [], duckWindows: [],
-      clipAudio: [{ nodeId: "v", src: "clip.mp4", start: 2, rate: 2, clipStart: 1.5, gain: 0.8 }],
+      clipAudio: [{ nodeId: "v", src: "clip.mp4", start: 2, rate: 2, clipStart: 1.5, gain: 0.8, fadeIn: 0, pan: 0 }],
       warnings: [],
     };
     const graph = buildFilterGraph(clipPlan, {
@@ -92,6 +92,41 @@ describe("buildFilterGraph", () => {
     expect(graph).toContain("volume=0.8");
     expect(graph).toContain("adelay=2000:all=1");
     expect(graph).toContain("amix=inputs=2"); // anchor + 1 clip
+  });
+
+  it("injects cue fade in/out + pan, in order, before the delay", () => {
+    const p: AudioPlan = {
+      duration: 10, bgm: null, duckWindows: [], clipAudio: [], warnings: [],
+      cues: [{ t: 2, gain: 1, duration: 1.5, fadeIn: 0.3, fadeOut: 0.5, pan: -1, source: { kind: "file", path: "c.wav" } }],
+    };
+    const graph = buildFilterGraph(p, { cueFiles: ["c.wav"], bgmFile: null });
+    expect(graph).toContain("afade=t=in:st=0:d=0.3");
+    expect(graph).toContain("afade=t=out:st=1.000:d=0.5"); // duration 1.5 - fadeOut 0.5
+    expect(graph).toContain("pan=stereo|c0=1.0000*c0|c1=0.0000*c1"); // pan -1 = full left
+    // pan/fade sit before the delay
+    expect(graph.indexOf("pan=stereo")).toBeLessThan(graph.indexOf("adelay=2000"));
+  });
+
+  it("injects clip fade in + pan (no clip fade-out — clips have no plan duration)", () => {
+    const p: AudioPlan = {
+      duration: 10, bgm: null, cues: [], duckWindows: [], warnings: [],
+      clipAudio: [{ nodeId: "v", src: "v.mp4", start: 1, rate: 1, clipStart: 0, gain: 1, fadeIn: 0.4, pan: 1 }],
+    };
+    const graph = buildFilterGraph(p, { cueFiles: [], bgmFile: null, clipFiles: [{ audio: p.clipAudio[0]!, file: "v.wav" }] });
+    expect(graph).toContain("afade=t=in:st=0:d=0.4");
+    expect(graph).toContain("pan=stereo|c0=0.0000*c0|c1=1.0000*c1"); // pan +1 = full right
+  });
+
+  it("BYTE-IDENTICAL: zero fade/pan produces the pre-feature chain", () => {
+    const base: AudioPlan = {
+      duration: 10, bgm: null, duckWindows: [], warnings: [],
+      cues: [{ t: 2, gain: 0.9, duration: 0.35, fadeIn: 0, fadeOut: 0, pan: 0, source: { kind: "sfx", name: "whoosh", params: {} } }],
+      clipAudio: [{ nodeId: "v", src: "v.mp4", start: 1, rate: 1, clipStart: 0, gain: 1, fadeIn: 0, pan: 0 }],
+    };
+    const graph = buildFilterGraph(base, { cueFiles: ["a.wav"], bgmFile: null, clipFiles: [{ audio: base.clipAudio[0]!, file: "v.wav" }] });
+    expect(graph).not.toContain("afade");
+    expect(graph).not.toContain("pan=stereo");
+    expect(graph).toContain("volume=0.9,adelay=2000:all=1[c0]"); // cue chain unchanged
   });
 });
 

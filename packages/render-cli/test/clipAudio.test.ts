@@ -37,7 +37,7 @@ afterAll(async () => {
 
 const planWith = (start: number): AudioPlan => ({
   duration: 2, bgm: null, cues: [], duckWindows: [],
-  clipAudio: [{ nodeId: "v", src: "clip.mp4", start, rate: 1, clipStart: 0, gain: 1 }],
+  clipAudio: [{ nodeId: "v", src: "clip.mp4", start, rate: 1, clipStart: 0, gain: 1, fadeIn: 0, pan: 0 }],
   warnings: [],
 });
 
