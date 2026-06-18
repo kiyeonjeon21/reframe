@@ -17,6 +17,7 @@ export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
 export { cameraTo, cameraMatrix, CAMERA_ID, CAMERA_PROPS } from "./camera.js";
 export { linearGradient, radialGradient, conicGradient, isGradient } from "./gradient.js";
 export { glow, dropShadow } from "./effects.js";
+export { row, column, grid, type RowOpts, type GridOpts } from "./layout.js";
 export { photoMontage, videoMontage, type MontageImage, type MontageOpts, type MontageResult, type KenBurns } from "./montage.js";
 export { motionPreset, PRESET_NAMES, type PresetName, type PresetRig, type PresetOpts } from "./presets.js";
 export { devicePreset, deviceScreen, deviceScreenCenter, deviceBounds, deviceScreenPoint, DEVICE_PRESET_NAMES, type DevicePresetName, type DevicePresetOpts } from "./devicePreset.js";

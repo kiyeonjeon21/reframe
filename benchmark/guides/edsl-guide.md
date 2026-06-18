@@ -4,6 +4,10 @@ You write a motion-graphics scene as **declarative data** using the reframe
 TypeScript eDSL. Your output is a single `.ts` file that default-exports a
 `scene({...})` call. Everything imports from `@reframe/core`.
 
+> `See examples/scenes/…` pointers below refer to the GitHub repo
+> (github.com/kiyeonjeon21/reframe), not the installed npm package — this guide is
+> self-contained; you don't need them to write a scene.
+
 ```ts
 import { scene, group, rect, ellipse, line, text,
          seq, par, stagger, to, tween, wait,
@@ -30,10 +34,13 @@ Factories return plain data. Every node needs a unique `id`.
 - `ellipse({ id, x, y, width, height, fill?, stroke?, strokeWidth?, ... })`
 - `line({ id, x1, y1, x2, y2, stroke, strokeWidth?, opacity?, progress? })` —
   `progress` 0..1 draws the line on (1 = full line).
-- `text({ id, x, y, content, contentDecimals?, fontFamily, fontSize, fontWeight?, fill?, letterSpacing?, ... })` —
+- `text({ id, x, y, content, contentDecimals?, contentThousands?, prefix?, suffix?, fontFamily, fontSize, fontWeight?, fill?, letterSpacing?, ... })` —
   `content` may be a number; numeric content interpolates (count-up) and renders
   via `toFixed(contentDecimals ?? 0)`. For a "8.2"-style label, set
-  `contentDecimals: 1`.
+  `contentDecimals: 1`; `contentThousands: true` groups the integer (35,786).
+  **`prefix`/`suffix`** wrap the value so a count-up reads `$2.4M` or `+32%` from
+  ONE node (`{ content: 2.4, contentDecimals: 1, prefix: "$", suffix: "M" }`) —
+  don't hand-position separate `$`/`%` nodes.
 - `path({ id, d, x, y, fill?, stroke?, strokeWidth?, progress?, originX?, originY?, opacity?, rotation?, scale?, anchor? })` —
   a true vector shape from an SVG path `d` string (crisp at any zoom; recolour by
   animating `fill`/`stroke`). `progress` 0..1 draws the stroke OUTLINE on (animate
@@ -62,6 +69,23 @@ Factories return plain data. Every node needs a unique `id`.
 `"center"` | `"center-right"` | `"bottom-left"` | `"bottom-center"` | `"bottom-right"`.
 Example: a bar that grows upward = `anchor: "bottom-left"` + animate `height`.
 Font: use `fontFamily: "Inter"` (weights 400/700/800 are available).
+
+### Layout helpers (evenly spacing things)
+
+Positions are absolute pixels. For a row of cards or a grid of tiles, use the
+layout helpers instead of hand-rolling the column math — they return coordinates
+you spread into `x`/`y`:
+
+```ts
+import { row, grid } from "@reframe/core";
+// 3 cards, 440px wide, 60px apart, centred on the frame:
+row(3, { center: 960, gap: 60, itemWidth: 440 }).map((x, i) =>
+  rect({ id: `card-${i}`, x, y: 540, width: 440, height: 300, anchor: "center", fill: "#1A1F2E" }));
+// or spread centres across a span: row(3, { center: 960, span: 900 })
+// grid(rows, cols, { center: {x,y}, gapX, gapY, cellW, cellH }) → { x, y }[] (row-major)
+```
+
+`column` is `row` for the y axis.
 
 ## States: declare looks, not motion
 
@@ -98,7 +122,8 @@ them with normal TS (`Object.fromEntries`, `.map`) for data-driven scenes.
   later `tween` can chain from there. Use it for swoops/arcs/orbits — straight
   `tween`s on x and y can't curve. `closed: true` loops the waypoints (orbit).
   `curviness` shapes the path: `1` smooth (default), `0` sharp corners, `>1` loopier.
-- `wait(seconds)` — hold.
+- `wait(seconds, label?)` — hold; the optional `label` names the hold so audio
+  cues and overlay retiming can address it.
 
 Eases: `linear`, `easeIn/Out/InOutQuad`, `easeIn/Out/InOutCubic`,
 `easeIn/Out/InOutQuart`, `easeIn/Out/InOutExpo`, or `{ cubicBezier: [x1,y1,x2,y2] }`.

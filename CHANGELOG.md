@@ -8,6 +8,24 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### On-ramp ergonomics (from a fresh-user test)
+
+- **`prefix` / `suffix` on `text`** — a numeric count-up can now read `$2.4M` or
+  `+32%` from ONE node (`{ content: 2.4, contentDecimals: 1, prefix: "$", suffix: "M" }`)
+  instead of three hand-positioned nodes. Affixes wrap the (possibly counting-up)
+  value; absent ⇒ content unchanged (golden-safe).
+- **Layout helpers** `row` / `column` / `grid` (`@reframe/core`) — pure coordinate
+  math for evenly spacing a row of cards or a grid of tiles, so you don't hand-roll
+  the column math. They return coordinates to spread into node `x`/`y`.
+
+### Docs
+
+- Guide: document `prefix`/`suffix`, the layout helpers, `contentThousands`, and
+  `wait(seconds, label?)`; note that `examples/scenes/…` pointers are repo-only (not
+  in the npm package), so the guide is self-contained.
+
 ## [0.6.11] - 2026-06-18
 
 ### Added
