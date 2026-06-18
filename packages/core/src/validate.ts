@@ -237,8 +237,11 @@ export function validateScene(ir: SceneIR): void {
       problems.push(`camera: a node is already named "camera" — rename that node or drop the scene camera (the id "camera" can't be both)`);
     }
     for (const [key, value] of Object.entries(ir.camera)) {
-      if (!CAMERA_PROPS.includes(key)) {
-        problems.push(`camera: "${key}" is not a camera prop — valid props: ${CAMERA_PROPS.join(", ")}`);
+      if (key === "zSort") {
+        // discrete, non-animatable flag (kept out of the numeric CAMERA_PROPS)
+        if (typeof value !== "boolean") problems.push(`camera.zSort must be a boolean`);
+      } else if (!CAMERA_PROPS.includes(key)) {
+        problems.push(`camera: "${key}" is not a camera prop — valid props: ${CAMERA_PROPS.join(", ")}, zSort`);
       } else if (typeof value !== "number") {
         problems.push(`camera.${key} must be a number`);
       } else if (key === "perspective" && value <= 0) {

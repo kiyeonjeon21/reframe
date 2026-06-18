@@ -221,11 +221,17 @@ scene({
   `aperture` for an iris pull. Absent/`0` ⇒ no blur. HUD/UI text should be `fixed` so it stays
   crisp (a `fixed` node opts out of DOF too). It feeds the same `blur` op, so it composes with an
   authored `blur`.
+- **Occlusion by depth** is opt-in: set `camera.zSort: true` and siblings paint far→near
+  (larger `z` first) so nearer nodes cover farther ones without hand-ordering the tree (a
+  `fixed` HUD stays on top; a track-matte group keeps its child order). Off by default — paint
+  stays array order. Gotcha: with `zSort`, a full-screen background rect at `z: 0` is the
+  NEAREST plane and paints on top — use the scene `background` color instead, or give the
+  backdrop a large `z`.
 - **Limits (honest):** `rotateX`/`rotateY` are an affine approximation (cos-foreshorten +
   keystone skew) — a single rotated quad is really a trapezoid Canvas 2D can't draw, so it
   reads as a flip/tilt, not a pixel-true 3D face (that needs WebGL). Depth positioning
-  (parallax, convergence, dolly) IS exact. `z` does NOT reorder drawing — paint stays array
-  order, so order your nodes back-to-front yourself. No GPU 3D, no z-buffer.
+  (parallax, convergence, dolly) IS exact. No GPU 3D, no z-buffer (per-pixel) — `zSort` orders
+  whole nodes, so two INTERSECTING planes can't visually cross.
 
 See `examples/scenes/perspective-cards.ts`.
 

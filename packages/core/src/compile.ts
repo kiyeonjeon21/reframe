@@ -65,6 +65,8 @@ export interface CompiledScene {
   hasCamera: boolean;
   /** True iff the scene sets/animates `camera.perspective` (gates depth projection). */
   hasPerspective: boolean;
+  /** True iff `camera.zSort` is on (gates depth-ordered paint; needs perspective). */
+  zSort: boolean;
 }
 
 const key = (target: string, prop: string) => `${target}.${prop}`;
@@ -351,6 +353,10 @@ export function compileScene(ir: SceneIR): CompiledScene {
     !cameraIsNode &&
     (ir.camera?.perspective !== undefined || segments.has("camera.perspective"));
 
+  // Depth-ordered paint. Only meaningful with perspective (depth lives in the
+  // projection path); off ⇒ paint stays array order ⇒ byte-identical.
+  const zSort = !cameraIsNode && ir.camera?.zSort === true && hasPerspective;
+
   return {
     ir,
     duration: ir.duration ?? (inferredEnd > 0 ? inferredEnd : DEFAULT_STILL_DURATION),
@@ -363,5 +369,6 @@ export function compileScene(ir: SceneIR): CompiledScene {
     beatTimes,
     hasCamera,
     hasPerspective,
+    zSort,
   };
 }

@@ -469,6 +469,14 @@ export interface CameraIR {
    */
   focus?: number;
   aperture?: number;
+  /**
+   * Paint order by depth (requires `perspective`). Off by default — drawing stays
+   * array order. When `true`, siblings at each level are drawn far-to-near (larger
+   * world `z` first) so nearer nodes occlude farther ones without hand-ordering the
+   * tree. A `fixed` HUD stays on top; a track-matte group keeps its child order (the
+   * first child is the mask). Discrete flag, not animatable.
+   */
+  zSort?: boolean;
 }
 
 export interface SceneIR {

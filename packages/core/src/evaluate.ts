@@ -416,6 +416,15 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     return { ...fx, blur: z0((fx.blur ?? 0) + extra) };
   };
 
+  // Depth-ordered paint: siblings drawn far→near (larger world z first) so nearer
+  // nodes occlude farther ones. Off ⇒ array order ⇒ byte-identical. Array.sort is
+  // stable, so equal-depth siblings keep their authored order.
+  const zSort = compiled.zSort;
+  const depthOf = (node: NodeIR, zAcc: number): number =>
+    zAcc + num(node.id, "z", (node.props as { z?: number }).z ?? 0);
+  const depthOrder = (children: NodeIR[], zAcc: number): NodeIR[] =>
+    [...children].sort((a, b) => depthOf(b, zAcc) - depthOf(a, zAcc));
+
   // `zAcc` = accumulated parent depth; `project` = this subtree gets perspective
   // (false under a fixed HUD — perspective is part of the camera).
   const walk = (node: NodeIR, parent: Mat2D, parentOpacity: number, clips: ClipRegion[], zAcc: number, project: boolean) => {
@@ -510,7 +519,10 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           for (let i = 1; i < node.children.length; i++) walk(node.children[i]!, matrix, opacity, childClips, depth, project);
           ops.push({ type: "matte-pop", id, transform: matrix, opacity });
         } else {
-          for (const child of node.children) walk(child, matrix, opacity, childClips, depth, project);
+          // depth-ordered paint (far→near) when zSort is on and this subtree projects;
+          // a matte group is exempt above (its first child is the mask). Stable sort.
+          const kids = zSort && project ? depthOrder(node.children, depth) : node.children;
+          for (const child of kids) walk(child, matrix, opacity, childClips, depth, project);
         }
         if (hasFx) ops.push({ type: "group-fx-pop", id, transform: matrix, opacity });
         return;
@@ -666,7 +678,14 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         compiled.ir.size,
       )
     : IDENTITY;
-  for (const node of compiled.ir.nodes) {
+  // depth-ordered paint reorders the top-level siblings too (far→near); a fixed HUD
+  // is drawn last so it stays on top regardless of depth. Off ⇒ authored order.
+  let roots = compiled.ir.nodes;
+  if (zSort) {
+    const isHud = (n: NodeIR): boolean => !!(n.props.fixed && compiled.hasCamera);
+    roots = [...depthOrder(compiled.ir.nodes.filter((n) => !isHud(n)), 0), ...compiled.ir.nodes.filter(isHud)];
+  }
+  for (const node of roots) {
     const root = compiled.hasCamera && node.props.fixed ? IDENTITY : cameraRoot;
     // a fixed HUD opts out of perspective too (the vanishing point is part of the camera)
     const project = persp && !(node.props.fixed && compiled.hasCamera);
