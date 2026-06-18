@@ -6,6 +6,15 @@ export const MAX_DAY = 140;
 export const LONGEST_STREAK = 16;
 export const BUSIEST = "Apr 19";
 export const HANDLE = "@kiyeonjeon21";
+// First week index of each calendar month (derived from the real dates), so the
+// phased build + the single updating month label line up with the camera.
+export const MONTHS: { label: string; week: number }[] = [
+  { label: "JUN 2025", week: 0 }, { label: "JUL 2025", week: 2 }, { label: "AUG 2025", week: 6 },
+  { label: "SEP 2025", week: 11 }, { label: "OCT 2025", week: 15 }, { label: "NOV 2025", week: 19 },
+  { label: "DEC 2025", week: 24 }, { label: "JAN 2026", week: 28 }, { label: "FEB 2026", week: 33 },
+  { label: "MAR 2026", week: 37 }, { label: "APR 2026", week: 41 }, { label: "MAY 2026", week: 45 },
+  { label: "JUN 2026", week: 50 },
+];
 export const WEEKS: number[][] = [
   [0,0,0,0,0,0,0],
   [0,1,0,0,0,0,0],
