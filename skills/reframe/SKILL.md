@@ -21,6 +21,27 @@ runtime needs ffmpeg on PATH and a one-time `npx playwright install chromium`
    the key timeline moments — those names are addresses for everything below.
 3. Render and verify: `npx -y reframe-video render <name>.ts` → `out/<name>.mp4`.
 
+## Directing a high-end piece (cinematic / reference-faithful)
+
+Simple jobs (a lower-third, a logo sting, a KPI card) just work from the guide.
+But a CINEMATIC or REFERENCE-FAITHFUL piece (a product teaser, a UI/session
+reproduction, a title sequence) needs a director's process — **read it first**:
+`npx -y reframe-video guide --directing`. The short version:
+
+1. Get the spec from the user: concept, **references** (screenshots / a reference
+   video / pasted real content — save them to disk), exact brand colors, length +
+   aspect, and tone. Vague prompts are why these take many rounds.
+2. **Storyboard the beats** with `beat("setup"/"rising"/"climax"/…)` BEFORE animating.
+3. **Match references with the `diff` tool** instead of eyeballing:
+   `npx -y reframe-video diff ref.png --mode grid` (measure a screenshot),
+   then `... diff ref.png scene.ts --mode side|diff` (compare a render) → fix → repeat.
+4. Apply cinematic craft: camera push-in per beat (`cameraTo` in `par`), curved
+   entrances (`motionPath` + `easeOutBack`), fake/real depth, layered `oscillate`
+   idle, and label-anchored sound.
+5. **Verify objectively**: `... labels` (exact beat seconds), `... motion out.mp4`
+   (makes "more dynamic" measurable), `... trace ref.mp4 --apply scene.ts` (borrow a
+   reference VIDEO's timing), `... preview` (hand-tune → overlay that survives regen).
+
 ## Modifying an existing scene — the contract
 
 Before rewriting any existing scene, read the regeneration contract:

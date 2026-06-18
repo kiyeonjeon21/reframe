@@ -100,6 +100,27 @@ export async function captureIr(
   });
 }
 
+/** Render ONE frame of an IR scene at scene-time `t` → PNG buffer (for the `diff` tool). */
+export async function renderFrameAt(ir: SceneIR, t: number, opts: { sceneDir?: string } = {}): Promise<Buffer> {
+  const sceneDir = opts.sceneDir ?? process.cwd();
+  const assets = await buildImageAssets(ir, sceneDir);
+  const { fps, duration } = resolveTiming(ir, {});
+  const videoAssets = await buildVideoFrameAssets(ir, sceneDir, fps, duration);
+  const bundle = await browserBundle();
+  return withPage(ir.size, async (page) => {
+    await page.setContent(`<!DOCTYPE html><html><body style="margin:0;background:#000"></body></html>`);
+    await injectFonts(page);
+    await page.addScriptTag({ content: bundle });
+    await page.evaluate(
+      ([sceneIr, imageAssets, vAssets]) =>
+        window.__reframe.init(sceneIr as never, imageAssets as never, vAssets as never),
+      [ir, assets, videoAssets] as unknown[],
+    );
+    const dataUrl = await page.evaluate((tt) => window.__reframe.renderFrame(tt), t);
+    return Buffer.from(dataUrl.slice(22), "base64");
+  });
+}
+
 /**
  * Render an arbitrary HTML page deterministically: virtual-clock shim is
  * injected before any page script, then time advances exactly 1000/fps ms per

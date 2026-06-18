@@ -34,6 +34,7 @@ const nodeBundles: [entry: string, out: string][] = [
   ["packages/render-cli/src/cli.ts", "cli.js"],
   ["packages/render-cli/src/labels.ts", "labels.js"],
   ["packages/render-cli/src/player.ts", "player.js"],
+  ["packages/render-cli/src/diff.ts", "diff.js"],
   ["benchmark/harness/motion/analyze.ts", "analyze.js"],
   ["benchmark/harness/motion/trace-cli.ts", "trace-cli.js"],
 ];
@@ -110,6 +111,7 @@ await cp(join(REPO, "assets", "fonts"), join(PKG, "assets", "fonts"), { recursiv
 await cp(join(REPO, "assets", "sfx"), join(PKG, "assets", "sfx"), { recursive: true });
 await mkdir(join(PKG, "guides"), { recursive: true });
 await cp(join(REPO, "benchmark/guides/edsl-guide.md"), join(PKG, "guides", "edsl-guide.md"));
+await cp(join(REPO, "benchmark/guides/directing-guide.md"), join(PKG, "guides", "directing-guide.md"));
 await cp(join(REPO, "docs/regen-contract.md"), join(PKG, "guides", "regen-contract.md"));
 await cp(join(REPO, "LICENSE"), join(PKG, "LICENSE"));
 

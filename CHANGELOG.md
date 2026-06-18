@@ -8,6 +8,22 @@ versions may change them.
 
 ## [Unreleased]
 
+### Added
+
+#### Making high-end pieces easier: a director workflow + `reframe diff`
+
+- **`reframe diff <ref-image> [<scene.ts>] [--t S] [--mode side|blend|diff|grid]`** — the
+  reference-matching tool. Renders a scene's frame at `t` and composites it against a reference
+  image so an agent iterates toward a faithful match instead of eyeballing: `side` (reference |
+  render), `blend` (50% overlay), `diff` (absolute pixel difference), and `grid` (a labelled 100px
+  coordinate grid over the reference ALONE — to measure a screenshot before any render exists).
+- **`reframe guide --directing`** — a new high-end / reference-heavy workflow guide (kept separate
+  from the lean syntax guide): what to get from the user, storyboard the beats first, match
+  references with `diff`, a cinematic-craft checklist (camera push-in per beat, curved entrances,
+  depth rig, layered idle, label-anchored sound), and verify objectively with `labels`/`motion`/
+  `trace`. The skill (`skills/reframe/SKILL.md`) gains a "Directing a high-end piece" section that
+  surfaces these and the existing-but-buried iteration tools.
+
 ## [0.6.12] - 2026-06-18
 
 ### Added
