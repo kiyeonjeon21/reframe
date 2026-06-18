@@ -9,6 +9,27 @@ const BACK_C3 = BACK_C1 + 1;
 const ELASTIC_C4 = (2 * Math.PI) / 3;
 const ELASTIC_C5 = (2 * Math.PI) / 4.5;
 
+/**
+ * Damped harmonic oscillator as a normalized 0..1 easing (mass = 1). The damping
+ * ratio ζ = damping / (2·√stiffness) sets the SHAPE — low ζ rings/overshoots, high ζ
+ * is snappy. Sampled over a fixed envelope horizon K so the spring always settles
+ * within the tween's window regardless of the (real-time) stiffness; the tiny
+ * residual e^{-K} is snapped to the target at the endpoint, exactly like the elastic
+ * eases force f(0)=0 / f(1)=1. `velocity` is an initial launch slope. Pure and
+ * deterministic (Math.exp/cos/sin, same family as elastic).
+ */
+function springEase(stiffness: number, damping: number, velocity: number): EaseFn {
+  const K = 5; // envelope decay across [0,1] (~0.7% residual, snapped at u=1)
+  const zeta = Math.min(0.999, Math.max(0.05, damping / (2 * Math.sqrt(Math.max(1e-6, stiffness)))));
+  const wd = (K / zeta) * Math.sqrt(1 - zeta * zeta); // normalized damped angular frequency
+  const coef = (K - velocity) / wd;
+  return (u) => {
+    if (u <= 0) return 0;
+    if (u >= 1) return 1;
+    return 1 - Math.exp(-K * u) * (Math.cos(wd * u) + coef * Math.sin(wd * u));
+  };
+}
+
 /** Canonical 4-segment bounce; the in/inout variants are reflections of it. */
 function easeOutBounce(u: number): number {
   const n1 = 7.5625;
@@ -60,6 +81,10 @@ const EASE_TABLE: Record<string, EaseFn> = {
   easeOutBounce,
   easeInOutBounce: (u) =>
     u < 0.5 ? (1 - easeOutBounce(1 - 2 * u)) / 2 : (1 + easeOutBounce(2 * u - 1)) / 2,
+  // damped-spring presets (ζ from damping/(2√stiffness)): 0.5 / 0.30 / 0.90
+  spring: springEase(100, 10, 0),
+  springBouncy: springEase(180, 8, 0),
+  springStiff: springEase(210, 26, 0),
 };
 
 export const EASE_NAMES = Object.keys(EASE_TABLE) as import("./ir.js").EaseName[];
@@ -70,6 +95,10 @@ export function resolveEase(ease: Ease | undefined): EaseFn {
     const fn = EASE_TABLE[ease];
     if (!fn) throw new Error(`unknown ease "${ease}" — valid: ${Object.keys(EASE_TABLE).join(", ")}`);
     return fn;
+  }
+  if ("spring" in ease) {
+    const { stiffness = 100, damping = 10, velocity = 0 } = ease.spring;
+    return springEase(stiffness, damping, velocity);
   }
   return cubicBezierEase(...ease.cubicBezier);
 }

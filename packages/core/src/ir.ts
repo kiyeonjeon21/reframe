@@ -31,9 +31,26 @@ export type EaseName =
   | "easeInOutElastic"
   | "easeInBounce"
   | "easeOutBounce"
-  | "easeInOutBounce";
+  | "easeInOutBounce"
+  // damped-spring presets (settle to rest within the tween's duration; overshoot
+  // governed by the damping ratio). `springBouncy` rings, `springStiff` barely
+  // overshoots. For custom physics use the `{ spring: {...} }` object form below.
+  | "spring"
+  | "springBouncy"
+  | "springStiff";
 
-export type Ease = EaseName | { cubicBezier: [number, number, number, number] };
+/**
+ * A custom spring: a damped harmonic oscillator sampled over the tween's normalized
+ * 0..1 window (mass = 1). `stiffness`/`damping` set the damping ratio
+ * ζ = damping / (2·√stiffness) — the SHAPE knob (low ζ ⇒ bouncy, high ζ ⇒ snappy);
+ * `velocity` is an initial launch slope. Defaults: stiffness 100, damping 10
+ * (ζ = 0.5), velocity 0.
+ */
+export interface SpringEase {
+  spring: { stiffness?: number; damping?: number; velocity?: number };
+}
+
+export type Ease = EaseName | { cubicBezier: [number, number, number, number] } | SpringEase;
 
 export type Anchor =
   | "top-left"

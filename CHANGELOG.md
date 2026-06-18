@@ -8,6 +8,22 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.15] - 2026-06-18
+
+### Added
+
+#### Spring physics easing
+
+- **Spring eases** — a damped harmonic oscillator (mass-spring-damper) as a normalized 0..1 easing
+  that settles to rest within the tween's duration. Three named presets — `spring` (a natural
+  settle), `springBouncy` (low damping, rings past the target), `springStiff` (high damping, snappy,
+  barely overshoots) — plus a custom form `{ spring: { stiffness?, damping?, velocity? } }` where the
+  damping ratio `ζ = damping / (2·√stiffness)` shapes the overshoot and `velocity` is an initial
+  launch slope. Works anywhere an `ease` is accepted (`tween`/`to`/`motionPath`/presets). Pure and
+  deterministic (same `Math.exp/cos/sin` family as the elastic eases); endpoints are pinned to
+  `f(0)=0` / `f(1)=1`. Additive / golden-safe: no existing scene names a spring, so every snapshot is
+  byte-identical. Demo: `examples/scenes/spring-demo.ts`.
+
 ## [0.6.14] - 2026-06-18
 
 ### Fixed
@@ -486,7 +502,8 @@ versions may change them.
   non-destructive overlays that survive AI regeneration, preview editor, batch
   rendering, label-anchored audio, and the Claude Code skill/plugin.
 
-[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.14...HEAD
+[Unreleased]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.15...HEAD
+[0.6.15]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.13...v0.6.14
 [0.6.13]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.12...v0.6.13
 [0.6.12]: https://github.com/kiyeonjeon21/reframe/compare/v0.6.11...v0.6.12
