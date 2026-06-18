@@ -27,6 +27,12 @@ export function atempoChain(rate: number): string[] {
   return out;
 }
 
+/** Stereo balance: -1 full left … 0 centre … +1 full right (applied after FORMAT). */
+function panFilter(pan: number): string {
+  const clamp = (v: number) => Math.max(0, Math.min(1, v)).toFixed(4);
+  return `pan=stereo|c0=${clamp(1 - pan)}*c0|c1=${clamp(1 + pan)}*c1`;
+}
+
 export interface MuxInputs {
   /** Audio file per cue, same order as plan.cues. */
   cueFiles: string[];
@@ -66,7 +72,14 @@ export function buildFilterGraph(plan: AudioPlan, inputs: MuxInputs): string {
 
   plan.cues.forEach((cue, i) => {
     const delayMs = Math.round(cue.t * 1000);
-    lines.push(`[${inputIndex}:a]${FORMAT},volume=${cue.gain},adelay=${delayMs}:all=1[c${i}]`);
+    const chain: string[] = [FORMAT, `volume=${cue.gain}`];
+    if (cue.fadeIn > 0) chain.push(`afade=t=in:st=0:d=${cue.fadeIn}`);
+    if (cue.fadeOut > 0) {
+      chain.push(`afade=t=out:st=${Math.max(0, cue.duration - cue.fadeOut).toFixed(3)}:d=${cue.fadeOut}`);
+    }
+    if (cue.pan !== 0) chain.push(panFilter(cue.pan));
+    chain.push(`adelay=${delayMs}:all=1`);
+    lines.push(`[${inputIndex}:a]${chain.join(",")}[c${i}]`);
     mixIn.push(`[c${i}]`);
     inputIndex++;
   });
@@ -75,6 +88,8 @@ export function buildFilterGraph(plan: AudioPlan, inputs: MuxInputs): string {
     const chain: string[] = [];
     if (audio.clipStart > 0) chain.push(`atrim=start=${audio.clipStart.toFixed(3)}`, "asetpts=PTS-STARTPTS");
     chain.push(...atempoChain(audio.rate), FORMAT, `volume=${audio.gain}`);
+    if (audio.fadeIn > 0) chain.push(`afade=t=in:st=0:d=${audio.fadeIn}`);
+    if (audio.pan !== 0) chain.push(panFilter(audio.pan));
     const delayMs = Math.round(audio.start * 1000);
     if (delayMs > 0) chain.push(`adelay=${delayMs}:all=1`);
     lines.push(`[${inputIndex}:a]${chain.join(",")}[k${i}]`);

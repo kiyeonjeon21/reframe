@@ -21,7 +21,7 @@ export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   line: ["x1", "y1", "x2", "y2", "stroke", "strokeWidth", "opacity", "progress", ...FX_PROPS],
   text: [...COMMON_PROPS, "content", "contentDecimals", "contentThousands", "prefix", "suffix", "fontFamily", "fontSize", "fontWeight", "fill", "letterSpacing"],
   image: [...COMMON_PROPS, "src", "width", "height", "fit"],
-  video: [...COMMON_PROPS, "src", "width", "height", "fit", "start", "rate", "clipStart", "volume"],
+  video: [...COMMON_PROPS, "src", "width", "height", "fit", "start", "rate", "clipStart", "volume", "fadeIn", "pan"],
   path: [...COMMON_PROPS, "d", "fill", "stroke", "strokeWidth", "progress", "originX", "originY"],
   group: COMMON_PROPS,
 };
@@ -270,6 +270,15 @@ export function validateScene(ir: SceneIR): void {
     }
     if (cue.gain !== undefined && cue.gain < 0) {
       problems.push(`audio.cues[${i}]: gain must be >= 0`);
+    }
+    if (cue.fadeIn !== undefined && cue.fadeIn < 0) {
+      problems.push(`audio.cues[${i}]: fadeIn must be >= 0`);
+    }
+    if (cue.fadeOut !== undefined && cue.fadeOut < 0) {
+      problems.push(`audio.cues[${i}]: fadeOut must be >= 0`);
+    }
+    if (cue.pan !== undefined && (cue.pan < -1 || cue.pan > 1)) {
+      problems.push(`audio.cues[${i}]: pan must be in [-1, 1] (-1 left … +1 right)`);
     }
   }
   const duck = ir.audio?.bgm?.duck;

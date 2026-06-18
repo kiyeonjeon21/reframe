@@ -510,15 +510,19 @@ Label-anchored sound design — cues follow retiming and regeneration:
 audio: {
   bgm: { synth: "ambient-pad", gain: 0.3, fadeIn: 1, fadeOut: 2, duck: { depth: 0.5 } },
   cues: [
-    { at: "enter", sfx: "whoosh", gain: 0.8 },          // anchored to a timeline label
-    { at: "enter", offset: 0.2, sfx: "pop" },
-    { at: 5.0, file: "keypress-001.wav", gain: 0.5 },   // absolute seconds; file from assets/sfx/
+    { at: "enter", sfx: "whoosh", gain: 0.8, pan: -0.6 },     // anchored to a label; panned left
+    { at: "enter", offset: 0.2, sfx: "pop", fadeIn: 0.05, fadeOut: 0.1 },
+    { at: 5.0, file: "keypress-001.wav", gain: 0.5 },         // absolute seconds; file from assets/sfx/
   ],
 }
 ```
 
 Procedural sfx names: `whoosh` `pop` `tick` `rise` `shimmer` `thud` (deterministic,
 seedable via `params: { seed }`). Exactly one of `sfx`/`file` per cue.
+**Mixing**: any cue takes `fadeIn`/`fadeOut` (seconds) and `pan` (-1 left … 0 centre …
++1 right). A `video` clip's audio takes `fadeIn` and `pan` too (clip fade-out isn't
+supported yet — a clip has no fixed length in the plan). The bed auto-ducks under cues
+(`bgm.duck`).
 
 ## Rules
 
