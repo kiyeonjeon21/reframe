@@ -12,9 +12,9 @@ const BLEND_MODES = new Set([
   "add", "color-dodge", "soft-light", "hard-light", "difference",
 ]);
 const IMAGE_FITS = new Set(["fill", "cover"]);
-const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "anchor", "fixed", ...FX_PROPS];
-/** Animatable props of the reserved "camera" target (look-at point + zoom + rotation). */
-const CAMERA_PROPS = ["x", "y", "zoom", "rotation"];
+const COMMON_PROPS = ["x", "y", "opacity", "rotation", "scale", "scaleX", "scaleY", "skewX", "skewY", "z", "rotateX", "rotateY", "anchor", "fixed", ...FX_PROPS];
+/** Animatable props of the reserved "camera" target (look-at + zoom + rotation + perspective). */
+const CAMERA_PROPS = ["x", "y", "zoom", "rotation", "perspective"];
 export const PROPS_BY_TYPE: Record<NodeIR["type"], string[]> = {
   rect: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth", "radius"],
   ellipse: [...COMMON_PROPS, "width", "height", "fill", "stroke", "strokeWidth"],
@@ -241,6 +241,8 @@ export function validateScene(ir: SceneIR): void {
         problems.push(`camera: "${key}" is not a camera prop — valid props: ${CAMERA_PROPS.join(", ")}`);
       } else if (typeof value !== "number") {
         problems.push(`camera.${key} must be a number`);
+      } else if (key === "perspective" && value <= 0) {
+        problems.push(`camera.perspective must be > 0 (focal distance in px) — drop it to disable perspective`);
       }
     }
   }
