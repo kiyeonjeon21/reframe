@@ -1,0 +1,25 @@
+{
+  "reframeOverlay": 1,
+  "name": "survive-edits",
+  "target": "survive-demo",
+  "nodes": {
+    "disc": { "fill": "#2E6BFF", "shadowColor": "#2E6BFF" },
+    "tagline": { "content": "ship it on Friday" }
+  },
+  "addNodes": [
+    {
+      "type": "text",
+      "id": "watermark",
+      "props": {
+        "x": 1880,
+        "y": 1040,
+        "anchor": "bottom-right",
+        "content": "made with reframe",
+        "fontFamily": "Inter",
+        "fontSize": 22,
+        "fontWeight": 500,
+        "fill": "#3E4658"
+      }
+    }
+  ]
+}
