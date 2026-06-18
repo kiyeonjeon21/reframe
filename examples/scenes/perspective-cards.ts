@@ -60,7 +60,7 @@ export default scene({
     // 1. the depth field rises in, near-to-far
     par(
       stagger(0.08, ...field.map((n) => tween(n.id, { opacity: 1, scale: 1 }, { duration: 0.6, ease: "easeOutBack" }))),
-      textIn("rise", title, { duration: 0.9 }),
+      textIn("rise", title, { speed: 1.1 }),
     ),
     wait(0.3),
     // 2. camera pans — parallax: near cards slide further than far ones
