@@ -508,3 +508,6 @@ export const DEFAULT_TO_DURATION = 0.5;
 export const DEFAULT_TWEEN_DURATION = 0.5;
 export const DEFAULT_MOTIONPATH_DURATION = 1;
 export const DEFAULT_FPS = 30;
+/** Fallback length (seconds) for a scene with no animating timeline — a static
+ *  frame still needs a positive duration to render. Override with scene `duration`. */
+export const DEFAULT_STILL_DURATION = 1;

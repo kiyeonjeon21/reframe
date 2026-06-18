@@ -191,12 +191,21 @@ async function main() {
       preflightFfmpeg();
       // default output: out/<basename>.mp4 (repo out/ in the repo, ./out when installed)
       const outBase = PACKAGED ? join(USER_CWD, "out") : join(ROOT, "out");
+      const stem = `${basename(input).replace(/\.[^.]+$/, "")}.mp4`;
       let outArgs = args;
-      if (!args.includes("-o")) {
+      const oIdx = args.indexOf("-o");
+      if (oIdx === -1) {
         await mkdir(outBase, { recursive: true });
-        outArgs = [...args, "-o", join(outBase, `${basename(input).replace(/\.[^.]+$/, "")}.mp4`)];
+        outArgs = [...args, "-o", join(outBase, stem)];
+      } else if (args[oIdx + 1] && !args[oIdx + 1]!.startsWith("-") && !/\.\w{2,4}$/.test(args[oIdx + 1]!)) {
+        // `-o out` with no file extension means a DIRECTORY (matches the docs'
+        // "mp4 into out/") — ffmpeg can't infer a muxer from an extensionless path,
+        // so resolve it to <dir>/<scene>.mp4 and create the dir.
+        const dir = userPath(args[oIdx + 1]!);
+        await mkdir(dir, { recursive: true });
+        outArgs = args.map((a, i) => (i === oIdx + 1 ? join(dir, stem) : a));
       }
-      // user-relative paths for overlays and -o
+      // user-relative paths for overlays and -o (idempotent on the absolute -o we just built)
       outArgs = outArgs.map((a, i) =>
         outArgs[i - 1] === "--overlay" || outArgs[i - 1] === "-o" ? userPath(a) : a,
       );

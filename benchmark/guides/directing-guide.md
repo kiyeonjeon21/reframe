@@ -43,6 +43,11 @@ reframe diff ref.png scene.ts --mode blend  # 50% overlay — spot drift
 
 Loop: `--mode grid` to measure → write the node tree → `--mode side`/`diff` to compare →
 fix coordinates/sizes/colors → repeat until faithful. Pick the frame with `--t <sec>`.
+The grid is rendered at the reference's **full resolution** — the printed numbers are
+exact scene pixels, so place nodes at the labelled coordinates directly (no scaling).
+`diff`/`blend` are sharpest on hard edges (type, icons, frames); over large **soft
+gradients/glows** they always light up "different" even when close, so tune those by
+eye with `--mode side` rather than chasing the diff to black.
 
 ### 3. Apply the cinematic-craft checklist
 

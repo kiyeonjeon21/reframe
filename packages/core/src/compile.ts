@@ -10,7 +10,12 @@
  */
 
 import type { NodeIR, PropValue, SceneIR, TimelineIR, Ease } from "./ir.js";
-import { DEFAULT_MOTIONPATH_DURATION, DEFAULT_TO_DURATION, DEFAULT_TWEEN_DURATION } from "./ir.js";
+import {
+  DEFAULT_MOTIONPATH_DURATION,
+  DEFAULT_STILL_DURATION,
+  DEFAULT_TO_DURATION,
+  DEFAULT_TWEEN_DURATION,
+} from "./ir.js";
 import { pathPoint, pathTangentAngle } from "./path.js";
 
 export interface PropertySegment {
@@ -317,7 +322,11 @@ export function compileScene(ir: SceneIR): CompiledScene {
     }
   };
 
-  const inferredEnd = ir.timeline ? walk(ir.timeline, 0) : 0;
+  // A static scene (no timeline, or a timeline that produces no spans) still needs
+  // a positive duration to render a frame — fall back to DEFAULT_STILL_DURATION
+  // rather than 0/undefined. Existing animated scenes always infer > 0, so this is
+  // golden-safe (the fallback only fires when nothing animates).
+  const inferredEnd = (ir.timeline ? walk(ir.timeline, 0) : 0) || 0;
   for (const list of segments.values()) list.sort((a, b) => a.t0 - b.t0);
   for (const list of motionPaths.values()) list.sort((a, b) => a.t0 - b.t0);
 
@@ -340,7 +349,7 @@ export function compileScene(ir: SceneIR): CompiledScene {
 
   return {
     ir,
-    duration: ir.duration ?? inferredEnd,
+    duration: ir.duration ?? (inferredEnd > 0 ? inferredEnd : DEFAULT_STILL_DURATION),
     segments,
     motionPaths,
     initialValues,
