@@ -74,6 +74,11 @@ flagship scenes — reuse the technique, vary the content:
 
 ### 4. Verify objectively (don't argue about "more dynamic")
 
+Mind the tiers so you're not full-rendering to check small things: `compile`
+(validate eDSL → IR, ~1s) and `labels` are cheap, no render; `frame --t <sec>`
+is the cheap visual look (one PNG, ~1s); `motion`/`trace` below need a finished
+render or reference video, so they're end-stage measurement, not the per-edit loop.
+
 - `reframe labels scene.ts` — every label → exact seconds. The timing source for audio + a
   sanity check that beats land when you think.
 - `reframe motion out.mp4` — speeds, static fraction, oscillation rhythm, spikes. A vague
@@ -97,5 +102,6 @@ addresses), so the human's polish isn't lost when you redo the base.
   matching with `diff` before adding motion.
 - Keep `id`s/labels stable across rewrites (see `reframe guide --regen`) so the user's
   overlay edits survive.
-- It's still iterative. The tools cut the rounds; they don't remove the loop. Render, look,
-  adjust — the agent should render frames and read them, not guess.
+- It's still iterative. The tools cut the rounds; they don't remove the loop. `compile` to
+  validate (~1s), `frame --t <sec>` to look at a held moment (~1s), adjust — the agent should
+  read frames, not guess. Full `render` is the last step, not the per-edit check.
