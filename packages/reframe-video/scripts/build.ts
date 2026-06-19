@@ -96,15 +96,56 @@ await build({
   outfile: join(PKG, "dist", "browserEntry.js"),
   logLevel: "warning",
 });
+// The published renderer imports core by the PACKAGE name so a downstream
+// consumer (who has `reframe-video`, not `@reframe/core`) can resolve it — and
+// so it shares the ONE core instance the main entry exports (no duplicate
+// `evaluate`). esbuild keeps `@reframe/core` external but rewrites the specifier
+// to `reframe-video` (a self-import that resolves via the package's exports map).
+const coreToSelf = {
+  name: "core-to-self-import",
+  setup(b: { onResolve: (o: { filter: RegExp }, cb: () => { path: string; external: true }) => void }) {
+    b.onResolve({ filter: /^@reframe\/core$/ }, () => ({ path: "reframe-video", external: true as const }));
+  },
+};
 await build({
   entryPoints: [join(REPO, "packages/renderer-canvas/src/index.ts")],
   bundle: true,
   format: "esm",
   target: "es2022",
   outfile: join(PKG, "dist", "renderer-canvas.js"),
-  external: ["@reframe/core"], // vite aliases it to dist/index.js → one core instance
+  plugins: [coreToSelf],
   logLevel: "warning",
 });
+// renderer-canvas declarations: tsc emits with the source's `@reframe/core`
+// import; repoint it at the package's own core types so `reframe-video/renderer`
+// type-resolves for consumers.
+const rcDtsConfig = join(PKG, "dist", "tsconfig.rc-dts.json");
+await writeFile(
+  rcDtsConfig,
+  JSON.stringify({
+    extends: join(REPO, "tsconfig.base.json"),
+    include: [join(REPO, "packages/renderer-canvas/src")],
+    compilerOptions: {
+      noEmit: false,
+      declaration: true,
+      emitDeclarationOnly: true,
+      lib: ["ES2022", "DOM"],
+      rootDir: join(REPO, "packages/renderer-canvas/src"),
+      outDir: join(PKG, "dist", "types-renderer"),
+    },
+  }),
+);
+execFileSync("npx", ["tsc", "-p", rcDtsConfig], { cwd: REPO, stdio: "inherit" });
+await rm(rcDtsConfig);
+const rcTypes = join(PKG, "dist", "types-renderer", "index.d.ts");
+await writeFile(rcTypes, (await readFile(rcTypes, "utf8")).replaceAll('"@reframe/core"', '"../types/index.js"'));
+await writeFile(join(PKG, "dist", "renderer-canvas.d.ts"), 'export * from "./types-renderer/index.js";\n');
+
+// regression guard: the published renderer must self-import the package, never a
+// bare `@reframe/core` (which a consumer can't resolve).
+const rcJs = await readFile(join(PKG, "dist", "renderer-canvas.js"), "utf8");
+if (rcJs.includes("@reframe/core")) throw new Error("renderer-canvas.js still imports @reframe/core — the self-import rewrite regressed");
+if (!/from\s*["']reframe-video["']/.test(rcJs)) throw new Error("renderer-canvas.js does not import reframe-video — expected a self-import of core");
 
 // --- assets & guides -------------------------------------------------------
 await cp(join(REPO, "assets", "fonts"), join(PKG, "assets", "fonts"), { recursive: true });
