@@ -222,6 +222,14 @@ refreshes the git clone but NEVER re-bakes the cache — users keep loading the
 stale skill until a manual cache delete or reinstall. (This file and other repo
 docs are NOT part of the plugin, so editing them needs no plugin bump.)
 
+**A new `reframe-video` npm release does NOT need a plugin bump.** SKILL.md and the
+guides call the CLI as `npx -y reframe-video <cmd>` (unpinned, no `@version`), so
+consumers get the latest CLI at runtime with no change to the plugin's cached bytes —
+the plugin version tracks only the plugin's own content (SKILL.md + `.claude-plugin/`),
+fully decoupled from the CLI's `0.6.z`. The one exception: if a new CLI command/flow
+means you rewrite SKILL.md to teach it, that SKILL.md edit triggers the bump (the rule
+above) — not the npm publish itself.
+
 ## Gotchas
 
 - ffmpeg is a system dependency; Playwright chromium needs a one-time
