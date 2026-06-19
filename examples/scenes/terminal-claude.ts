@@ -76,7 +76,7 @@ const TODO_LINES = ["read the eDSL guide", "write the scene", "fix the ellipse r
 const feed: NodeIR[] = [
   userRow("u0", 0, "> make a bouncing logo sting"),
   msgRow("a1", 44, "I'll read the guide, then build and render a logo sting."),
-  toolRow("r2", 90, "Read(benchmark/guides/edsl-guide.md)"),
+  toolRow("r2", 90, "Read(docs/guides/edsl-guide.md)"),
   subRow("r2s", 114, "read 284 lines"),
   toolRow("w4", 152, "Write(logo-sting.ts)"),
   subRow("w4s", 176, "created  ·  96 lines"),

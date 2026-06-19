@@ -74,6 +74,9 @@ to handle explicitly:
 - **Batch**: `npx -y reframe-video batch scene.ts data.json` — one mp4 per
   data row; row keys are overlay addresses (`nodes.<id>.<prop>`,
   `timeline.<label>.duration`, ...). CSV works too (headers = addresses).
+- **HTML/GSAP scenes**: `render` also accepts a self-contained `.html` scene and
+  captures it deterministically via a virtual clock — read
+  `npx -y reframe-video guide --html` before writing one.
 - **Preview editor**: `npx -y reframe-video preview` — scrub/play/knobs for
   scenes in the current directory; the user's knob edits export as an overlay
   JSON they can pass to render.

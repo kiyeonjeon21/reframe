@@ -16,7 +16,7 @@ type change — disc ellipse→rect, bar rect→line — should keep its id).
 ## Generation prompt (per run, fresh-context subagent)
 
 1. The contract blockquote from docs/regen-contract.md, verbatim.
-2. The format guide benchmark/guides/edsl-guide.md, in full.
+2. The format guide docs/guides/edsl-guide.md, in full.
 3. The current scene source (examples/scenes/<base>.ts), in full.
 4. The redesign brief (briefs/<taskId>.md).
 5. Output instruction: write exactly one file runs/<taskId>-1/attempt-0/scene.ts.

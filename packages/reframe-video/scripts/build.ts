@@ -14,6 +14,7 @@
  *   assets/ guides/ preview/ copied alongside
  */
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, rm, writeFile, chmod } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -169,9 +170,19 @@ if (!/from\s*["']reframe-video["']/.test(rcJs)) throw new Error("renderer-canvas
 await cp(join(REPO, "assets", "fonts"), join(PKG, "assets", "fonts"), { recursive: true });
 await cp(join(REPO, "assets", "sfx"), join(PKG, "assets", "sfx"), { recursive: true });
 await mkdir(join(PKG, "guides"), { recursive: true });
-await cp(join(REPO, "benchmark/guides/edsl-guide.md"), join(PKG, "guides", "edsl-guide.md"));
-await cp(join(REPO, "benchmark/guides/directing-guide.md"), join(PKG, "guides", "directing-guide.md"));
-await cp(join(REPO, "docs/regen-contract.md"), join(PKG, "guides", "regen-contract.md"));
+// Guides ship flat under guides/; sources are the authoring docs under docs/.
+// Keep this set in sync with the GUIDE map in render-cli/src/reframe.ts.
+const GUIDES = [
+  { src: "docs/guides/edsl-guide.md", dst: "edsl-guide.md" },
+  { src: "docs/guides/directing-guide.md", dst: "directing-guide.md" },
+  { src: "docs/guides/html-guide.md", dst: "html-guide.md" },
+  { src: "docs/regen-contract.md", dst: "regen-contract.md" },
+];
+for (const { src, dst } of GUIDES) {
+  const out = join(PKG, "guides", dst);
+  await cp(join(REPO, src), out);
+  if (!existsSync(out)) throw new Error(`guide not shipped: ${out} (from ${src})`);
+}
 await cp(join(REPO, "LICENSE"), join(PKG, "LICENSE"));
 
 // --- authoring brain: the Claude Code plugin + skill (portable for SDK/agent
