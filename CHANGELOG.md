@@ -24,6 +24,8 @@ versions may change them.
 - Internal: the CLI's guide-path resolution and the package build's guide copy were consolidated
   (single `GUIDE` map / `GUIDES` manifest + post-copy validation). No IR/golden change.
 
+## [0.6.21] - 2026-06-19
+
 ### Changed
 
 #### Agent verify-loop docs: the cheap `compile → frame → render` tiering
@@ -34,6 +36,8 @@ versions may change them.
   ~1s, no browser/ffmpeg) then `frame --t <sec>` (one PNG, ~1s, no mux), reserving `render` for the
   final mp4. The directing guide also flags `motion`/`trace` as end-stage measurement, not per-edit.
   Docs only — no code, IR, or golden change (the `compile`/`frame` commands shipped in 0.6.20).
+
+## [0.6.20] - 2026-06-19
 
 ### Added
 

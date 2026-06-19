@@ -270,11 +270,14 @@ your scene.
 |---|---|
 | `pnpm reframe render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; output defaults to `out/`) |
 | `pnpm reframe batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (rows = overlays), parallel, with a per-row report |
+| `pnpm reframe compile <scene.ts\|.json> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium) |
+| `pnpm reframe frame <scene.ts\|.json> [--t <sec>] [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop |
 | `pnpm reframe preview` | scrub/play/edit UI; edits export as overlay JSON |
 | `pnpm reframe new <name>` | scaffold a documented starter scene |
 | `pnpm reframe motion <mp4\|framesDir>` | calibrated motion profile (speeds, easing, discontinuities) |
 | `pnpm reframe trace <ref.mp4> [--apply scene.ts]` | extract a video's motion structure (a `MotionSketch`); `--apply` emits a timeline that re-tells it on your own nodes |
-| `pnpm reframe guide [--regen]` | print the authoring guide / the regeneration contract |
+| `pnpm reframe guide [--directing\|--regen\|--html]` | print a guide: eDSL syntax (default), the high-end directing workflow, the regeneration contract, or HTML/GSAP scenes |
+| `pnpm reframe skill [--path]` | print the authoring skill for an agent; `--path` prints the plugin dir to load |
 | `pnpm reframe demo` | the edit-survival demo above |
 
 ## How edits survive regeneration
