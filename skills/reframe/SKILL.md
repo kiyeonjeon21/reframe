@@ -19,7 +19,15 @@ runtime needs ffmpeg on PATH and a one-time `npx playwright install chromium`
    Scenes must be pure functions of time: no `Math.random()`/`Date` — use
    `wiggle` with a seed. Give every node a meaningful stable `id` and label
    the key timeline moments — those names are addresses for everything below.
-3. Render and verify: `npx -y reframe-video render <name>.ts` → `out/<name>.mp4`.
+3. Iterate on the cheap commands; full-render once at the end:
+   - `npx -y reframe-video compile <name>.ts` — validate eDSL → IR in ~1s, no
+     browser, no ffmpeg. Fix the classified error it prints, repeat. Catch every
+     syntax/validation error here before launching anything heavier.
+   - `npx -y reframe-video frame <name>.ts --t <sec> -o frame.png` — render ONE
+     PNG at a key moment in ~1s (chromium only, no mp4 mux) and LOOK at it. This
+     is your visual check; sample a few times across the timeline.
+   - `npx -y reframe-video render <name>.ts` → `out/<name>.mp4` — the full mp4 is
+     ~10x slower; run it once the frames look right, not per edit.
 
 ## Directing a high-end piece (cinematic / reference-faithful)
 
@@ -86,6 +94,8 @@ to handle explicitly:
 
 ## Verification habits
 
-Render after every change. For visual checks, extract a few frames with
-ffmpeg and look at them. Same input renders byte-identically, so "it changed"
-or "it didn't change" is always provable.
+Verify on the cheap commands, not by full-rendering. `compile` (validate, ~1s)
+then `frame --t <sec>` (one PNG, ~1s) is the inner loop; `render` is for the
+final mp4. Don't pull frames out of an mp4 with ffmpeg just to look — `frame`
+writes the PNG directly and skips the mux. Same input renders byte-identically,
+so "it changed" or "it didn't change" is always provable from a single frame.

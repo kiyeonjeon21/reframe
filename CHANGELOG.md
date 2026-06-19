@@ -8,7 +8,18 @@ versions may change them.
 
 ## [Unreleased]
 
-## [0.6.20] - 2026-06-19
+## [0.6.21] - 2026-06-19
+
+### Changed
+
+#### Agent verify-loop docs: the cheap `compile → frame → render` tiering
+
+- **`skills/reframe/SKILL.md` and the directing guide now teach the cheap inner loop.** They used to
+  tell the authoring agent to full-render (`render`, ~12s) after every change and ffmpeg-extract
+  frames to look — the slowest path. They now route iteration through `compile` (validate eDSL → IR,
+  ~1s, no browser/ffmpeg) then `frame --t <sec>` (one PNG, ~1s, no mux), reserving `render` for the
+  final mp4. The directing guide also flags `motion`/`trace` as end-stage measurement, not per-edit.
+  Docs only — no code, IR, or golden change (the `compile`/`frame` commands shipped in 0.6.20).
 
 ### Added
 
