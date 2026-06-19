@@ -1,7 +1,4 @@
 {
-  "enabledPlugins": {
-    "playwright@claude-plugins-official": true
-  },
   "permissions": {
     "allow": [
       "Bash(pnpm test)",
@@ -18,5 +15,9 @@
       "Bash(git diff *)",
       "Bash(git log *)"
     ]
+  },
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": true,
+    "reframe@kiyeonjeon21": true
   }
 }
