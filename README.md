@@ -281,7 +281,7 @@ your scene.
 
 Overlays address the scene by **node id, state name, and timeline label** —
 never by position or index. When an AI regenerates a scene it follows one
-contract (`docs/regen-contract.md`, or `pnpm reframe guide --regen`): keep
+contract (`docs/guides/regen-contract.md`, or `pnpm reframe guide --regen`): keep
 those names stable for every concept that survives the redesign. When the
 contract is broken anyway, `composeScene` skips the affected edits and reports
 them with a diagnosis naming the likely rename. The failure hierarchy:

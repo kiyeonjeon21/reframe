@@ -54,8 +54,8 @@ const TRACE = PACKAGED
   ? join(ROOT, "dist", "trace-cli.js")
   : join(ROOT, "benchmark", "harness", "motion", "trace-cli.ts");
 const CMD = PACKAGED ? "reframe" : "pnpm reframe";
-// Guides ship flat under <pkg>/guides/; in the repo they author under docs/
-// (regen-contract is a contract, the rest are syntax/authoring guides).
+// The `guide` command's targets: authored under docs/guides/ in the repo,
+// shipped flat under <pkg>/guides/ in the package.
 const GUIDE = PACKAGED
   ? {
       regen: join(ROOT, "guides", "regen-contract.md"),
@@ -64,7 +64,7 @@ const GUIDE = PACKAGED
       edsl: join(ROOT, "guides", "edsl-guide.md"),
     }
   : {
-      regen: join(ROOT, "docs", "regen-contract.md"),
+      regen: join(ROOT, "docs", "guides", "regen-contract.md"),
       directing: join(ROOT, "docs", "guides", "directing-guide.md"),
       html: join(ROOT, "docs", "guides", "html-guide.md"),
       edsl: join(ROOT, "docs", "guides", "edsl-guide.md"),

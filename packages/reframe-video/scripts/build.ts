@@ -176,7 +176,7 @@ const GUIDES = [
   { src: "docs/guides/edsl-guide.md", dst: "edsl-guide.md" },
   { src: "docs/guides/directing-guide.md", dst: "directing-guide.md" },
   { src: "docs/guides/html-guide.md", dst: "html-guide.md" },
-  { src: "docs/regen-contract.md", dst: "regen-contract.md" },
+  { src: "docs/guides/regen-contract.md", dst: "regen-contract.md" },
 ];
 for (const { src, dst } of GUIDES) {
   const out = join(PKG, "guides", dst);

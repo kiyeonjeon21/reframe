@@ -20,7 +20,7 @@ See AGENTS.md for the repo map and conventions, CONTRIBUTING.md for the ground r
 - [ ] New behavior has a test
 - [ ] Scenes stay pure functions of time (no `Date` / `Math.random()`; `wiggle`/a `seed`)
 - [ ] Golden snapshots (`packages/core/test/__snapshots__`) are unchanged — or the change is **intentional and explained below**
-- [ ] Stable addresses preserved — I did not rename node `id`s, state names, or timeline `label`s for concepts that survive (see `docs/regen-contract.md`)
+- [ ] Stable addresses preserved — I did not rename node `id`s, state names, or timeline `label`s for concepts that survive (see `docs/guides/regen-contract.md`)
 - [ ] I did not edit recorded measurements under `benchmark/` to change numbers
 - [ ] I have read and agree to the [CLA](../CLA.md) (opening this PR confirms agreement)
 

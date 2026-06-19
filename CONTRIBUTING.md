@@ -28,7 +28,7 @@ release). Read it before larger changes. Scene syntax lives in
   regression to explain, not to bless.
 - **Stable addresses survive regeneration.** Don't rename node `id`s, state
   names, or timeline `label`s for concepts that persist a redesign (see
-  `docs/regen-contract.md`).
+  `docs/guides/regen-contract.md`).
 - **Don't edit `benchmark/` results** to change numbers; they are recorded
   measurements.
 - Keep `pnpm test` and `pnpm typecheck` green. New behavior needs a test.
