@@ -23,10 +23,12 @@ npx reframe-video render hello.ts    # → out/hello.mp4
 | `reframe render <scene.ts> [--overlay edits.json] [-o out.mp4]` | deterministic mp4 |
 | `reframe batch <scene.ts> <data.json\|csv>` | one mp4 per data row (row keys are overlay addresses) |
 | `reframe compile <scene.ts> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium) |
+| `reframe frame <scene.ts> [--t <sec>] [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop |
 | `reframe preview` | scrub/play/edit UI for scenes in the current directory; edits export as overlay JSON |
 | `reframe new <name>` | scaffold a documented starter scene |
 | `reframe motion <mp4>` | calibrated motion profile of a rendered clip |
-| `reframe guide [--regen]` | the scene-authoring guide / regeneration contract — **feed this to your AI** |
+| `reframe guide [--directing\|--regen\|--html]` | the authoring guide (default eDSL syntax; directing workflow; regeneration contract; HTML/GSAP) — **feed this to your AI** |
+| `reframe skill [--path]` | print the authoring skill for an agent; `--path` prints the plugin dir to load |
 
 (Installed as both `reframe` and `reframe-video`; with npx use `npx reframe-video <cmd>`.)
 
