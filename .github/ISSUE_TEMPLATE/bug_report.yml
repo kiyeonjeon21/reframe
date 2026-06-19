@@ -1,0 +1,75 @@
+name: Bug report
+description: Something rendered, compiled, or behaved differently than expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a report. reframe is early alpha, so concrete repros help a lot.
+        Determinism is the contract: if a render is non-deterministic, that is itself a bug.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear description of the bug and what you expected instead.
+      placeholder: e.g. "The path morph snaps at the midpoint instead of interpolating."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: >
+        The smallest scene `.ts` (or overlay JSON) that shows it, plus the exact command
+        you ran. A scene is best — paste it inline or link a gist.
+      placeholder: |
+        # command
+        pnpm reframe render bug.ts -o out/bug.mp4
+
+        # bug.ts
+        import { scene, ... } from "@reframe/core";
+        export default scene({ ... });
+      render: ts
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      description: Which part of reframe is involved.
+      options:
+        - render / batch (mp4)
+        - preview editor
+        - player / artifact (self-contained HTML)
+        - logo sting
+        - core (compile / evaluate / IR)
+        - reframe-video (the published npm package)
+        - other / not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`reframe-video` version, or the commit SHA if working from the repo."
+      placeholder: "0.6.18 (or commit a8a88bf)"
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node version, ffmpeg version (`ffmpeg -version`), and whether Playwright chromium is installed.
+      placeholder: |
+        macOS 15.3, Node 20.11, ffmpeg 7.1, chromium installed
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for a duplicate.
+          required: true
+        - label: My scene is a pure function of time (no `Date` / `Math.random()`; `wiggle`/a `seed` instead).
+          required: true

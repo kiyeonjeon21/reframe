@@ -1,0 +1,51 @@
+name: Feature request
+description: Propose new motion vocabulary, an API, or a workflow improvement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas welcome. The strongest proposals keep scenes deterministic and additive
+        (new behavior should leave existing scenes byte-identical unless it is a deliberate
+        IR/overlay change).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What can't you express today, or what is awkward? A concrete scene you wanted to author helps.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: The API or behavior you have in mind. Sketch the call site if you can.
+      placeholder: |
+        motionPreset("draw-bloom", { target: "logo", energy: 0.7 })
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways to get the same result (existing primitives, a different shape of API).
+    validations:
+      required: false
+  - type: dropdown
+    id: determinism
+    attributes:
+      label: Determinism impact
+      description: See `AGENTS.md` and the golden snapshots in `packages/core/test/__snapshots__`.
+      options:
+        - Additive (no existing scene changes; golden snapshots unaffected)
+        - Changes the IR / overlay schema (a deliberate, breaking change)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: References, prior art (Manim, Motion Canvas, Lottie, Rive, After Effects), mockups, links.
+    validations:
+      required: false
