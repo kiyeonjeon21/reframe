@@ -69,6 +69,9 @@ const GUIDE = PACKAGED
       html: join(ROOT, "docs", "guides", "html-guide.md"),
       edsl: join(ROOT, "docs", "guides", "edsl-guide.md"),
     };
+// The Claude Code plugin (.claude-plugin/ + skills/): scoped to plugin/ in the
+// repo so the marketplace caches only it; flattened to the package root on build.
+const PLUGIN_DIR = PACKAGED ? ROOT : join(ROOT, "plugin");
 
 const USAGE = `reframe — declarative motion graphics
 
@@ -517,13 +520,13 @@ async function main() {
       // The authoring skill for a programmatic/agent consumer. `--path` prints the
       // plugin root (has .claude-plugin/ + skills/) to point a local-plugin loader
       // at; default prints SKILL.md for an agent that injects instructions as text.
-      // skills/ keeps its name in the package, so the path is the same repo/packaged.
+      // Repo: plugin/ ; package: flattened to the root (see PLUGIN_DIR).
       if (rest.includes("--path")) {
-        process.stdout.write(`${ROOT}\n`);
+        process.stdout.write(`${PLUGIN_DIR}\n`);
         return;
       }
       const { readFile } = await import("node:fs/promises");
-      process.stdout.write(await readFile(join(ROOT, "skills", "reframe", "SKILL.md"), "utf8"));
+      process.stdout.write(await readFile(join(PLUGIN_DIR, "skills", "reframe", "SKILL.md"), "utf8"));
       return;
     }
 
