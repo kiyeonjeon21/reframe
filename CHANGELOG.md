@@ -8,6 +8,26 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.20] - 2026-06-19
+
+### Added
+
+#### `reframe frame` — render one frame at time `t` to a PNG
+
+- **New `reframe frame <scene.ts|.json> [--t <sec>] [-o out.png]`** — render exactly one frame at
+  time `t` to a PNG, using the same renderer as `render` but without the video muxing (chromium, no
+  ffmpeg). For an agentic "render-and-look" loop: show the model its own output (no reference, no
+  full mp4) so it can refine composition/quality. Pairs with `compile` and `diff`.
+
+#### Portable skill/plugin for Agent-SDK consumers
+
+- **The Claude Code plugin + skill now ship in the package** (`.claude-plugin/` + `skills/` added to
+  the published `files`), so an SDK/agent consumer with only `reframe-video` from npm — no repo
+  checkout — can point a local-plugin loader at `node_modules/reframe-video`. `SKILL.md` is already
+  portable (it directs agents to `reframe-video guide`, not repo files).
+- **New `reframe skill`** prints `SKILL.md` (for an agent that injects the instructions as text);
+  `reframe skill --path` prints the plugin root directory to load.
+
 ## [0.6.19] - 2026-06-19
 
 ### Added

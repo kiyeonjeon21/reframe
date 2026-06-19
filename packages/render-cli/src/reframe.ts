@@ -41,6 +41,9 @@ const COMPILE = PACKAGED
 const DIFF = PACKAGED
   ? join(ROOT, "dist", "diff.js")
   : join(ROOT, "packages", "render-cli", "src", "diff.ts");
+const FRAME = PACKAGED
+  ? join(ROOT, "dist", "frame.js")
+  : join(ROOT, "packages", "render-cli", "src", "frame.ts");
 const PLAYER = PACKAGED
   ? join(ROOT, "dist", "player.js")
   : join(ROOT, "packages", "render-cli", "src", "player.ts");
@@ -67,6 +70,8 @@ usage:
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
   ${CMD} compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]
                                  bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium)
+  ${CMD} frame <scene.ts|.json> [--t <sec>] [-o out.png]  render ONE frame at time t to a PNG (no mp4; for a render-and-look loop)
+  ${CMD} skill [--path]          print the authoring skill (SKILL.md) for an agent; --path prints the plugin dir to load
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
   ${CMD} diff <ref-image> [<scene.ts>] [--t S] [--mode side|blend|diff|grid]  compare/measure a render against a reference image
@@ -245,6 +250,28 @@ async function main() {
       if (fileArg && !existsSync(userPath(fileArg))) fail(`no such file: ${userPath(fileArg)}`);
       process.exit(
         await (PACKAGED ? run(process.execPath, [COMPILE, ...passed]) : run("npx", ["tsx", COMPILE, ...passed])),
+      );
+    }
+
+    case "frame": {
+      const input = rest[0];
+      if (!input || input.startsWith("-")) fail(`frame needs a scene file\n\n${USAGE}`);
+      const inputPath = userPath(input);
+      if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
+      // chromium needed, NOT ffmpeg (one frame, no muxing). default out: out/<stem>.png
+      const args = rest.slice(1);
+      const outBase = PACKAGED ? join(USER_CWD, "out") : join(ROOT, "out");
+      const stem = `${basename(input).replace(/\.[^.]+$/, "")}.png`;
+      let outArgs = args;
+      if (args.indexOf("-o") === -1) {
+        await mkdir(outBase, { recursive: true });
+        outArgs = [...args, "-o", join(outBase, stem)];
+      }
+      outArgs = outArgs.map((a, i) => (outArgs[i - 1] === "-o" ? userPath(a) : a));
+      process.exit(
+        await (PACKAGED
+          ? run(process.execPath, [FRAME, inputPath, ...outArgs])
+          : run("npx", ["tsx", FRAME, inputPath, ...outArgs])),
       );
     }
 
@@ -463,6 +490,20 @@ async function main() {
       const file = (PACKAGED ? pkgFile : repoFile)[which];
       const { readFile } = await import("node:fs/promises");
       process.stdout.write(await readFile(file, "utf8"));
+      return;
+    }
+
+    case "skill": {
+      // The authoring skill for a programmatic/agent consumer. `--path` prints the
+      // plugin root (has .claude-plugin/ + skills/) to point a local-plugin loader
+      // at; default prints SKILL.md for an agent that injects instructions as text.
+      // skills/ keeps its name in the package, so the path is the same repo/packaged.
+      if (rest.includes("--path")) {
+        process.stdout.write(`${ROOT}\n`);
+        return;
+      }
+      const { readFile } = await import("node:fs/promises");
+      process.stdout.write(await readFile(join(ROOT, "skills", "reframe", "SKILL.md"), "utf8"));
       return;
     }
 
