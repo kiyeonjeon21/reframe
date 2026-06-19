@@ -11,9 +11,12 @@ runtime needs ffmpeg on PATH and a one-time `npx playwright install chromium`
 
 ## Creating a scene
 
-1. **Read the guide first** — it is the complete, current syntax (~1,700
-   tokens) and one read is enough to write valid scenes:
-   `npx -y reframe-video guide`
+1. **Read the guide first** — `npx -y reframe-video guide` is the complete,
+   current syntax. It's sectioned and sizable: read the core (Nodes, States,
+   Timeline) closely, and **skim the specialized sections by heading**
+   (perspective, track mattes, group effects, video, montage, character rig,
+   device frames, cursor, audio) — read one in full only when your scene uses
+   it. You don't need to re-read it for follow-up edits; it's already in context.
 2. Write a single self-contained `<name>.ts` in the user's directory
    (`npx -y reframe-video new <name>` scaffolds a documented starter).
    Scenes must be pure functions of time: no `Math.random()`/`Date` — use
