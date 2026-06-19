@@ -14,12 +14,20 @@ if (!path) {
   process.exit(1);
 }
 
-const scene = await loadScene(path);
-const compiled = compileScene(scene);
-const rows = [...compiled.labelTimes.entries()].sort((a, b) => a[1].t0 - b[1].t0 || a[0].localeCompare(b[0]));
+async function main() {
+  const scene = await loadScene(path!);
+  const compiled = compileScene(scene);
+  const rows = [...compiled.labelTimes.entries()].sort((a, b) => a[1].t0 - b[1].t0 || a[0].localeCompare(b[0]));
 
-console.log(`# ${scene.id} — ${rows.length} labels · ${compiled.duration.toFixed(2)}s @ ${scene.fps ?? 30}fps`);
-console.log(`# ${"start".padStart(7)}  ${"end".padStart(7)}  label`);
-for (const [name, { t0, t1 }] of rows) {
-  console.log(`${`${t0.toFixed(2)}s`.padStart(8)}  ${`${t1.toFixed(2)}s`.padStart(8)}  ${name}`);
+  console.log(`# ${scene.id} — ${rows.length} labels · ${compiled.duration.toFixed(2)}s @ ${scene.fps ?? 30}fps`);
+  console.log(`# ${"start".padStart(7)}  ${"end".padStart(7)}  label`);
+  for (const [name, { t0, t1 }] of rows) {
+    console.log(`${`${t0.toFixed(2)}s`.padStart(8)}  ${`${t1.toFixed(2)}s`.padStart(8)}  ${name}`);
+  }
 }
+
+// loadScene now throws a clean SceneLoadError (no base64 bundle dump); print its message.
+main().catch((err: unknown) => {
+  console.error(`error: ${err instanceof Error ? err.message : String(err)}`);
+  process.exit(1);
+});

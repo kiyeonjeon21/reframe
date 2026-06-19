@@ -1,13 +1,18 @@
 /**
- * Load a scene (or composition) module from anywhere on disk.
+ * Load a scene (or composition) module from anywhere on disk — or straight from
+ * source text.
  *
- * The file is bundled with esbuild before importing, with `@reframe/core`
+ * The file/source is bundled with esbuild before importing, with `@reframe/core`
  * aliased to this repo's core entry — so a scene is a single self-contained
  * document that needs no package.json or node_modules next to it. Relative
  * imports beside the scene file (shared palettes, layout helpers) bundle in
  * too. JSON inputs are the IR itself and skip the bundler.
+ *
+ * Errors are surfaced as `SceneLoadError` with a `kind` (`bundle` | `eval` |
+ * `validation`) and a concise message — the giant `data:text/javascript;base64,…`
+ * bundle URL is stripped, so feeding the message to a user or an LLM is useful.
  */
-import { build } from "esbuild";
+import { build, type BuildOptions } from "esbuild";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,32 +27,74 @@ const CORE_ENTRY =
     ? resolve(HERE, "index.js")
     : resolve(HERE, "..", "..", "core", "src", "index.ts");
 
-/** Bundle + import the module's default export (unknown — scene or composition). */
-async function loadDefault(path: string): Promise<unknown> {
-  if (path.endsWith(".json")) return JSON.parse(await readFile(path, "utf8"));
-  let code: string;
-  try {
-    const out = await build({
-      entryPoints: [path],
-      bundle: true,
-      format: "esm",
-      platform: "neutral",
-      write: false,
-      logLevel: "silent",
-      sourcemap: "inline",
-      // both specifiers accepted: the guide's canonical "@reframe/core" and
-      // the published package name
-      alias: { "@reframe/core": CORE_ENTRY, "reframe-video": CORE_ENTRY },
-    });
-    code = out.outputFiles[0]!.text;
-  } catch (err) {
-    throw new Error(`failed to bundle ${path}:\n${err instanceof Error ? err.message : String(err)}`);
+/** A load failure with a coarse stage so callers can branch / report structured errors. */
+export class SceneLoadError extends Error {
+  readonly kind: "bundle" | "eval" | "validation";
+  constructor(kind: "bundle" | "eval" | "validation", message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "SceneLoadError";
+    this.kind = kind;
   }
-  const mod = (await import(
-    `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`
-  )) as { default?: unknown };
-  if (mod.default === undefined) throw new Error(`${path} must default-export a scene or composition`);
+}
+
+/** The base64 scene bundle is ~64KB of noise in a stack/message — replace it. */
+const clean = (err: unknown): string =>
+  (err instanceof Error ? err.message : String(err)).replace(
+    /data:text\/javascript;base64,[A-Za-z0-9+/=]+/g,
+    "<scene bundle>",
+  );
+
+const ALIAS = { "@reframe/core": CORE_ENTRY, "reframe-video": CORE_ENTRY };
+
+/** esbuild a scene to ESM code (from a file entry or inline source) → throws `bundle`. */
+async function bundle(input: { path: string } | { code: string; resolveDir: string }): Promise<string> {
+  const common: BuildOptions = {
+    bundle: true,
+    format: "esm",
+    platform: "neutral",
+    write: false,
+    logLevel: "silent",
+    sourcemap: "inline",
+    alias: ALIAS,
+  };
+  try {
+    const out = await build(
+      "path" in input
+        ? { ...common, entryPoints: [input.path] }
+        : { ...common, stdin: { contents: input.code, resolveDir: input.resolveDir, loader: "ts", sourcefile: "scene.ts" } },
+    );
+    return out.outputFiles![0]!.text;
+  } catch (err) {
+    throw new SceneLoadError("bundle", clean(err), { cause: err });
+  }
+}
+
+/** Dynamic-import bundled code → throws `validation` (scene() validates at
+ *  construction) or `eval` (ReferenceError / a throw in the scene). */
+async function importDefault(code: string, label: string): Promise<unknown> {
+  let mod: { default?: unknown };
+  try {
+    mod = (await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`)) as { default?: unknown };
+  } catch (err) {
+    // scene() runs validateScene at construction; that SceneValidationError
+    // surfaces here. It comes from the scene's own bundled core, so match by
+    // name (cross-bundle `instanceof` would not).
+    const kind = err instanceof Error && err.name === "SceneValidationError" ? "validation" : "eval";
+    throw new SceneLoadError(kind, clean(err), { cause: err });
+  }
+  if (mod.default === undefined) throw new SceneLoadError("eval", `${label} must default-export a scene or composition`);
   return mod.default;
+}
+
+async function loadDefault(path: string): Promise<unknown> {
+  if (path.endsWith(".json")) {
+    try {
+      return JSON.parse(await readFile(path, "utf8"));
+    } catch (err) {
+      throw new SceneLoadError("eval", `failed to read ${path}: ${clean(err)}`, { cause: err });
+    }
+  }
+  return importDefault(await bundle({ path }), path);
 }
 
 /** True for a default export that is a CompositionIR (has a `scenes` array). */
@@ -55,13 +102,28 @@ export function isComposition(def: unknown): def is CompositionIR {
   return typeof def === "object" && def !== null && Array.isArray((def as { scenes?: unknown }).scenes);
 }
 
-export async function loadScene(path: string): Promise<SceneIR> {
-  const def = await loadDefault(path);
+function asScene(def: unknown, label: string): SceneIR {
   if (isComposition(def)) {
-    throw new Error(`${path} is a composition — render it directly, not as a single scene`);
+    throw new SceneLoadError("validation", `${label} is a composition — render it directly, not as a single scene`);
   }
-  validateScene(def as SceneIR);
+  try {
+    validateScene(def as SceneIR);
+  } catch (err) {
+    throw new SceneLoadError("validation", clean(err), { cause: err });
+  }
   return def as SceneIR;
+}
+
+/** Load + validate a scene from a file path (.ts bundled, .json parsed). */
+export async function loadScene(path: string): Promise<SceneIR> {
+  return asScene(await loadDefault(path), path);
+}
+
+/** Load + validate a scene straight from eDSL source text (no temp file). For a
+ *  backend that hands generated source directly. `resolveDir` (default cwd) is
+ *  where relative imports in the source resolve. */
+export async function loadSceneFromCode(code: string, resolveDir: string = process.cwd()): Promise<SceneIR> {
+  return asScene(await importDefault(await bundle({ code, resolveDir }), "<source>"), "<source>");
 }
 
 /** Load a scene OR composition, validated and discriminated. */
@@ -70,9 +132,12 @@ export async function loadModule(
 ): Promise<{ kind: "scene"; ir: SceneIR } | { kind: "composition"; ir: CompositionIR }> {
   const def = await loadDefault(path);
   if (isComposition(def)) {
-    validateComposition(def);
+    try {
+      validateComposition(def);
+    } catch (err) {
+      throw new SceneLoadError("validation", clean(err), { cause: err });
+    }
     return { kind: "composition", ir: def };
   }
-  validateScene(def as SceneIR);
-  return { kind: "scene", ir: def as SceneIR };
+  return { kind: "scene", ir: asScene(def, path) };
 }

@@ -33,6 +33,10 @@
       "types": "./dist/renderer-canvas.d.ts",
       "import": "./dist/renderer-canvas.js"
     },
+    "./compile": {
+      "types": "./dist/compile-api.d.ts",
+      "import": "./dist/compile-api.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

@@ -35,6 +35,9 @@ const RENDER_CLI = PACKAGED
 const LABELS = PACKAGED
   ? join(ROOT, "dist", "labels.js")
   : join(ROOT, "packages", "render-cli", "src", "labels.ts");
+const COMPILE = PACKAGED
+  ? join(ROOT, "dist", "compile.js")
+  : join(ROOT, "packages", "render-cli", "src", "compile.ts");
 const DIFF = PACKAGED
   ? join(ROOT, "dist", "diff.js")
   : join(ROOT, "packages", "render-cli", "src", "diff.ts");
@@ -62,6 +65,8 @@ usage:
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
+  ${CMD} compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]
+                                 bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium)
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
   ${CMD} diff <ref-image> [<scene.ts>] [--t S] [--mode side|blend|diff|grid]  compare/measure a render against a reference image
@@ -223,6 +228,23 @@ async function main() {
       if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
       process.exit(
         await (PACKAGED ? run(process.execPath, [LABELS, inputPath]) : run("npx", ["tsx", LABELS, inputPath])),
+      );
+    }
+
+    case "compile": {
+      // no ffmpeg/chromium preflight — this is the fast IR path. Source can be a
+      // file (positional), --stdin (piped), or --code "<src>".
+      const hasInlineSource = rest.includes("--stdin") || rest.includes("--code");
+      const fileArg = rest.find((a, i) => !a.startsWith("-") && !["-o", "--code", "--timeout"].includes(rest[i - 1] ?? ""));
+      if (!fileArg && !hasInlineSource) fail(`compile needs a scene file, --stdin, or --code "<src>"\n\n${USAGE}`);
+      const passed = rest.map((a, i) => {
+        if (a === fileArg) return userPath(a); // the scene file
+        if (rest[i - 1] === "-o") return userPath(a); // the output path
+        return a;
+      });
+      if (fileArg && !existsSync(userPath(fileArg))) fail(`no such file: ${userPath(fileArg)}`);
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [COMPILE, ...passed]) : run("npx", ["tsx", COMPILE, ...passed])),
       );
     }
 

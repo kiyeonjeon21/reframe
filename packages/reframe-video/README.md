@@ -22,6 +22,7 @@ npx reframe-video render hello.ts    # → out/hello.mp4
 |---|---|
 | `reframe render <scene.ts> [--overlay edits.json] [-o out.mp4]` | deterministic mp4 |
 | `reframe batch <scene.ts> <data.json\|csv>` | one mp4 per data row (row keys are overlay addresses) |
+| `reframe compile <scene.ts> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium) |
 | `reframe preview` | scrub/play/edit UI for scenes in the current directory; edits export as overlay JSON |
 | `reframe new <name>` | scaffold a documented starter scene |
 | `reframe motion <mp4>` | calibrated motion profile of a rendered clip |
@@ -87,6 +88,25 @@ apply one yourself. Images and video need registries: pass `images`
 (`{ get(src) }`) and `videos` (`{ frame(src, i) }`) returning decoded
 `CanvasImageSource`s. The default entry (scene authoring + `compileScene` /
 `evaluate`) is unchanged.
+
+## Compiling source to IR in-process (server)
+
+For a backend that has an LLM author eDSL source and needs the **SceneIR** back
+(to preview, diff, or self-correct) without rendering, the loader is exported as
+a Node-only subpath:
+
+```ts
+import { loadSceneFromCode, loadScene, SceneLoadError } from "reframe-video/compile";
+
+const ir = await loadSceneFromCode(generatedSource);   // bundle + validate, no ffmpeg/chromium
+// errors are classified + sanitized (no base64 bundle dump):
+try { await loadSceneFromCode(badSource); }
+catch (e) { if (e instanceof SceneLoadError) console.log(e.kind, e.message); } // "eval" | "bundle" | "validation"
+```
+
+This runs the scene module in-process — bound untrusted/model-authored source
+(a timeout) and run it where it can't do harm. The same thing on the CLI is
+`reframe compile … --json`.
 
 ## Why this instead of generating Remotion/HTML?
 

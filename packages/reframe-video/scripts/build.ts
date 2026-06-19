@@ -33,6 +33,8 @@ const nodeBundles: [entry: string, out: string][] = [
   ["packages/render-cli/src/reframe.ts", "bin.js"],
   ["packages/render-cli/src/cli.ts", "cli.js"],
   ["packages/render-cli/src/labels.ts", "labels.js"],
+  ["packages/render-cli/src/compile.ts", "compile.js"],
+  ["packages/render-cli/src/compileApi.ts", "compile-api.js"],
   ["packages/render-cli/src/player.ts", "player.js"],
   ["packages/render-cli/src/diff.ts", "diff.js"],
   ["benchmark/harness/motion/analyze.ts", "analyze.js"],
@@ -86,6 +88,21 @@ await writeFile(
 execFileSync("npx", ["tsc", "-p", dtsConfig], { cwd: REPO, stdio: "inherit" });
 await rm(dtsConfig);
 await writeFile(join(PKG, "dist", "index.d.ts"), 'export * from "./types/index.js";\n');
+
+// --- compile API declarations (the `reframe-video/compile` library entry) -----
+// Small, stable surface — hand-authored against the package's own core types.
+await writeFile(
+  join(PKG, "dist", "compile-api.d.ts"),
+  [
+    'import type { CompositionIR, SceneIR } from "./index.js";',
+    'export declare class SceneLoadError extends Error { readonly kind: "bundle" | "eval" | "validation"; }',
+    "export declare function loadScene(path: string): Promise<SceneIR>;",
+    "export declare function loadSceneFromCode(code: string, resolveDir?: string): Promise<SceneIR>;",
+    "export declare function isComposition(def: unknown): def is CompositionIR;",
+    'export declare function loadModule(path: string): Promise<{ kind: "scene"; ir: SceneIR } | { kind: "composition"; ir: CompositionIR }>;',
+    "",
+  ].join("\n"),
+);
 
 // --- browser-side bundles --------------------------------------------------
 await build({
