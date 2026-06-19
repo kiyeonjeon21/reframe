@@ -8,6 +8,19 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.23] - 2026-06-20
+
+### Changed
+
+#### eDSL guide: a "Device frames" section so one-shot device requests use `devicePreset`
+
+- **The authoring guide (`reframe guide`) now has a dedicated "Device frames" section** introducing
+  `devicePreset("phone"/"browser"/"laptop"/…)` as the way to put a device on screen. It was only
+  mentioned in passing (an analogy + the `deviceScreenPoint` cursor helper), so a one-shot request
+  like "float a phone" tended to hand-draw the device from `rect`s instead of using the parametric
+  preset (notch/dynamic island, chrome, clipped screen content). Also notes there is no `"iphone"` —
+  `"phone"` is the iOS-style frame. Docs only — no code/IR/golden change.
+
 ## [0.6.22] - 2026-06-19
 
 ### Changed

@@ -475,6 +475,31 @@ group({ id: "burst", x, y, blend: "screen" }, [ disc1, disc2, disc3 ])          
   with the effect). It wraps a matte group and nests. The effects are screen-pixel space.
   See `examples/scenes/group-fx-demo.ts`.
 
+## Device frames (phone / browser / laptop …)
+
+To put a **phone, browser, laptop, …** on screen, use the preset — don't hand-draw
+a device out of rects. `devicePreset(name, opts) → NodeIR` returns a parametric
+vector frame (bezel, rounded body, phone notch / dynamic island, browser chrome).
+
+- `devicePreset(name, { id, x, y, scale?, opacity?, orientation?, content })` —
+  names: `phone` `tablet` `laptop` `browser` `watch` `monitor` `tv` `foldable`
+  `terminal` `car`. **There is no `"iphone"` — `"phone"` IS the iOS-style frame**
+  (notch + dynamic island). `browser`/`terminal` take an `address` string.
+- `content` nodes are authored in **screen-LOCAL centre coords** (0,0 = screen
+  centre) and clipped to the screen. Stable ids `${id}-screen` / `${id}-content`
+  (overlay/regen addresses) — keep `id` across rewrites.
+- It's one node: animate the device group for the float/entrance (`tween`/
+  `motionPath` its `x`/`y`/`scale`/`rotation`, `oscillate` for an idle drift).
+
+```ts
+// a phone floating centre, a chat bubble inside the screen:
+devicePreset("phone", { id: "hero", x: 960, y: 540, scale: 0.92, opacity: 0,
+  content: [ rect({ id: "b1", x: 80, y: -120, width: 300, height: 64, radius: 22, fill: "#2563EB" }) ] })
+// timeline: par(tween("hero", { opacity: 1, scale: 1 }, { ease: "easeOutBack" }))
+```
+
+Pair with `cursor` + `deviceScreenPoint` (below) to click UI *inside* the device.
+
 ## Cursor (UI demos)
 
 A vector mouse pointer that glides across the scene and clicks things — for app
