@@ -11,6 +11,8 @@ packages/reframe-video/dist/
 packages/reframe-video/assets/
 packages/reframe-video/guides/
 packages/reframe-video/preview/
+packages/reframe-video/.claude-plugin/
+packages/reframe-video/skills/
 packages/reframe-video/LICENSE
 packages/reframe-video/*.tgz
 benchmark/harness/motion/calibration/trace-work/

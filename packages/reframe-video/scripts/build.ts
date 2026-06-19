@@ -24,7 +24,7 @@ const REPO = resolve(PKG, "..", "..");
 const define = { "process.env.REFRAME_PACKAGED": '"1"' };
 const external = ["esbuild", "playwright", "vite"];
 
-for (const dir of ["dist", "assets", "guides", "preview"]) {
+for (const dir of ["dist", "assets", "guides", "preview", ".claude-plugin", "skills"]) {
   await rm(join(PKG, dir), { recursive: true, force: true });
 }
 
@@ -37,6 +37,7 @@ const nodeBundles: [entry: string, out: string][] = [
   ["packages/render-cli/src/compileApi.ts", "compile-api.js"],
   ["packages/render-cli/src/player.ts", "player.js"],
   ["packages/render-cli/src/diff.ts", "diff.js"],
+  ["packages/render-cli/src/frame.ts", "frame.js"],
   ["benchmark/harness/motion/analyze.ts", "analyze.js"],
   ["benchmark/harness/motion/trace-cli.ts", "trace-cli.js"],
 ];
@@ -172,6 +173,13 @@ await cp(join(REPO, "benchmark/guides/edsl-guide.md"), join(PKG, "guides", "edsl
 await cp(join(REPO, "benchmark/guides/directing-guide.md"), join(PKG, "guides", "directing-guide.md"));
 await cp(join(REPO, "docs/regen-contract.md"), join(PKG, "guides", "regen-contract.md"));
 await cp(join(REPO, "LICENSE"), join(PKG, "LICENSE"));
+
+// --- authoring brain: the Claude Code plugin + skill (portable for SDK/agent
+// consumers — SKILL.md already points at `reframe-video guide`, not repo files,
+// so it works from node_modules with no sibling repo). Kept at the same relative
+// paths so `reframe skill` resolves them in repo and packaged alike.
+await cp(join(REPO, ".claude-plugin"), join(PKG, ".claude-plugin"), { recursive: true });
+await cp(join(REPO, "skills"), join(PKG, "skills"), { recursive: true });
 
 // --- preview ---------------------------------------------------------------
 await mkdir(join(PKG, "preview", "src"), { recursive: true });
