@@ -200,6 +200,16 @@ and runs `npm publish` with the `NPM_TOKEN` repo secret. Manual fallback:
 `pnpm --filter reframe-video build && cd packages/reframe-video && npm publish`.
 Never commit `.env` (it holds `NPM_TOKEN`; it is gitignored).
 
+**Plugin/skill changes also need `.claude-plugin/plugin.json` `version` bumped.**
+The Claude Code marketplace caches an installed plugin by that version string in
+`~/.claude/plugins/cache/...`, so if you edit `skills/reframe/SKILL.md` or the
+`.claude-plugin/` manifests but leave the version unchanged, `/plugin marketplace
+update reframe` refreshes the clone but NEVER re-bakes the cache — users keep
+loading the stale skill (only a manual cache delete or reinstall fixes it). So
+whenever you touch the skill or plugin manifests, bump `plugin.json` `version`
+(a small `0.1.z` patch) in the same commit. This is independent of the npm
+`reframe-video` version above; the marketplace tracks git `main`, not the npm tag.
+
 ## Gotchas
 
 - ffmpeg is a system dependency; Playwright chromium needs a one-time

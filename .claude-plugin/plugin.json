@@ -1,6 +1,6 @@
 {
   "name": "reframe",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create and iterate motion-graphics videos as addressable data: deterministic mp4 renders, human edits that survive AI regeneration, label-anchored audio, data-driven batch rendering.",
   "author": {
     "name": "Kiyeon Jeon",
