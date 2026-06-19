@@ -8,6 +8,33 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.19] - 2026-06-19
+
+### Added
+
+#### Public canvas renderer (`reframe-video/renderer`)
+
+- **Export `renderFrame` / `drawDisplayList`** (plus the `ImageRegistry` / `VideoRegistry`
+  interfaces) as a `reframe-video/renderer` subpath, so a browser app can draw scenes to a 2D
+  canvas **identically to the mp4 path** — camera, clips, track mattes, group effects, gradients,
+  and images/video all handled by the engine. Downstream consumers can delete a hand-rolled
+  renderer fork and stay in sync. The published bundle self-imports `reframe-video`, so a consumer
+  shares the one core instance (no duplicate `evaluate`). Additive — the default `.` entry is
+  unchanged.
+
+#### `reframe compile` — eDSL source → validated SceneIR JSON (no render)
+
+- **New `reframe compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]`** —
+  bundle + validate a scene to **SceneIR JSON without rendering** (no ffmpeg/chromium; fast). For a
+  consumer that needs the IR for a canvas preview, a semantic-diff loop, or an agentic
+  self-correction loop.
+- **Clean, classified errors**: a failing scene exits non-zero with a concise message tagged
+  `bundle` / `eval` / `validation` (`--json` ⇒ `{ ok:false, error, kind }`), instead of the ~64KB
+  base64 bundle dump `labels` / `render` printed before. `labels` is cleaned up the same way.
+- **In-process loader** exported as `reframe-video/compile` (`loadScene` / `loadSceneFromCode` /
+  `SceneLoadError`), server/Node-only, for embedders that want the IR without shelling out.
+  `--timeout` bounds the bundle+eval.
+
 ## [0.6.18] - 2026-06-18
 
 ### Added
