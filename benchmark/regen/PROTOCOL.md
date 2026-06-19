@@ -2,7 +2,7 @@
 
 Measures whether real AI agents keep node ids / state names / timeline labels
 stable when regenerating a scene, given only the contract text in
-`docs/regen-contract.md` (verbatim — its practicality is what's under test).
+`docs/guides/regen-contract.md` (verbatim — its practicality is what's under test).
 
 ## Matrix
 
@@ -15,7 +15,7 @@ type change — disc ellipse→rect, bar rect→line — should keep its id).
 
 ## Generation prompt (per run, fresh-context subagent)
 
-1. The contract blockquote from docs/regen-contract.md, verbatim.
+1. The contract blockquote from docs/guides/regen-contract.md, verbatim.
 2. The format guide docs/guides/edsl-guide.md, in full.
 3. The current scene source (examples/scenes/<base>.ts), in full.
 4. The redesign brief (briefs/<taskId>.md).

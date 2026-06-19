@@ -19,7 +19,7 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 - `pnpm reframe frame <scene.ts|.json> [--t <sec>] [-o out.png]` — render ONE frame at time `t` to a PNG (same renderer as `render`, no ffmpeg muxing; chromium only). For an agentic render-and-look loop (feed the frame back to a model). Reuses `renderFrameAt` (`frameLoop.ts`); entry `packages/render-cli/src/frame.ts`.
 - `pnpm reframe skill [--path]` — print the authoring skill (`skills/reframe/SKILL.md`) for a programmatic/agent consumer; `--path` prints the plugin root dir. The skill + `.claude-plugin/` ship in the npm package (`files`) so an Agent-SDK consumer can load the plugin from `node_modules/reframe-video` (no repo checkout). Inline in `reframe.ts`.
 - `pnpm reframe player <scene.ts|.json> [-o out.html]` — bundle a scene into ONE self-contained HTML that plays the motion live in any browser (and pastes into a Claude.ai Artifact). esbuild IIFE of core + `renderer-canvas` + the scene on a `<canvas>` rAF loop, with the Inter fonts inlined; visual-only (no audio / image-node sources). Entry `packages/render-cli/src/player.ts`.
-- `pnpm reframe preview` / `new <name>` / `motion <mp4>` / `trace <ref.mp4>` / `guide [--directing|--regen|--html]` / `demo` — `guide` prints the eDSL syntax (default), the high-end directing workflow (`--directing`), the stable-address contract (`--regen`), or the HTML/GSAP scene guide (`--html`); sources live in `docs/guides/` (+ `docs/regen-contract.md`)
+- `pnpm reframe preview` / `new <name>` / `motion <mp4>` / `trace <ref.mp4>` / `guide [--directing|--regen|--html]` / `demo` — `guide` prints the eDSL syntax (default), the high-end directing workflow (`--directing`), the stable-address contract (`--regen`), or the HTML/GSAP scene guide (`--html`); sources live in `docs/guides/`
 - `pnpm test` (vitest), `pnpm typecheck`
 
 ## Authoring scenes — read the guide first
@@ -165,7 +165,7 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
 When regenerating or rewriting an existing scene, **never rename node `id`s,
 state names, or timeline `label`s** for concepts that survive the redesign —
 overlay documents hold human edits at those addresses. Full contract:
-`docs/regen-contract.md`. Overlay schema by example:
+`docs/guides/regen-contract.md`. Overlay schema by example:
 `examples/overlays/brand-edits.json`.
 
 ## Repo map
