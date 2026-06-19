@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Scene authoring guide (eDSL)
-    url: https://github.com/kiyeonjeon21/reframe/blob/main/benchmark/guides/edsl-guide.md
+    url: https://github.com/kiyeonjeon21/reframe/blob/main/docs/guides/edsl-guide.md
     about: How to write a scene. Read this before reporting an authoring problem.
   - name: Contributing & dev setup
     url: https://github.com/kiyeonjeon21/reframe/blob/main/CONTRIBUTING.md

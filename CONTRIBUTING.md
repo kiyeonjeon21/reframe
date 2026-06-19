@@ -18,7 +18,7 @@ pnpm typecheck
 
 `AGENTS.md` is the working guide for the repo (commands, repo map, conventions,
 release). Read it before larger changes. Scene syntax lives in
-`benchmark/guides/edsl-guide.md`.
+`docs/guides/edsl-guide.md`.
 
 ## Ground rules
 

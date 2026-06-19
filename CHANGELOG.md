@@ -8,7 +8,21 @@ versions may change them.
 
 ## [Unreleased]
 
-## [0.6.21] - 2026-06-19
+## [0.6.22] - 2026-06-19
+
+### Changed
+
+#### `reframe guide --html` + guides moved to `docs/guides/`
+
+- **New `reframe guide --html`** prints the HTML/GSAP authoring guide. The HTML render mode
+  (`reframe render scene.html`) was already live but its guide was shipped nowhere and exposed by
+  no command — now it ships in the package and is reachable like the other guides.
+- **Authoring guides moved from `benchmark/guides/` to `docs/guides/`** (source-of-truth cleanup:
+  `benchmark/` is for frozen experiment artifacts, but the guides are living docs). No change to the
+  packaged layout — they still ship flat under `guides/`. The `guide` command now fails with a clear
+  `guide not found: <path>` instead of a raw filesystem error when a guide is missing.
+- Internal: the CLI's guide-path resolution and the package build's guide copy were consolidated
+  (single `GUIDE` map / `GUIDES` manifest + post-copy validation). No IR/golden change.
 
 ### Changed
 

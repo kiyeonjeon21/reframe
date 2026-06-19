@@ -6,7 +6,7 @@
  *   pnpm reframe preview
  *   pnpm reframe new <scene-name>
  *   pnpm reframe motion <out.mp4|framesDir> [...analyze args]
- *   pnpm reframe guide [--regen]
+ *   pnpm reframe guide [--directing|--regen|--html]
  *   pnpm reframe demo
  *
  * Thin dispatcher over the existing tools, plus the onboarding affordances:
@@ -54,6 +54,21 @@ const TRACE = PACKAGED
   ? join(ROOT, "dist", "trace-cli.js")
   : join(ROOT, "benchmark", "harness", "motion", "trace-cli.ts");
 const CMD = PACKAGED ? "reframe" : "pnpm reframe";
+// Guides ship flat under <pkg>/guides/; in the repo they author under docs/
+// (regen-contract is a contract, the rest are syntax/authoring guides).
+const GUIDE = PACKAGED
+  ? {
+      regen: join(ROOT, "guides", "regen-contract.md"),
+      directing: join(ROOT, "guides", "directing-guide.md"),
+      html: join(ROOT, "guides", "html-guide.md"),
+      edsl: join(ROOT, "guides", "edsl-guide.md"),
+    }
+  : {
+      regen: join(ROOT, "docs", "regen-contract.md"),
+      directing: join(ROOT, "docs", "guides", "directing-guide.md"),
+      html: join(ROOT, "docs", "guides", "html-guide.md"),
+      edsl: join(ROOT, "docs", "guides", "edsl-guide.md"),
+    };
 
 const USAGE = `reframe — declarative motion graphics
 
@@ -75,7 +90,7 @@ usage:
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
   ${CMD} diff <ref-image> [<scene.ts>] [--t S] [--mode side|blend|diff|grid]  compare/measure a render against a reference image
-  ${CMD} guide [--regen|--directing]  print a guide (--regen: stable-address contract; --directing: high-end workflow)
+  ${CMD} guide [--directing|--regen|--html]  print a guide (default: eDSL syntax; --directing: high-end workflow; --regen: stable-address contract; --html: HTML/GSAP scenes)
   ${CMD} demo                    run the edit-survival demo (3 mp4s into out/)
 `;
 
@@ -484,10 +499,15 @@ async function main() {
     }
 
     case "guide": {
-      const which = rest.includes("--regen") ? "regen" : rest.includes("--directing") ? "directing" : "edsl";
-      const repoFile = { regen: join(ROOT, "docs", "regen-contract.md"), directing: join(ROOT, "benchmark", "guides", "directing-guide.md"), edsl: join(ROOT, "benchmark", "guides", "edsl-guide.md") };
-      const pkgFile = { regen: join(ROOT, "guides", "regen-contract.md"), directing: join(ROOT, "guides", "directing-guide.md"), edsl: join(ROOT, "guides", "edsl-guide.md") };
-      const file = (PACKAGED ? pkgFile : repoFile)[which];
+      const which = rest.includes("--regen")
+        ? "regen"
+        : rest.includes("--directing")
+          ? "directing"
+          : rest.includes("--html")
+            ? "html"
+            : "edsl";
+      const file = GUIDE[which];
+      if (!existsSync(file)) fail(`guide not found: ${file}`);
       const { readFile } = await import("node:fs/promises");
       process.stdout.write(await readFile(file, "utf8"));
       return;
