@@ -63,6 +63,31 @@ Audio is label-anchored (`audio: { cues: [{ at: "enter", sfx: "whoosh" }] }`)
 so sound design follows retiming and regeneration. Full syntax:
 `npx reframe-video guide`.
 
+## Rendering to a canvas (live preview)
+
+The same renderer that produces the mp4 is exported as a subpath for drawing
+frames to a 2D canvas in the browser — so an editor or preview can render a
+scene live and match the export. Compile once, draw any time `t`:
+
+```ts
+import { compileScene, evaluate } from "reframe-video";
+import { renderFrame, drawDisplayList } from "reframe-video/renderer";
+
+const compiled = compileScene(myScene);          // myScene: SceneIR
+const ctx = canvas.getContext("2d")!;
+
+renderFrame(ctx, compiled, t);                    // clears + paints the frame at time t
+// or drive the DisplayList yourself (you own the clear/background):
+drawDisplayList(ctx, evaluate(compiled, t));
+```
+
+Camera, clips, track mattes, group effects, gradients and text are handled
+exactly like the mp4 path — `renderFrame` bakes the scene camera in, so don't
+apply one yourself. Images and video need registries: pass `images`
+(`{ get(src) }`) and `videos` (`{ frame(src, i) }`) returning decoded
+`CanvasImageSource`s. The default entry (scene authoring + `compileScene` /
+`evaluate`) is unchanged.
+
 ## Why this instead of generating Remotion/HTML?
 
 One-shot generation quality is a wash (we measured it). The difference is the

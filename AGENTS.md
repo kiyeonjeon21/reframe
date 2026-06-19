@@ -169,7 +169,10 @@ overlay documents hold human edits at those addresses. Full contract:
 
 - `packages/core` — eDSL/IR/compile/evaluate/composeScene, presets, path,
   motionPath (zero deps; tests in `test/`)
-- `packages/renderer-canvas` — DisplayList → Canvas 2D
+- `packages/renderer-canvas` — DisplayList → Canvas 2D. Its `renderFrame` /
+  `drawDisplayList` are re-exported from the published package as
+  `reframe-video/renderer` (a subpath export) for live browser preview — the
+  bundle self-imports `reframe-video` so a consumer shares the one core instance
 - `packages/render-cli` — Playwright capture + ffmpeg; `reframe.ts` is the user CLI
 - `packages/preview` — Vite editor (edits → overlay draft, `window.__store` debug hook)
 - `packages/reframe-video` — the published npm package (see Release below)

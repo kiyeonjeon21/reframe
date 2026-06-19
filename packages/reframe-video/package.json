@@ -28,7 +28,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./renderer": {
+      "types": "./dist/renderer-canvas.d.ts",
+      "import": "./dist/renderer-canvas.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
