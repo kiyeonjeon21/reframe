@@ -200,15 +200,27 @@ and runs `npm publish` with the `NPM_TOKEN` repo secret. Manual fallback:
 `pnpm --filter reframe-video build && cd packages/reframe-video && npm publish`.
 Never commit `.env` (it holds `NPM_TOKEN`; it is gitignored).
 
-**Plugin/skill changes also need `.claude-plugin/plugin.json` `version` bumped.**
-The Claude Code marketplace caches an installed plugin by that version string in
-`~/.claude/plugins/cache/...`, so if you edit `skills/reframe/SKILL.md` or the
-`.claude-plugin/` manifests but leave the version unchanged, `/plugin marketplace
-update reframe` refreshes the clone but NEVER re-bakes the cache — users keep
-loading the stale skill (only a manual cache delete or reinstall fixes it). So
-whenever you touch the skill or plugin manifests, bump `plugin.json` `version`
-(a small `0.1.z` patch) in the same commit. This is independent of the npm
-`reframe-video` version above; the marketplace tracks git `main`, not the npm tag.
+### Plugin/skill release (separate version line from the npm package above)
+
+The Claude Code plugin is its own release line, independent of `reframe-video`:
+
+- **Identifiers** — marketplace `kiyeonjeon21`, plugin `reframe`, install id
+  `reframe@kiyeonjeon21` (`<plugin>@<marketplace>`). The github add address stays
+  `kiyeonjeon21/reframe`. Defined in `.claude-plugin/marketplace.json` (the
+  marketplace `name` + plugin list) and `.claude-plugin/plugin.json` (the plugin
+  `name` + `version`).
+- **Versioning** — `.claude-plugin/plugin.json` `version` on a `0.1.z` track;
+  default to a PATCH bump, independent of `reframe-video`'s `0.6.z`. The
+  marketplace tracks git `main` (not the npm tag), so a push to `main` IS the
+  release — no `npm publish` needed for the plugin.
+
+**Bump `plugin.json` `version` whenever you touch `skills/reframe/SKILL.md` or
+the `.claude-plugin/` manifests, in the same commit.** The marketplace caches an
+installed plugin by that version string in `~/.claude/plugins/cache/...`; if the
+content changes but the version doesn't, `/plugin marketplace update kiyeonjeon21`
+refreshes the git clone but NEVER re-bakes the cache — users keep loading the
+stale skill until a manual cache delete or reinstall. (This file and other repo
+docs are NOT part of the plugin, so editing them needs no plugin bump.)
 
 ## Gotchas
 
