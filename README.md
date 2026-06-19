@@ -145,7 +145,7 @@ Using Claude Code? Install the skill and just describe the video you want:
 
 ```
 /plugin marketplace add kiyeonjeon21/reframe
-/plugin install reframe@reframe
+/plugin install reframe@kiyeonjeon21
 ```
 
 To hack on reframe itself, clone-based setup:
