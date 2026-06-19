@@ -13,4 +13,6 @@ Claude-only config:
 - There is no built-in publish/release hook; releases are a GitHub Actions
   concern (`.github/workflows/publish.yml`). See "Release" in `AGENTS.md`.
 - The reframe Claude Code plugin/skill: `skills/reframe/SKILL.md` +
-  `.claude-plugin/` (install: `/plugin marketplace add kiyeonjeon21/reframe`).
+  `.claude-plugin/` (install: `/plugin marketplace add kiyeonjeon21/reframe`
+  then `/plugin install reframe@kiyeonjeon21`). Versioning + the
+  "bump `plugin.json` when the skill changes" rule live in AGENTS.md "Release".
