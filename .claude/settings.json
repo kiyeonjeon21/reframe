@@ -19,5 +19,13 @@
   "enabledPlugins": {
     "playwright@claude-plugins-official": true,
     "reframe@kiyeonjeon21": true
+  },
+  "extraKnownMarketplaces": {
+    "kiyeonjeon21": {
+      "source": {
+        "source": "github",
+        "repo": "kiyeonjeon21/reframe"
+      }
+    }
   }
 }
