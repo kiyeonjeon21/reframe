@@ -189,8 +189,8 @@ await cp(join(REPO, "LICENSE"), join(PKG, "LICENSE"));
 // consumers — SKILL.md already points at `reframe-video guide`, not repo files,
 // so it works from node_modules with no sibling repo). Kept at the same relative
 // paths so `reframe skill` resolves them in repo and packaged alike.
-await cp(join(REPO, ".claude-plugin"), join(PKG, ".claude-plugin"), { recursive: true });
-await cp(join(REPO, "skills"), join(PKG, "skills"), { recursive: true });
+await cp(join(REPO, "plugin", ".claude-plugin"), join(PKG, ".claude-plugin"), { recursive: true });
+await cp(join(REPO, "plugin", "skills"), join(PKG, "skills"), { recursive: true });
 
 // --- preview ---------------------------------------------------------------
 await mkdir(join(PKG, "preview", "src"), { recursive: true });

@@ -17,7 +17,7 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 - `pnpm reframe labels <scene.ts>` — print the compiled event clock (every timeline label → exact seconds; the timing source for `audio.cues` and beat debugging)
 - `pnpm reframe compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]` — bundle + validate eDSL source into SceneIR JSON, NO render (no ffmpeg/chromium; fast). On failure: a concise classified error (`bundle`/`eval`/`validation`), never the base64 bundle; `--json` makes it `{ok:false,error,kind}`. The in-process equivalent is exported as `reframe-video/compile` (`loadScene`/`loadSceneFromCode`, server-only). Entry `packages/render-cli/src/compile.ts`; loader `loadScene.ts`.
 - `pnpm reframe frame <scene.ts|.json> [--t <sec>] [-o out.png]` — render ONE frame at time `t` to a PNG (same renderer as `render`, no ffmpeg muxing; chromium only). For an agentic render-and-look loop (feed the frame back to a model). Reuses `renderFrameAt` (`frameLoop.ts`); entry `packages/render-cli/src/frame.ts`.
-- `pnpm reframe skill [--path]` — print the authoring skill (`skills/reframe/SKILL.md`) for a programmatic/agent consumer; `--path` prints the plugin root dir. The skill + `.claude-plugin/` ship in the npm package (`files`) so an Agent-SDK consumer can load the plugin from `node_modules/reframe-video` (no repo checkout). Inline in `reframe.ts`.
+- `pnpm reframe skill [--path]` — print the authoring skill (`plugin/skills/reframe/SKILL.md`) for a programmatic/agent consumer; `--path` prints the plugin root dir. The skill + `.claude-plugin/` ship in the npm package (`files`) so an Agent-SDK consumer can load the plugin from `node_modules/reframe-video` (no repo checkout). Inline in `reframe.ts`.
 - `pnpm reframe player <scene.ts|.json> [-o out.html]` — bundle a scene into ONE self-contained HTML that plays the motion live in any browser (and pastes into a Claude.ai Artifact). esbuild IIFE of core + `renderer-canvas` + the scene on a `<canvas>` rAF loop, with the Inter fonts inlined; visual-only (no audio / image-node sources). Entry `packages/render-cli/src/player.ts`.
 - `pnpm reframe preview` / `new <name>` / `motion <mp4>` / `trace <ref.mp4>` / `guide [--directing|--regen|--html]` / `demo` — `guide` prints the eDSL syntax (default), the high-end directing workflow (`--directing`), the stable-address contract (`--regen`), or the HTML/GSAP scene guide (`--html`); sources live in `docs/guides/`
 - `pnpm test` (vitest), `pnpm typecheck`
@@ -179,7 +179,9 @@ overlay documents hold human edits at those addresses. Full contract:
 - `packages/render-cli` — Playwright capture + ffmpeg; `reframe.ts` is the user CLI
 - `packages/preview` — Vite editor (edits → overlay draft, `window.__store` debug hook)
 - `packages/reframe-video` — the published npm package (see Release below)
-- `skills/reframe/SKILL.md` + `.claude-plugin/` — the Claude Code plugin
+- `plugin/` — the Claude Code plugin, scoped to its own subdir so the marketplace
+  caches only it (`plugin/.claude-plugin/plugin.json` + `plugin/skills/reframe/SKILL.md`);
+  the root `.claude-plugin/marketplace.json` points its `source` at `./plugin`
 - `examples/` — scenes, overlays, edit-survival demo, logo-sting
 - `benchmark/` — measurement artifacts (LLM benchmark, regen experiment, motion
   profiler). These are recorded experimental results — do not regenerate or
@@ -206,16 +208,17 @@ The Claude Code plugin is its own release line, independent of `reframe-video`:
 
 - **Identifiers** — marketplace `kiyeonjeon21`, plugin `reframe`, install id
   `reframe@kiyeonjeon21` (`<plugin>@<marketplace>`). The github add address stays
-  `kiyeonjeon21/reframe`. Defined in `.claude-plugin/marketplace.json` (the
-  marketplace `name` + plugin list) and `.claude-plugin/plugin.json` (the plugin
-  `name` + `version`).
+  `kiyeonjeon21/reframe`. Defined in `.claude-plugin/marketplace.json` (root — the
+  marketplace `name` + plugin list, with the plugin `source` pointing at `./plugin`)
+  and `plugin/.claude-plugin/plugin.json` (the plugin `name` + `version`). The plugin
+  is scoped to `plugin/` so the marketplace caches only that subdir, not the whole repo.
 - **Versioning** — `.claude-plugin/plugin.json` `version` on a `0.1.z` track;
   default to a PATCH bump, independent of `reframe-video`'s `0.6.z`. The
   marketplace tracks git `main` (not the npm tag), so a push to `main` IS the
   release — no `npm publish` needed for the plugin.
 
-**Bump `plugin.json` `version` whenever you touch `skills/reframe/SKILL.md` or
-the `.claude-plugin/` manifests, in the same commit.** The marketplace caches an
+**Bump `plugin/.claude-plugin/plugin.json` `version` whenever you touch anything
+under `plugin/` (the skill or the manifest), in the same commit.** The marketplace caches an
 installed plugin by that version string in `~/.claude/plugins/cache/...`; if the
 content changes but the version doesn't, `/plugin marketplace update kiyeonjeon21`
 refreshes the git clone but NEVER re-bakes the cache — users keep loading the
@@ -225,7 +228,7 @@ docs are NOT part of the plugin, so editing them needs no plugin bump.)
 **A new `reframe-video` npm release does NOT need a plugin bump.** SKILL.md and the
 guides call the CLI as `npx -y reframe-video <cmd>` (unpinned, no `@version`), so
 consumers get the latest CLI at runtime with no change to the plugin's cached bytes —
-the plugin version tracks only the plugin's own content (SKILL.md + `.claude-plugin/`),
+the plugin version tracks only the plugin's own content (everything under `plugin/`),
 fully decoupled from the CLI's `0.6.z`. The one exception: if a new CLI command/flow
 means you rewrite SKILL.md to teach it, that SKILL.md edit triggers the bump (the rule
 above) — not the npm publish itself.

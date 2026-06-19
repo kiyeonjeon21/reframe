@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "reframe",
-      "source": "./",
+      "source": "./plugin",
       "description": "Motion-graphics videos as addressable data — generate, tweak, regenerate without losing human edits."
     }
   ]
