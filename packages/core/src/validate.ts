@@ -5,7 +5,9 @@
  */
 
 import type { CompositionIR, NodeIR, SceneIR, TimelineIR } from "./ir.js";
+import { EASE_NAMES } from "./interpolate.js";
 
+const EASE_SET = new Set<string>(EASE_NAMES);
 const FX_PROPS = ["blur", "shadowColor", "shadowBlur", "shadowX", "shadowY", "blend"]; // paint effects (blend is discrete)
 const BLEND_MODES = new Set([
   "normal", "multiply", "screen", "overlay", "lighten", "darken",
@@ -137,6 +139,27 @@ export function validateScene(ir: SceneIR): void {
   }
 
   const labels = new Set<string>();
+  const checkEase = (path: string, ease: unknown) => {
+    if (ease === undefined) return;
+    if (typeof ease === "string") {
+      if (!EASE_SET.has(ease)) {
+        problems.push(`${path}: unknown ease "${ease}" — valid: ${EASE_NAMES.join(", ")} (note: there are no *Sine eases)`);
+      }
+      return;
+    }
+    if (typeof ease === "object" && ease !== null) {
+      const o = ease as Record<string, unknown>;
+      if ("spring" in o) return;
+      if ("cubicBezier" in o) {
+        if (!Array.isArray(o.cubicBezier) || o.cubicBezier.length !== 4) {
+          problems.push(`${path}: ease cubicBezier must be [x1, y1, x2, y2]`);
+        }
+        return;
+      }
+    }
+    problems.push(`${path}: invalid ease — use a name, { spring }, or { cubicBezier: [x1,y1,x2,y2] }`);
+  };
+
   const checkTimeline = (tl: TimelineIR, path: string) => {
     if ("label" in tl && tl.label !== undefined) {
       if (labels.has(tl.label)) {
@@ -164,6 +187,7 @@ export function validateScene(ir: SceneIR): void {
         if (tl.duration !== undefined && tl.duration <= 0) {
           problems.push(`${path}: to("${tl.state}") duration must be > 0`);
         }
+        checkEase(path, (tl as { ease?: unknown }).ease);
         for (const id of tl.filter ?? []) {
           if (!nodeById.has(id)) problems.push(`${path}: filter contains unknown node "${id}"`);
         }
@@ -173,6 +197,7 @@ export function validateScene(ir: SceneIR): void {
         if (tl.duration !== undefined && tl.duration <= 0) {
           problems.push(`${path}: tween duration must be > 0`);
         }
+        checkEase(path, (tl as { ease?: unknown }).ease);
         break;
       case "motionPath": {
         const node = nodeById.get(tl.target);
@@ -193,6 +218,7 @@ export function validateScene(ir: SceneIR): void {
         if (tl.curviness !== undefined && tl.curviness < 0) {
           problems.push(`${path}: motionPath "${tl.target}" curviness must be >= 0`);
         }
+        checkEase(path, (tl as { ease?: unknown }).ease);
         break;
       }
       case "wait":
