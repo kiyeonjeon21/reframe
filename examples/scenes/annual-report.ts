@@ -1,42 +1,62 @@
 import {
   scene, group, rect, ellipse, line, path, text,
-  seq, par, stagger, beat, tween, wait, cameraTo, oscillate,
-  conicGradient, linearGradient,
+  seq, par, stagger, beat, tween, wait, cameraTo, cameraFit, oscillate, row,
+  conicGradient,
   type NodeIR,
 } from "@reframe/core";
 
 // "FY2026" — an animated annual report as a guided camera tour of one dashboard:
 // KPI count-ups → a bar chart (grow from base) → a growth line that DRAWS ON
-// (`path` `progress`) → a market-share donut (`conicGradient`). The camera pushes
-// into each widget in turn, then pulls back to the whole board. Probes: multi-
-// chart orchestration + camera tour + the conic-gradient donut + count-ups.
+// (`path` `progress`) → a market-share donut (`conicGradient`). Two patterns keep
+// it tidy: (1) chart geometry is DERIVED FROM the panel rect (heights normalized to
+// max → never overflow) and each chart sits in a `group({ clip })` (a safety net so
+// nothing can punch out the panel); (2) every camera push uses `cameraFit(box)` so
+// the widget is framed without clipping. Probes: multi-chart orchestration + the
+// conic-gradient donut + count-ups + container-safe layout + camera framing.
 
 const W = 1920, H = 1080;
 const FG = "#EAF0FF", DIM = "#7E88A8", GRID = "#1E2740", TEAL = "#54D6C0", VIOLET = "#7C5CFF", PINK = "#FF6FA5", GOLD = "#FFC861";
 
-// panel helper
-const panel = (id: string, x: number, y: number, w: number, h: number): NodeIR =>
-  rect({ id, x, y, width: w, height: h, radius: 18, anchor: "center", fill: "#0E1426", stroke: GRID, strokeWidth: 1.5, opacity: 0 });
+// panel rect helper — keeps each widget's bounding box in ONE place, reused for the
+// node, its clip, and the cameraFit push (so they can never drift apart).
+interface Box { x: number; y: number; width: number; height: number }
+const cx = (b: Box) => b.x + b.width / 2;
+const cy = (b: Box) => b.y + b.height / 2;
+const panel = (id: string, b: Box): NodeIR =>
+  rect({ id, x: cx(b), y: cy(b), width: b.width, height: b.height, radius: 18, anchor: "center", fill: "#0E1426", stroke: GRID, strokeWidth: 1.5, opacity: 0 });
+const clip = (b: Box, pad = 0) => ({ kind: "rect" as const, x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad, radius: 18 });
 
-// KPIs (top row)
+const KPI_BOX: Box = { x: 190, y: 250, width: 1540, height: 220 };
+const BAR_BOX: Box = { x: 230, y: 600, width: 720, height: 360 };
+const LINE_BOX: Box = { x: 1000, y: 600, width: 720, height: 360 };
+const DONUT_BOX: Box = { x: 1340, y: 230, width: 300, height: 300 };
+
+// ── KPIs ──
 const KPIS = [
   { id: "k-rev", x: 430, label: "REVENUE", val: 24.8, pre: "$", suf: "M", dec: 1, c: TEAL },
   { id: "k-usr", x: 960, label: "ACTIVE USERS", val: 1480000, pre: "", suf: "", dec: 0, c: VIOLET, thou: true },
   { id: "k-nps", x: 1490, label: "NPS", val: 72, pre: "", suf: "", dec: 0, c: GOLD },
 ];
 
-// bar chart (lower-left)
-const BARS = [38, 52, 61, 84]; // indexed values
-const BX0 = 300, BY = 880, BW = 90, BGAP = 150, BPX = 4;
+// ── bar chart: geometry DERIVED from BAR_BOX so it can't overflow ──
+const BARS = [38, 52, 61, 84];
+const BMAX = Math.max(...BARS);
+const BAR_BASE = BAR_BOX.y + BAR_BOX.height - 56;     // baseline (room for labels)
+const BAR_MAXH = BAR_BOX.height - 120;                // top headroom (title + margin)
+const barX = row(BARS.length, { center: cx(BAR_BOX), span: BAR_BOX.width - 200 });
+const barH = (v: number) => (v / BMAX) * BAR_MAXH;
 const bars: NodeIR[] = BARS.flatMap((v, i) => [
-  rect({ id: `bar-${i}`, x: BX0 + i * BGAP, y: BY, width: BW, height: v * BPX, radius: 8, anchor: "bottom-center", fill: i === 3 ? TEAL : "#2E3E5E", scaleY: 0 }),
-  text({ id: `blab-${i}`, x: BX0 + i * BGAP, y: BY + 36, anchor: "center", content: ["Q1", "Q2", "Q3", "Q4"][i]!, fontFamily: "Inter", fontSize: 22, fill: DIM, opacity: 0 }),
+  rect({ id: `bar-${i}`, x: barX[i]!, y: BAR_BASE, width: 84, height: barH(v), radius: 8, anchor: "bottom-center", fill: i === 3 ? TEAL : "#2E3E5E", scaleY: 0 }),
+  text({ id: `blab-${i}`, x: barX[i]!, y: BAR_BASE + 30, anchor: "center", content: ["Q1", "Q2", "Q3", "Q4"][i]!, fontFamily: "Inter", fontSize: 22, fill: DIM, opacity: 0 }),
 ]);
 
-// growth line (lower-right) — a polyline that draws on
-const LP = [[1180, 860], [1280, 800], [1380, 820], [1480, 720], [1580, 700], [1680, 600], [1760, 540]];
-const linePath = "M" + LP.map((p) => `${p[0]} ${p[1]}`).join(" L");
-const lineDots: NodeIR[] = LP.map((p, i) => ellipse({ id: `ld-${i}`, x: p[0]!, y: p[1]!, width: 12, height: 12, anchor: "center", fill: PINK, opacity: 0 }));
+// ── growth line: points NORMALIZED into LINE_BOX (low→high maps to bottom→top) ──
+const SERIES = [12, 18, 16, 27, 31, 44, 52];
+const SMAX = Math.max(...SERIES), SMIN = Math.min(...SERIES);
+const lx = row(SERIES.length, { center: cx(LINE_BOX), span: LINE_BOX.width - 140 });
+const ly = (v: number) => (LINE_BOX.y + LINE_BOX.height - 70) - ((v - SMIN) / (SMAX - SMIN)) * (LINE_BOX.height - 150);
+const linePath = "M" + SERIES.map((v, i) => `${lx[i]!.toFixed(1)} ${ly(v).toFixed(1)}`).join(" L");
+const lineDots: NodeIR[] = SERIES.map((v, i) => ellipse({ id: `ld-${i}`, x: lx[i]!, y: ly(v), width: 12, height: 12, anchor: "center", fill: PINK, opacity: 0 }));
 
 export default scene({
   id: "annual-report",
@@ -48,24 +68,28 @@ export default scene({
     text({ id: "title", x: 120, y: 110, anchor: "top-left", content: "FY2026 — ANNUAL REPORT", fontFamily: "Inter", fontSize: 46, fontWeight: 800, fill: FG, letterSpacing: 2, opacity: 0 }),
     // KPI panels
     ...KPIS.flatMap((k) => [
-      panel(`${k.id}-p`, k.x, 300, 480, 200),
-      text({ id: `${k.id}-l`, x: k.x, y: 248, anchor: "center", content: k.label, fontFamily: "Inter", fontSize: 24, fontWeight: 700, fill: DIM, letterSpacing: 2, opacity: 0 }),
-      text({ id: k.id, x: k.x, y: 330, anchor: "center", content: 0, contentDecimals: k.dec, prefix: k.pre, suffix: k.suf, ...(k.thou ? { contentThousands: true } : {}), fontFamily: "Inter", fontSize: 80, fontWeight: 800, fill: k.c, opacity: 0 }),
+      panel(`${k.id}-p`, { x: k.x - 240, y: 250, width: 480, height: 220 }),
+      text({ id: `${k.id}-l`, x: k.x, y: 318, anchor: "center", content: k.label, fontFamily: "Inter", fontSize: 24, fontWeight: 700, fill: DIM, letterSpacing: 2, opacity: 0 }),
+      text({ id: k.id, x: k.x, y: 392, anchor: "center", content: 0, contentDecimals: k.dec, prefix: k.pre, suffix: k.suf, ...(k.thou ? { contentThousands: true } : {}), fontFamily: "Inter", fontSize: 78, fontWeight: 800, fill: k.c, opacity: 0 }),
     ]),
-    // bar panel
-    panel("bar-p", 590, 760, 740, 360),
-    text({ id: "bar-t", x: 300, y: 640, anchor: "center-left", content: "Revenue by quarter", fontFamily: "Inter", fontSize: 26, fontWeight: 700, fill: FG, opacity: 0 }),
-    line({ id: "bar-axis", x1: 240, y1: BY, x2: 900, y2: BY, stroke: GRID, strokeWidth: 2, opacity: 0 }),
-    ...bars,
-    // line panel
-    panel("line-p", 1470, 760, 720, 360),
-    text({ id: "line-t", x: 1150, y: 640, anchor: "center-left", content: "Growth trajectory", fontFamily: "Inter", fontSize: 26, fontWeight: 700, fill: FG, opacity: 0 }),
-    path({ id: "line", x: 0, y: 0, d: linePath, stroke: PINK, strokeWidth: 4, progress: 0 }),
-    ...lineDots,
+    // bar widget — panel + a CLIPPED group so bars/labels can never escape it
+    panel("bar-p", BAR_BOX),
+    text({ id: "bar-t", x: BAR_BOX.x + 30, y: BAR_BOX.y + 36, anchor: "center-left", content: "Revenue by quarter", fontFamily: "Inter", fontSize: 26, fontWeight: 700, fill: FG, opacity: 0 }),
+    group({ id: "bar-clip", x: 0, y: 0, clip: clip(BAR_BOX) }, [
+      line({ id: "bar-axis", x1: BAR_BOX.x + 20, y1: BAR_BASE, x2: BAR_BOX.x + BAR_BOX.width - 20, y2: BAR_BASE, stroke: GRID, strokeWidth: 2, opacity: 0 }),
+      ...bars,
+    ]),
+    // line widget — panel + CLIPPED group
+    panel("line-p", LINE_BOX),
+    text({ id: "line-t", x: LINE_BOX.x + 30, y: LINE_BOX.y + 36, anchor: "center-left", content: "Growth trajectory", fontFamily: "Inter", fontSize: 26, fontWeight: 700, fill: FG, opacity: 0 }),
+    group({ id: "line-clip", x: 0, y: 0, clip: clip(LINE_BOX) }, [
+      path({ id: "line", x: 0, y: 0, d: linePath, stroke: PINK, strokeWidth: 4, progress: 0 }),
+      ...lineDots,
+    ]),
     // donut (market share) — conic gradient ring + hole
-    ellipse({ id: "donut", x: 1490, y: 360, width: 280, height: 280, anchor: "center", fill: conicGradient([{ offset: 0, color: TEAL }, { offset: 0.42, color: TEAL }, { offset: 0.42, color: VIOLET }, { offset: 0.7, color: VIOLET }, { offset: 0.7, color: GOLD }, { offset: 0.88, color: GOLD }, { offset: 0.88, color: "#2E3E5E" }, { offset: 1, color: "#2E3E5E" }]), opacity: 0, scale: 0.6 }),
-    ellipse({ id: "donut-hole", x: 1490, y: 360, width: 150, height: 150, anchor: "center", fill: "#0E1426", opacity: 0 }),
-    text({ id: "donut-c", x: 1490, y: 360, anchor: "center", content: "42%", fontFamily: "Inter", fontSize: 48, fontWeight: 800, fill: TEAL, opacity: 0 }),
+    ellipse({ id: "donut", x: cx(DONUT_BOX), y: cy(DONUT_BOX), width: 280, height: 280, anchor: "center", fill: conicGradient([{ offset: 0, color: TEAL }, { offset: 0.42, color: TEAL }, { offset: 0.42, color: VIOLET }, { offset: 0.7, color: VIOLET }, { offset: 0.7, color: GOLD }, { offset: 0.88, color: GOLD }, { offset: 0.88, color: "#2E3E5E" }, { offset: 1, color: "#2E3E5E" }]), opacity: 0, scale: 0.6 }),
+    ellipse({ id: "donut-hole", x: cx(DONUT_BOX), y: cy(DONUT_BOX), width: 150, height: 150, anchor: "center", fill: "#0E1426", opacity: 0 }),
+    text({ id: "donut-c", x: cx(DONUT_BOX), y: cy(DONUT_BOX), anchor: "center", content: "42%", fontFamily: "Inter", fontSize: 48, fontWeight: 800, fill: TEAL, opacity: 0 }),
     text({ id: "wm", x: W - 40, y: H - 36, anchor: "center-right", content: "made with reframe", fontFamily: "Inter", fontSize: 19, fontWeight: 600, fill: "#2A3550", fixed: true }),
   ],
 
@@ -73,7 +97,7 @@ export default scene({
     beat("open", {}, [
       par(
         tween("title", { opacity: 1 }, { duration: 0.5, ease: "easeOutQuad" }),
-        cameraTo({ zoom: 1.18, x: 960, y: 300 }, { duration: 1.0, ease: "easeInOutCubic" }),
+        cameraTo(cameraFit(KPI_BOX, { margin: 90 }), { duration: 1.0, ease: "easeInOutCubic" }),
         stagger(0.12, ...KPIS.flatMap((k) => [
           tween(`${k.id}-p`, { opacity: 1 }, { duration: 0.4 }),
           tween(`${k.id}-l`, { opacity: 1 }, { duration: 0.4 }),
@@ -84,7 +108,7 @@ export default scene({
     wait(0.6),
     beat("bars", {}, [
       par(
-        cameraTo({ zoom: 1.32, x: 590, y: 770 }, { duration: 1.0, ease: "easeInOutCubic" }),
+        cameraTo(cameraFit(BAR_BOX, { margin: 70 }), { duration: 1.0, ease: "easeInOutCubic" }),
         tween("bar-p", { opacity: 1 }, { duration: 0.4 }),
         tween("bar-t", { opacity: 1 }, { duration: 0.4 }),
         tween("bar-axis", { opacity: 1 }, { duration: 0.4 }),
@@ -97,7 +121,7 @@ export default scene({
     wait(0.5),
     beat("line", {}, [
       par(
-        cameraTo({ zoom: 1.3, x: 1470, y: 760 }, { duration: 1.0, ease: "easeInOutCubic" }),
+        cameraTo(cameraFit(LINE_BOX, { margin: 70 }), { duration: 1.0, ease: "easeInOutCubic" }),
         tween("line-p", { opacity: 1 }, { duration: 0.4 }),
         tween("line-t", { opacity: 1 }, { duration: 0.4 }),
         seq(wait(0.3), tween("line", { progress: 1 }, { duration: 1.3, ease: "easeInOutCubic" })),
@@ -107,7 +131,7 @@ export default scene({
     wait(0.5),
     beat("donut", {}, [
       par(
-        cameraTo({ zoom: 1.35, x: 1490, y: 360 }, { duration: 1.0, ease: "easeInOutCubic" }),
+        cameraTo(cameraFit(DONUT_BOX, { margin: 70 }), { duration: 1.0, ease: "easeInOutCubic" }),
         tween("donut", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutBack" }),
         tween("donut-hole", { opacity: 1 }, { duration: 0.5 }),
         seq(wait(0.4), tween("donut-c", { opacity: 1 }, { duration: 0.4 })),
