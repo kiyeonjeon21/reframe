@@ -26,10 +26,12 @@ const panel = (id: string, b: Box): NodeIR =>
   rect({ id, x: cx(b), y: cy(b), width: b.width, height: b.height, radius: 18, anchor: "center", fill: "#0E1426", stroke: GRID, strokeWidth: 1.5, opacity: 0 });
 const clip = (b: Box, pad = 0) => ({ kind: "rect" as const, x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad, radius: 18 });
 
-const KPI_BOX: Box = { x: 190, y: 250, width: 1540, height: 220 };
-const BAR_BOX: Box = { x: 230, y: 600, width: 720, height: 360 };
-const LINE_BOX: Box = { x: 1000, y: 600, width: 720, height: 360 };
-const DONUT_BOX: Box = { x: 1340, y: 230, width: 300, height: 300 };
+// open-beat framing spans the header (title at y~110) + the KPI row, so the title
+// is never clipped on the first zoom. Bottom row = three equal chart panels.
+const OPEN_BOX: Box = { x: 120, y: 100, width: 1610, height: 370 };
+const BAR_BOX: Box = { x: 80, y: 600, width: 540, height: 360 };
+const LINE_BOX: Box = { x: 690, y: 600, width: 540, height: 360 };
+const DONUT_BOX: Box = { x: 1300, y: 600, width: 540, height: 360 };
 
 // ── KPIs ──
 const KPIS = [
@@ -46,7 +48,7 @@ const BAR_MAXH = BAR_BOX.height - 120;                // top headroom (title + m
 const barX = row(BARS.length, { center: cx(BAR_BOX), span: BAR_BOX.width - 200 });
 const barH = (v: number) => (v / BMAX) * BAR_MAXH;
 const bars: NodeIR[] = BARS.flatMap((v, i) => [
-  rect({ id: `bar-${i}`, x: barX[i]!, y: BAR_BASE, width: 84, height: barH(v), radius: 8, anchor: "bottom-center", fill: i === 3 ? TEAL : "#2E3E5E", scaleY: 0 }),
+  rect({ id: `bar-${i}`, x: barX[i]!, y: BAR_BASE, width: 64, height: barH(v), radius: 8, anchor: "bottom-center", fill: i === 3 ? TEAL : "#2E3E5E", scaleY: 0 }),
   text({ id: `blab-${i}`, x: barX[i]!, y: BAR_BASE + 30, anchor: "center", content: ["Q1", "Q2", "Q3", "Q4"][i]!, fontFamily: "Inter", fontSize: 22, fill: DIM, opacity: 0 }),
 ]);
 
@@ -86,10 +88,15 @@ export default scene({
       path({ id: "line", x: 0, y: 0, d: linePath, stroke: PINK, strokeWidth: 4, progress: 0 }),
       ...lineDots,
     ]),
-    // donut (market share) — conic gradient ring + hole
-    ellipse({ id: "donut", x: cx(DONUT_BOX), y: cy(DONUT_BOX), width: 280, height: 280, anchor: "center", fill: conicGradient([{ offset: 0, color: TEAL }, { offset: 0.42, color: TEAL }, { offset: 0.42, color: VIOLET }, { offset: 0.7, color: VIOLET }, { offset: 0.7, color: GOLD }, { offset: 0.88, color: GOLD }, { offset: 0.88, color: "#2E3E5E" }, { offset: 1, color: "#2E3E5E" }]), opacity: 0, scale: 0.6 }),
-    ellipse({ id: "donut-hole", x: cx(DONUT_BOX), y: cy(DONUT_BOX), width: 150, height: 150, anchor: "center", fill: "#0E1426", opacity: 0 }),
-    text({ id: "donut-c", x: cx(DONUT_BOX), y: cy(DONUT_BOX), anchor: "center", content: "42%", fontFamily: "Inter", fontSize: 48, fontWeight: 800, fill: TEAL, opacity: 0 }),
+    // donut widget — its OWN bottom-row panel (market share); conic ring + hole,
+    // clipped like the others so it can never spill into a neighbour
+    panel("donut-p", DONUT_BOX),
+    text({ id: "donut-t", x: DONUT_BOX.x + 30, y: DONUT_BOX.y + 36, anchor: "center-left", content: "Market share", fontFamily: "Inter", fontSize: 26, fontWeight: 700, fill: FG, opacity: 0 }),
+    group({ id: "donut-clip", x: 0, y: 0, clip: clip(DONUT_BOX) }, [
+      ellipse({ id: "donut", x: cx(DONUT_BOX), y: cy(DONUT_BOX) + 24, width: 240, height: 240, anchor: "center", fill: conicGradient([{ offset: 0, color: TEAL }, { offset: 0.42, color: TEAL }, { offset: 0.42, color: VIOLET }, { offset: 0.7, color: VIOLET }, { offset: 0.7, color: GOLD }, { offset: 0.88, color: GOLD }, { offset: 0.88, color: "#2E3E5E" }, { offset: 1, color: "#2E3E5E" }]), opacity: 0, scale: 0.6 }),
+      ellipse({ id: "donut-hole", x: cx(DONUT_BOX), y: cy(DONUT_BOX) + 24, width: 130, height: 130, anchor: "center", fill: "#0E1426", opacity: 0 }),
+      text({ id: "donut-c", x: cx(DONUT_BOX), y: cy(DONUT_BOX) + 24, anchor: "center", content: "42%", fontFamily: "Inter", fontSize: 44, fontWeight: 800, fill: TEAL, opacity: 0 }),
+    ]),
     text({ id: "wm", x: W - 40, y: H - 36, anchor: "center-right", content: "made with reframe", fontFamily: "Inter", fontSize: 19, fontWeight: 600, fill: "#2A3550", fixed: true }),
   ],
 
@@ -97,7 +104,7 @@ export default scene({
     beat("open", {}, [
       par(
         tween("title", { opacity: 1 }, { duration: 0.5, ease: "easeOutQuad" }),
-        cameraTo(cameraFit(KPI_BOX, { margin: 90 }), { duration: 1.0, ease: "easeInOutCubic" }),
+        cameraTo(cameraFit(OPEN_BOX, { margin: 60 }), { duration: 1.0, ease: "easeInOutCubic" }),
         stagger(0.12, ...KPIS.flatMap((k) => [
           tween(`${k.id}-p`, { opacity: 1 }, { duration: 0.4 }),
           tween(`${k.id}-l`, { opacity: 1 }, { duration: 0.4 }),
@@ -132,6 +139,8 @@ export default scene({
     beat("donut", {}, [
       par(
         cameraTo(cameraFit(DONUT_BOX, { margin: 70 }), { duration: 1.0, ease: "easeInOutCubic" }),
+        tween("donut-p", { opacity: 1 }, { duration: 0.4 }),
+        tween("donut-t", { opacity: 1 }, { duration: 0.4 }),
         tween("donut", { opacity: 1, scale: 1 }, { duration: 0.7, ease: "easeOutBack" }),
         tween("donut-hole", { opacity: 1 }, { duration: 0.5 }),
         seq(wait(0.4), tween("donut-c", { opacity: 1 }, { duration: 0.4 })),
