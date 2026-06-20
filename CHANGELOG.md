@@ -8,6 +8,15 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.34] - 2026-06-20
+
+### Fixed
+
+- **`autoFoley` now pans by a node's WORLD x, not its local x.** A child's local x is ~0 inside an
+  offset group, so cues were panning hard-left on real (grouped) scenes; resolved via
+  `nodeParentMatrix` at each event (device-hero auto-pans now spread across L/C/R). Gesture detection
+  still uses local coords (camera-free).
+
 ## [0.6.33] - 2026-06-20
 
 ### Added
