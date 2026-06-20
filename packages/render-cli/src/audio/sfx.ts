@@ -23,6 +23,14 @@ const ROOT =
 const VENDORED = join(ROOT, "assets", "sfx");
 const CACHE = join(tmpdir(), "reframe-sfx-cache");
 
+/**
+ * Names whose curated CC0 `<name>.wav` sample sounds better than the synth, so a
+ * bare `sfx:` uses the sample by default (these are mostly one-shot "hero" sounds
+ * where fidelity matters more than per-use variation). Opt back into the varying
+ * synth per cue with `params: { synth: 1 }`. Every other sfx name always synthesizes.
+ */
+const SAMPLE_DEFAULT = new Set<string>(["whoosh", "rise", "shimmer", "thud", "pop", "tick"]);
+
 function fnv1a(text: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
@@ -57,9 +65,15 @@ export async function resolveCueFile(cue: ResolvedCue, sceneDir: string): Promis
       `audio cue file "${p}" not found (tried absolute, scene-relative, assets/sfx/)`,
     );
   }
-  // `sfx:` always synthesizes — so the pitch/auto-variation applies. (A real
-  // sample is still available by name via an explicit `file: "whoosh.wav"` cue.)
+  // These six names ship a curated CC0 sample that sounds better than the synth,
+  // so a bare `sfx:` uses it by default (the sample is fixed — it doesn't pitch-
+  // vary). Every OTHER name always synthesizes (so it auto-varies). To force the
+  // varying synth for one of these, pass `params: { synth: 1 }`.
   const { name, params } = cue.source;
+  if (SAMPLE_DEFAULT.has(name) && !params.synth) {
+    const vendored = join(VENDORED, `${name}.wav`);
+    if (existsSync(vendored)) return vendored;
+  }
   return writeCached(`${name}-${fnv1a(JSON.stringify(params))}`, () => synthSfx(name, params));
 }
 

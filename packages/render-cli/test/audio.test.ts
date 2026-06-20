@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { AudioPlan } from "@reframe/core";
 import { BGM_SYNTHS, SFX_NAMES } from "@reframe/core";
 import { atempoChain, buildFilterGraph } from "../src/audio/mux.js";
+import { resolveCueFile } from "../src/audio/sfx.js";
 import { synthBgm, synthSfx } from "../src/audio/synth.js";
 import { encodeWavMono16 } from "../src/audio/wav.js";
 
@@ -145,6 +146,25 @@ describe("buildFilterGraph", () => {
     expect(graph).not.toContain("afade");
     expect(graph).not.toContain("pan=stereo");
     expect(graph).toContain("volume=0.9,adelay=2000:all=1[c0]"); // cue chain unchanged
+  });
+});
+
+describe("sample-default routing (sfx → wav vs synth)", () => {
+  const cue = (name: string, params: Record<string, number> = {}) =>
+    ({ t: 0, gain: 1, duration: 0.3, fadeIn: 0, fadeOut: 0, pan: 0, source: { kind: "sfx" as const, name: name as never, params } });
+
+  it("a hero name (whoosh) defaults to the curated .wav sample", async () => {
+    expect(await resolveCueFile(cue("whoosh"), "/tmp")).toMatch(/assets[/\\]sfx[/\\]whoosh\.wav$/);
+  });
+  it("params.synth forces the varying synth for a hero name", async () => {
+    const p = await resolveCueFile(cue("whoosh", { synth: 1 }), "/tmp");
+    expect(p).not.toMatch(/whoosh\.wav$/);
+    expect(p).toMatch(/whoosh-/); // synthesized cache file
+  });
+  it("a non-hero name (boom) always synthesizes", async () => {
+    const p = await resolveCueFile(cue("boom"), "/tmp");
+    expect(p).not.toMatch(/assets[/\\]sfx/);
+    expect(p).toMatch(/boom-/);
   });
 });
 

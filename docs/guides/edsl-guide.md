@@ -588,8 +588,9 @@ or your own path. **Mixing**: any cue takes `fadeIn`/`fadeOut` (seconds) and `pa
 **Recorded samples** are a separate layer from the synth palette: use a `file:` cue to
 play a CC0 file from `assets/sfx/` — keyboard typing (`keypress-*.wav`, also driven by
 `textTypeCues`), `footstep_*`, and the Kenney UI pack (`click_*`/`confirmation_*`/
-`select_*`/…). A bare `sfx:` name always synthesizes (so it pitch-varies); pass
-`file: "whoosh.wav"` to play the recorded version instead. Audition the procedural set
+`select_*`/…). Six "hero" names (`whoosh`/`rise`/`shimmer`/`thud`/`pop`/`tick`) default to a
+curated CC0 sample (better fidelity, fixed — no pitch-vary); add `params: { synth: 1 }`
+to use the varying synth instead. Every other `sfx:` name synthesizes. Audition the procedural set
 with `examples/scenes/sfx-showcase.ts` and the samples with `sample-showcase.ts`.
 
 ## Rules
