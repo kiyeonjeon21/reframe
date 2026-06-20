@@ -8,6 +8,25 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.43] - 2026-06-21
+
+### Added
+
+#### Structured validation errors (`code` + `path` alongside the message)
+
+- `SceneValidationError` now carries **`.issues: ValidationIssue[]`** — each problem is
+  `{ code, path, message }` with a stable machine `code` (`unknown-blend`, `duplicate-node-id`,
+  `unknown-timeline-label`, `bad-duration`, …) and a `path` locator (`nodes.box`,
+  `timeline.beat(in)[0]`, `camera.zoom`, `audio.cues[0]`), so a consumer can categorize a
+  failure and point a UI at the offending element instead of parsing prose.
+- Propagated in-process: `SceneLoadError.issues` carries them across the scene's own bundled
+  core (read as a plain property, since `instanceof` can't cross the bundle), and
+  `reframe compile --json` failures include `issues` (`{ ok:false, error, kind, issues? }`).
+  `ValidationIssue` is exported from `@reframe/core` and `reframe-video/compile`.
+- **Fully back-compat / additive**: every message is byte-identical, and `.problems` (string[])
+  + `.message` + the class identity are unchanged — the existing `toThrow(/…/)` suite passes
+  untouched. Validation isn't on the render path, so goldens are unaffected.
+
 ## [0.6.42] - 2026-06-21
 
 ### Added

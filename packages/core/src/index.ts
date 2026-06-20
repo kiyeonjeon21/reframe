@@ -1,6 +1,6 @@
 export * from "./ir.js";
 export * from "./dsl.js";
-export { validateScene, validateComposition, SceneValidationError, PROPS_BY_TYPE } from "./validate.js";
+export { validateScene, validateComposition, SceneValidationError, PROPS_BY_TYPE, type ValidationIssue } from "./validate.js";
 export {
   compileComposition,
   type CompiledComposition,

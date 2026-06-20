@@ -11,3 +11,4 @@
  */
 export { isComposition, loadModule, loadScene, loadSceneFromCode, SceneLoadError } from "./loadScene.js";
 export { checkDeterminism } from "./determinism.js";
+export type { ValidationIssue } from "@reframe/core";
