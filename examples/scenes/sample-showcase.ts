@@ -12,7 +12,7 @@ const W = 1920, H = 1080, CX = 960, CY = 480;
 const GRP = {
   keypress: "#54D6C0", footstep: "#E08CFF", click: "#3AA0FF",
   confirm: "#46E5A0", maximize: "#FFC861", select: "#7C5CFF",
-  pluck: "#FF6FA5", misc: "#FF6B6B",
+  pluck: "#FF6FA5", misc: "#FF6B6B", ui: "#9D8CFF", impact: "#FF8A5C",
 } as const;
 
 const SAMPLES: { f: string; g: keyof typeof GRP }[] = [
@@ -25,6 +25,23 @@ const SAMPLES: { f: string; g: keyof typeof GRP }[] = [
   { f: "select_001.ogg", g: "select" }, { f: "select_002.ogg", g: "select" }, { f: "select_003.ogg", g: "select" },
   { f: "pluck_001.ogg", g: "pluck" }, { f: "pluck_002.ogg", g: "pluck" },
   { f: "bong_001.ogg", g: "misc" }, { f: "glass_001.ogg", g: "misc" }, { f: "open_001.ogg", g: "misc" },
+  // Kenney Interface — added UI families
+  { f: "back_001.ogg", g: "ui" }, { f: "back_002.ogg", g: "ui" },
+  { f: "close_001.ogg", g: "ui" }, { f: "close_002.ogg", g: "ui" },
+  { f: "drop_001.ogg", g: "ui" }, { f: "drop_002.ogg", g: "ui" },
+  { f: "error_001.ogg", g: "ui" }, { f: "error_002.ogg", g: "ui" },
+  { f: "glitch_001.ogg", g: "ui" }, { f: "glitch_002.ogg", g: "ui" },
+  { f: "minimize_001.ogg", g: "ui" }, { f: "minimize_002.ogg", g: "ui" },
+  { f: "switch_001.ogg", g: "ui" }, { f: "switch_002.ogg", g: "ui" },
+  { f: "toggle_001.ogg", g: "ui" }, { f: "toggle_002.ogg", g: "ui" },
+  { f: "scroll_001.ogg", g: "ui" }, { f: "scratch_001.ogg", g: "ui" },
+  // Kenney RPG Audio — impact / foley
+  { f: "chop.ogg", g: "impact" }, { f: "knifeSlice.ogg", g: "impact" }, { f: "knifeSlice2.ogg", g: "impact" },
+  { f: "metalClick.ogg", g: "impact" }, { f: "metalLatch.ogg", g: "impact" },
+  { f: "metalPot1.ogg", g: "impact" }, { f: "metalPot2.ogg", g: "impact" },
+  { f: "handleCoins.ogg", g: "impact" }, { f: "handleCoins2.ogg", g: "impact" },
+  { f: "doorOpen_1.ogg", g: "impact" }, { f: "doorClose_1.ogg", g: "impact" },
+  { f: "creak1.ogg", g: "impact" }, { f: "bookFlip1.ogg", g: "impact" },
 ];
 
 const stem = (f: string) => f.replace(/\.[^.]+$/, "");
@@ -66,7 +83,7 @@ export default scene({
   ),
 
   behaviors: [
-    oscillate("title", "opacity", { amplitude: 0.04, frequency: 0.3 }, { from: 0, until: 18 }),
+    oscillate("title", "opacity", { amplitude: 0.04, frequency: 0.3 }, { from: 0, until: 40 }),
   ],
 
   audio: {

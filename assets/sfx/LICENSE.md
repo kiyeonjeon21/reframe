@@ -6,6 +6,8 @@ Verified against each asset page's license field on 2026-06-11.
 |---|---|---|---|
 | keypress-001/004/007/010/014.wav | [Keyboard Soundpack #1](https://opengameart.org/content/keyboard-soundpack-1-typing-and-single-keystrokes) (Cherry KC 1000 recordings) | unicaegames | CC0 |
 | click_001/002/003/004.ogg, confirmation_001/002/003/004.ogg, maximize_001/002/005/009.ogg, open_001.ogg, pluck_001/002.ogg, select_001/002/003.ogg, bong_001.ogg, glass_001.ogg | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | Kenney (kenney.nl) | CC0 |
+| back_001/002.ogg, close_001/002.ogg, drop_001/002.ogg, error_001/002.ogg, glitch_001/002.ogg, minimize_001/002.ogg, switch_001/002.ogg, toggle_001/002.ogg, scroll_001.ogg, scratch_001.ogg | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | Kenney (kenney.nl) | CC0 |
+| chop.ogg, knifeSlice.ogg, knifeSlice2.ogg, metalClick.ogg, metalLatch.ogg, metalPot1/2.ogg, handleCoins.ogg, handleCoins2.ogg, doorOpen_1.ogg, doorClose_1.ogg, creak1.ogg, bookFlip1.ogg | [RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney (kenney.nl) | CC0 |
 | tick.wav (tick_001), pop.wav (drop_002), shimmer.wav (glass_002 + echo tail) | [Interface Sounds](https://opengameart.org/content/interface-sounds) | Kenney (kenney.nl) | CC0 |
 | whoosh.wav (wind body), rise.wav (reversed slice) | [Air whoosh](https://opengameart.org/content/air-whoosh) | qubodup | CC0 |
 | whoosh.wav (transient layer: swish-9) | [Swishes Sound Pack](https://opengameart.org/content/swishes-sound-pack) | artisticdude | CC0 |
