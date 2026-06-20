@@ -2,11 +2,13 @@
 /**
  * `reframe lint <scene.ts|.json> [--json] [--strict]` — flag the surface that
  * ISN'T overlay-addressable (motion with no label can't be retimed by an edit
- * layer, and a base regeneration can silently drop it), plus an addressability
- * summary. `--strict` exits non-zero when there are findings (a CI gate).
+ * layer, and a base regeneration can silently drop it), PLUS verify the scene is
+ * a pure function of time (deterministic: same source → same IR). Together this is
+ * the "studio-readiness" gate. `--strict` exits non-zero on findings (a CI gate).
  */
 import { compileScene, lintScene, sceneManifest } from "@reframe/core";
 import { loadScene } from "./loadScene.js";
+import { checkDeterminism } from "./determinism.js";
 
 const args = process.argv.slice(2);
 const json = args.includes("--json");
@@ -19,7 +21,9 @@ if (!path) {
 
 async function main() {
   const compiled = compileScene(await loadScene(path!));
-  const findings = lintScene(compiled);
+  // addressability (IR-level) + determinism (source-level; .json has no source to re-eval)
+  const det = await checkDeterminism(path!);
+  const findings = [...det.findings, ...lintScene(compiled)];
   const s = sceneManifest(compiled).summary;
 
   if (json) {
@@ -29,7 +33,7 @@ async function main() {
       `# ${s.nodeCount} nodes · ${s.labeledSteps} labeled steps · motion addressable ${(s.motionAddressableRatio * 100).toFixed(0)}% (${s.unlabeledMotionSteps} unlabeled)`,
     );
     if (findings.length === 0) {
-      console.log("✓ no addressability findings");
+      console.log("✓ addressable + deterministic — no findings");
     } else {
       for (const f of findings) console.log(`  ${f.severity === "error" ? "✗" : "!"} [${f.rule}] ${f.message}`);
     }

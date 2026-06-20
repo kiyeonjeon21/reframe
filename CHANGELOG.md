@@ -8,6 +8,26 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.42] - 2026-06-21
+
+### Added
+
+#### Determinism guard — `reframe lint` now enforces scene purity
+
+- Scenes must be pure functions of time (no `Math.random()`/`Date`), but nothing enforced
+  it: a non-pure scene compiled to a *different IR each time*, silently breaking
+  reproducibility (the golden tests only cover IR→render, not source→IR). `reframe lint` now
+  closes that gap for `.ts` sources: it bundles the scene once, **evaluates it twice**, and
+  emits a `non-deterministic-render` finding pinned to the first IR address that differs
+  (e.g. `nodes[0].props.x changed 0.42 → 0.97`), with a hint at the culprit construct. Part
+  of the same `--strict` gate as the addressability checks.
+- New in-process API **`checkDeterminism(path)`** (exported via `reframe-video/compile`) →
+  `{ deterministic, findings }`, so an embedder can verify a freshly generated scene before
+  trusting it. Additive: pure scenes report clean, and the check only runs on source inputs
+  (`.json` is the IR itself). Implementation note: the two evals use distinct cache-busting
+  comments to defeat Node's `data:`-URL ESM module cache (without which the second eval would
+  return the cached module and miss module-level nondeterminism).
+
 ## [0.6.41] - 2026-06-21
 
 ### Added

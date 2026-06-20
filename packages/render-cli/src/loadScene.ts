@@ -47,7 +47,7 @@ const clean = (err: unknown): string =>
 const ALIAS = { "@reframe/core": CORE_ENTRY, "reframe-video": CORE_ENTRY };
 
 /** esbuild a scene to ESM code (from a file entry or inline source) → throws `bundle`. */
-async function bundle(input: { path: string } | { code: string; resolveDir: string }): Promise<string> {
+export async function bundle(input: { path: string } | { code: string; resolveDir: string }): Promise<string> {
   const common: BuildOptions = {
     bundle: true,
     format: "esm",
@@ -124,6 +124,15 @@ export async function loadScene(path: string): Promise<SceneIR> {
  *  where relative imports in the source resolve. */
 export async function loadSceneFromCode(code: string, resolveDir: string = process.cwd()): Promise<SceneIR> {
   return asScene(await importDefault(await bundle({ code, resolveDir }), "<source>"), "<source>");
+}
+
+/** Evaluate ALREADY-BUNDLED scene code into a validated SceneIR. `buster` is
+ *  appended as a comment so the `data:` URL differs per call — Node caches ESM by
+ *  URL, so without it a second eval of identical code returns the cached module
+ *  (and never re-runs module-level code). Used by the determinism check to eval
+ *  the same bundle twice and compare. */
+export async function evalSceneOnce(code: string, buster: string): Promise<SceneIR> {
+  return asScene(await importDefault(`${code}\n//det-${buster}`, "<source>"), "<source>");
 }
 
 /** Load a scene OR composition, validated and discriminated. */

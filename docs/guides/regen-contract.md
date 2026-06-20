@@ -72,7 +72,11 @@ checkable (no render):
   their editable/animated props, states, timeline labels with patchable params,
   beats, behaviors). Read it before patching so you target real, stable addresses.
 - `reframe lint <scene> [--strict]` — flag motion with no `label` (timing an
-  overlay can't reach and a regen can silently drop) + a `motionAddressableRatio`.
+  overlay can't reach and a regen can silently drop) + a `motionAddressableRatio`,
+  AND verify the scene is a **pure function of time**: it bundles + evaluates the
+  source twice and flags any IR that differs (a `Math.random()`/`Date` baked into a
+  prop). A non-pure scene compiles to a different IR each time, so its render is not
+  reproducible — use a seeded `wiggle()` or a scene knob instead.
 - `reframe verify-overlay <base> <overlay>...` — compose the overlay onto a base
   and report applied vs orphaned. Run it against the regenerated base to prove
   every edit survived; it exits non-zero if any address broke.
