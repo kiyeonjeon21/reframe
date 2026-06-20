@@ -2,7 +2,7 @@
 // Scrapes the PUBLIC contributions calendar (no auth/token), reconstructs the
 // week grid + metrics, then bakes the data into a scene and renders it with the
 // reframe CLI. Fetch once → bake → deterministic render (same boundary as
-// examples/gh-video). A repo-only probe — NOT shipped in the npm package.
+// labs/gh-video). A repo-only probe — NOT shipped in the npm package.
 
 import { spawn } from "node:child_process";
 import { writeFile, mkdir } from "node:fs/promises";

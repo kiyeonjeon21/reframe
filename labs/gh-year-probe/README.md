@@ -8,9 +8,9 @@ you run to make shareable videos and measure interest, not a shipped npm command
 ## Run
 
 ```sh
-pnpm exec tsx examples/gh-year-probe/generate.mts <handle> [-o out.mp4]
+pnpm exec tsx labs/gh-year-probe/generate.mts <handle> [-o out.mp4]
 # e.g.
-pnpm exec tsx examples/gh-year-probe/generate.mts torvalds -o out/torvalds.mp4
+pnpm exec tsx labs/gh-year-probe/generate.mts torvalds -o out/torvalds.mp4
 ```
 
 It scrapes the public contributions calendar, bakes the data into a scene, and renders
@@ -21,7 +21,7 @@ an mp4 (needs ffmpeg + the one-time `pnpm exec playwright install chromium`).
 - **`generate.mts`** — scrapes `github.com/users/<handle>/contributions` (no auth/token),
   reconstructs the 7×N week grid + metrics (total, busiest day, longest streak, months),
   bakes them into a temp `_gen.ts`, and renders it with the reframe CLI. Fetch once →
-  bake → deterministic render (same boundary as `examples/gh-video`).
+  bake → deterministic render (same boundary as `labs/gh-video`).
 - **`buildScene.ts`** — `buildGitHubYear(data)`, a **pure function** of the data that
   derives the whole arc: it finds the active week range, splits it into acts, locates the
   busiest month for the dive + callout, tracks the camera along the activity, ticks the

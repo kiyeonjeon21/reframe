@@ -1,7 +1,7 @@
 import { buildGhScene } from "./template.js";
 
 // Preview/example with sample data. Real videos come from generate.mts:
-//   npx tsx examples/gh-video/generate.mts <github-username>
+//   npx tsx labs/gh-video/generate.mts <github-username>
 export default buildGhScene({
   name: "Kiyeon Jeon",
   login: "kiyeonjeon21",

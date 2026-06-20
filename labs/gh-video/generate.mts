@@ -2,7 +2,7 @@
 /**
  * GitHub → video: one command, your stats as a share-worthy clip.
  *
- *   npx tsx examples/gh-video/generate.mts <github-username>
+ *   npx tsx labs/gh-video/generate.mts <github-username>
  *
  * Fetches public GitHub data (no auth), circle-crops the avatar, codegens a
  * scene from the data + template, and renders it. Output: out/gh-<user>.mp4.
@@ -47,7 +47,7 @@ async function gh(path: string): Promise<unknown> {
 async function main() {
   const user = process.argv[2];
   if (!user) {
-    console.error("usage: npx tsx examples/gh-video/generate.mts <github-username>");
+    console.error("usage: npx tsx labs/gh-video/generate.mts <github-username>");
     process.exit(2);
   }
   console.log(`fetching github.com/${user} …`);

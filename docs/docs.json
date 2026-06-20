@@ -19,7 +19,7 @@
             "pages": ["introduction", "quickstart", "the-loop"]
           },
           {
-            "group": "Guides",
+            "group": "Reference",
             "pages": [
               "guides/edsl-guide",
               "guides/directing-guide",
