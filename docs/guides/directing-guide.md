@@ -27,8 +27,7 @@ Ask for / confirm these — vague prompts are why these pieces take many rounds:
 Name the acts with `beat("...", {}, [ ... ])` before animating. A beat is a labeled,
 retimable narrative unit; its label anchors audio and lets you restructure whole sections.
 A reliable arc: **setup → inciting beat → rising → climax → resolution.** Decide what each
-beat shows and how long, THEN fill in motion. (See `device-hero.ts`: `beat("ki"/"seung"/
-"jeon"/"gyeol", …)` — entrance → it-takes-off → everywhere → resolve.)
+beat shows and how long, THEN fill in motion. (See `device-hero.ts`: `beat("ki"/"seung"/"jeon"/"gyeol", …)` — entrance → it-takes-off → everywhere → resolve.)
 
 ### 2. Match references with `diff` (stop eyeballing)
 
@@ -59,8 +58,7 @@ flagship scenes — reuse the technique, vary the content:
   `terminal-claude.ts` helpers `cam()`/`scroll()`/`show()` — focus + scroll + reveal as
   parameterized eased moves.)
 - **Curved entrances, not straight slides.** A hero enters on a `motionPath` arc with
-  `easeOutBack` (overshoot, then settle). (`device-hero.ts` `motionPath("phone-cam", [[…]],
-  { ease: "easeOutBack" })`.)
+  `easeOutBack` (overshoot, then settle). (`device-hero.ts` `motionPath("phone-cam", [[…]], { ease: "easeOutBack" })`.)
 - **Fake depth.** Layer a backdrop of many faint concentric ellipses (a smooth glow, no hard
   edge) + a spotlight + a cast shadow that tracks the hero + an impact ring on landing.
   (`device-hero.ts` backdrop/spot/shadow/ring rig.) Or use real depth: `camera.perspective`
@@ -68,9 +66,8 @@ flagship scenes — reuse the technique, vary the content:
 - **Layered idle motion.** Nothing should sit perfectly still. `oscillate` a few nodes at
   DIFFERENT frequencies (slow float, slower tilt, a fast accent) for life during holds.
 - **Sound on the beats.** `scene.audio` cues anchor to your beat/timeline labels, so they
-  survive retiming: `{ at: "land", file: "bong_001.ogg" }`, `{ at: "viral", offset: 0.4,
-  sfx: "pop" }`. An `ambient-pad` bgm with `duck` under the hits. Quote `reframe labels` to
-  see exact seconds.
+  survive retiming: `{ at: "land", file: "bong_001.ogg" }`, `{ at: "viral", offset: 0.4, sfx: "pop" }`.
+  An `ambient-pad` bgm with `duck` under the hits. Quote `reframe labels` to see exact seconds.
 
 ### 4. Verify objectively (don't argue about "more dynamic")
 
