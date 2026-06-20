@@ -8,6 +8,24 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.39] - 2026-06-20
+
+### Added
+
+#### Clip ripple — label-anchored `video.start` (Spine 2b)
+
+- A `video` node's **`start` now accepts a timeline label string**, not just a number:
+  `video({ start: "shot-2" })` anchors playback to that label's t0 (resolved from `compiled.labelTimes`
+  in `evaluate` and the clip-audio mux), so a clip **ripples** when its shot is retimed — by an overlay
+  (`timeline.shot-0.duration`) or an AI regeneration — instead of staying baked and playing the wrong
+  frames / showing a black gap. `photoMontage`/`videoMontage` now anchor each video shot to its
+  `shot-${i}` label, so montage clips ripple automatically.
+- This completes retime-survival for media pieces: **stills** (the montage `seq`), **titles/straps**
+  (`beat.at`, 0.6.38), and now **video clips** all follow a retiming together. **Additive and
+  golden-safe**: numeric `start` is unchanged and a label resolves to the same time for a non-retimed
+  render → byte-identical output (render-cli over-extracts conservatively for a string `start`).
+  `validateScene` rejects an unknown label.
+
 ## [0.6.38] - 2026-06-20
 
 ### Added

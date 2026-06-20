@@ -280,10 +280,12 @@ export interface VideoProps extends BaseProps {
   /** Box-fit into width×height, like the image node. `"fill"` (default) | `"cover"`. */
   fit?: ImageFit;
   /**
-   * Scene-time (seconds) at which playback begins. Before it, frame 0 (clipStart) shows;
-   * the node's visibility is still controlled by opacity/timeline. Default 0.
+   * Scene-time at which playback begins. Before it, frame 0 (clipStart) shows; the
+   * node's visibility is still controlled by opacity/timeline. Default 0. A NUMBER is
+   * an absolute time; a STRING anchors the start to that timeline label's t0 (like
+   * `beat.at`), so the clip follows when its shot is retimed (e.g. `start: "shot-2"`).
    */
-  start?: number;
+  start?: number | string;
   /** Playback speed multiplier (2 = double speed). Default 1. */
   rate?: number;
   /** Source in-point (seconds) shown at `start`. Default 0. */

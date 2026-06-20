@@ -581,7 +581,9 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         const [ax, ay] = ANCHOR_FACTORS[node.props.anchor ?? "top-left"];
         // pure source-frame index at scene-time t (renderer clamps to extracted count)
         const fps = compiled.ir.fps ?? 30;
-        const start = node.props.start ?? 0;
+        // a string `start` anchors playback to a timeline label's t0 (ripples on retime)
+        const startRaw = node.props.start;
+        const start = typeof startRaw === "string" ? compiled.labelTimes.get(startRaw)?.t0 ?? 0 : startRaw ?? 0;
         const rate = node.props.rate ?? 1;
         const clipStart = node.props.clipStart ?? 0;
         const srcT = clipStart + Math.max(0, t - start) * rate;

@@ -157,7 +157,11 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   analog of motionPreset.
 - Video clip (`video` node, `packages/core/src/ir.ts` + `render-cli/src/videos.ts`) — draw a
   clip as a layer; plays on the scene clock (`frame = round((clipStart + max(0,t-start)*rate)*fps)`,
-  computed purely in `evaluate` from `compiled.ir.fps`). Deterministic by **frame extraction**:
+  computed purely in `evaluate` from `compiled.ir.fps`). **`start` may be a label string** (not just
+  a number): it resolves to that timeline label's t0 (in `evaluate` + `collectClipAudio`, via
+  `compiled.labelTimes`), so a clip **ripples** when its shot is retimed; `photoMontage` anchors each
+  clip to its `shot-${i}` label. Numeric `start` is byte-identical (render-cli over-extracts for a
+  string `start`). Deterministic by **frame extraction**:
   render-cli runs `ffmpeg -vf fps=<sceneFps>` (`buildVideoFrameAssets`), the capture page decodes
   them into a `VideoRegistry`, and the renderer draws `frame` via the shared `drawRaster` (cover
   like image) — NOT a live `<video>` seek, so byte-identical (same machine). Props src/width/height/

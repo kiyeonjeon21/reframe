@@ -478,6 +478,9 @@ tween("clip", { scale: 1.08 }, { duration: 5 })  // transform composes with play
   `fit` (`"cover"` like the image node), `start` (scene-time playback begins), `rate`
   (speed), `clipStart` (source in-point s), `volume` (clip-audio gain, default 1; `0` mutes).
   Transform/opacity/effects compose as usual.
+- **`start` can be a label** (not just a number): `start: "shot-2"` anchors playback to that
+  timeline label's time (like `beat.at`), so the clip **ripples** when its shot is retimed (by an
+  overlay or AI regen) instead of desyncing. `photoMontage` does this automatically for video shots.
 - **Deterministic by frame extraction**: render-cli runs `ffmpeg -vf fps=<sceneFps>` to pull
   the clip's frames, and the renderer draws frame `round(t·fps)` — no live `<video>` seek, so
   it stays byte-identical (same machine).

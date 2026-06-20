@@ -31,7 +31,10 @@ function runFfmpeg(args: string[]): Promise<void> {
 
 /** Seconds of source footage a given video node will reach over the scene. */
 function neededSeconds(node: Extract<NodeIR, { type: "video" }>, duration: number): number {
-  const start = node.props.start ?? 0;
+  // a label-anchored `start` (string) only bounds how much footage to EXTRACT here;
+  // treating it as 0 over-extracts (harmless). The exact playback start is resolved in
+  // evaluate (frame mapping) from the label's time.
+  const start = typeof node.props.start === "string" ? 0 : node.props.start ?? 0;
   const rate = node.props.rate ?? 1;
   const clipStart = node.props.clipStart ?? 0;
   return clipStart + Math.max(0, duration - start) * Math.max(0, rate) + 1 / 30; // +1 frame slack
