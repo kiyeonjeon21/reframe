@@ -8,6 +8,24 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.27] - 2026-06-20
+
+### Added
+
+#### Richer, varied sound effects
+
+- **The procedural sfx palette grew from 6 to 21** — added `swish` `riser` `warp` (transition),
+  `click` `blip` `select` (ui), `boom` `knock` (impact), `chime` `ding` `coin` `sparkle` `success`
+  (positive), `zap` `error` (alert), alongside the original `whoosh`/`pop`/`tick`/`rise`/`shimmer`/`thud`.
+- **Repeats no longer sound identical.** A cue's `seed` now shifts the sound's PITCH (a musical step)
+  and texture — not just the noise — and **defaults to the cue's order**, so a run of the same sfx
+  becomes a little phrase with no setup. New `params.pitch` gives an explicit frequency multiplier.
+  Still fully seeded/deterministic (same `(name, seed, pitch)` → byte-identical WAV).
+- **Four new bgm beds** beside `ambient-pad`: `lofi`, `pulse`, `tension`, `uplift` (`bgm.synth`).
+- A deterministic peak guard keeps every (possibly pitch-shifted) sfx clamp-safe. Demo:
+  `examples/scenes/sfx-showcase.ts` auditions the whole palette. The sfx/bgm name sets are validated at
+  compile time. **Note:** existing scenes' repeated cues now auto-vary (their audio is slightly richer).
+
 ## [0.6.26] - 2026-06-20
 
 ### Added

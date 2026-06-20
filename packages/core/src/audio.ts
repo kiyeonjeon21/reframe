@@ -9,16 +9,20 @@
 
 import type { CompiledScene } from "./compile.js";
 import type { CompiledComposition } from "./composeComposition.js";
-import type { NodeIR, SceneIR, SfxName } from "./ir.js";
+import type { BgmSynth, NodeIR, SceneIR, SfxName } from "./ir.js";
 
 /** Nominal cue lengths (s) for duck-window math; file cues use a default. */
 export const SFX_DURATION: Record<SfxName, number> = {
-  whoosh: 0.35,
-  pop: 0.12,
-  tick: 0.03,
-  rise: 0.5,
-  shimmer: 0.9,
-  thud: 0.25,
+  // transition
+  whoosh: 0.35, swish: 0.32, rise: 0.5, riser: 0.85, warp: 0.5,
+  // ui
+  tick: 0.03, click: 0.05, blip: 0.1, pop: 0.12, select: 0.18,
+  // impact
+  thud: 0.25, boom: 0.6, knock: 0.14,
+  // positive
+  chime: 0.7, ding: 0.5, coin: 0.3, sparkle: 0.6, shimmer: 0.9, success: 0.6,
+  // alert
+  zap: 0.22, error: 0.4,
 };
 const FILE_CUE_DURATION = 0.4;
 
@@ -58,7 +62,7 @@ export interface ClipAudio {
 export interface AudioPlan {
   duration: number;
   bgm: {
-    source: { kind: "file"; path: string } | { kind: "synth"; name: "ambient-pad" };
+    source: { kind: "file"; path: string } | { kind: "synth"; name: BgmSynth };
     gain: number;
     fadeIn: number;
     fadeOut: number;
@@ -138,7 +142,9 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
       fadeOut: cue.fadeOut ?? 0,
       pan: cue.pan ?? 0,
       source: cue.sfx
-        ? { kind: "sfx", name: cue.sfx, params: cue.params ?? {} }
+        ? // auto-vary: default the seed to the cue's order so repeated sfx differ
+          // (pitch/texture); an explicit params.seed always wins.
+          { kind: "sfx", name: cue.sfx, params: { seed: index, ...cue.params } }
         : { kind: "file", path: cue.file! },
     });
   }
@@ -238,7 +244,9 @@ export function resolveCompositionAudioPlan(comp: CompiledComposition): AudioPla
       fadeOut: cue.fadeOut ?? 0,
       pan: cue.pan ?? 0,
       source: cue.sfx
-        ? { kind: "sfx", name: cue.sfx, params: cue.params ?? {} }
+        ? // auto-vary: default the seed to the cue's order so repeated sfx differ
+          // (pitch/texture); an explicit params.seed always wins.
+          { kind: "sfx", name: cue.sfx, params: { seed: index, ...cue.params } }
         : { kind: "file", path: cue.file! },
     });
   }

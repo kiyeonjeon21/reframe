@@ -11,7 +11,8 @@ import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ResolvedCue } from "@reframe/core";
-import { synthAmbientPad, synthSfx } from "./synth.js";
+import { synthBgm, synthSfx } from "./synth.js";
+import type { BgmSynth } from "@reframe/core";
 import { encodeWavMono16 } from "./wav.js";
 
 // packaged: dist/cli.js → <pkg>/assets/sfx; repo: src/audio → <root>/assets/sfx
@@ -64,7 +65,7 @@ export async function resolveCueFile(cue: ResolvedCue, sceneDir: string): Promis
 }
 
 export async function resolveBgmFile(
-  source: { kind: "file"; path: string } | { kind: "synth"; name: "ambient-pad" },
+  source: { kind: "file"; path: string } | { kind: "synth"; name: BgmSynth },
   duration: number,
   sceneDir: string,
 ): Promise<string> {
@@ -75,5 +76,5 @@ export async function resolveBgmFile(
     }
     throw new Error(`bgm file "${p}" not found`);
   }
-  return writeCached(`ambient-pad-${duration.toFixed(2)}`, () => synthAmbientPad(duration));
+  return writeCached(`${source.name}-${duration.toFixed(2)}`, () => synthBgm(source.name, duration));
 }
