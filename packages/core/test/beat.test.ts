@@ -122,6 +122,79 @@ describe("beats", () => {
     expect(compileScene(ir).labelTimes.get("La")?.t0).toBe(0); // untouched
   });
 
+  it("insertTimeline splices a beat into a named parent at a position", () => {
+    const base = scene({
+      id: "demo",
+      size,
+      nodes: [card()],
+      timeline: beat("group", {}, [
+        beat("a", {}, [tween("card", { opacity: 1 }, { duration: 0.5, label: "La" })]),
+        beat("c", {}, [tween("card", { opacity: 0.2 }, { duration: 0.5, label: "Lc" })]),
+      ]),
+    });
+    const { ir, report } = composeScene(base, {
+      reframeOverlay: 1,
+      name: "ins",
+      target: "demo",
+      insertTimeline: [
+        {
+          into: "group",
+          after: "a",
+          step: beat("b", {}, [tween("card", { opacity: 0.5 }, { duration: 0.5, label: "Lb" })]),
+        },
+      ],
+    });
+    const c = compileScene(ir);
+    expect(report.orphans).toHaveLength(0);
+    expect(report.applied.some((x) => x.action === "insert-timeline")).toBe(true);
+    expect(c.labelTimes.get("La")?.t0).toBe(0); // play order is now a, b, c
+    expect(c.labelTimes.get("Lb")?.t0).toBe(0.5);
+    expect(c.labelTimes.get("Lc")?.t0).toBe(1.0);
+  });
+
+  it("insertNodes inserts a node before a sibling (vs addNodes which appends)", () => {
+    const base = scene({
+      id: "demo",
+      size,
+      nodes: [card(), rect({ id: "top", x: 0, y: 0, width: 10, height: 10, fill: "#FFFFFF" })],
+    });
+    const { ir, report } = composeScene(base, {
+      reframeOverlay: 1,
+      name: "ins",
+      target: "demo",
+      insertNodes: [{ node: rect({ id: "mid", x: 0, y: 0, width: 10, height: 10, fill: "#00FF00" }), before: "top" }],
+    });
+    expect(report.orphans).toHaveLength(0);
+    expect(report.applied.some((x) => x.action === "insert-node")).toBe(true);
+    expect(ir.nodes.map((n) => n.id)).toEqual(["card", "mid", "top"]); // landed under "top"
+  });
+
+  it("insert verbs orphan unknown into/before/target, leaving the scene intact", () => {
+    const base = scene({
+      id: "demo",
+      size,
+      nodes: [card()],
+      timeline: beat("group", {}, [beat("a", {}, [tween("card", { opacity: 1 }, { duration: 0.5 })])]),
+    });
+    const unknownInto = composeScene(base, {
+      reframeOverlay: 1, name: "x", target: "demo",
+      insertTimeline: [{ into: "nope", step: beat("b", {}, [tween("card", { opacity: 0.5 }, { duration: 0.5 })]) }],
+    });
+    expect(unknownInto.report.orphans).toHaveLength(1);
+
+    const unknownBefore = composeScene(base, {
+      reframeOverlay: 1, name: "y", target: "demo",
+      insertNodes: [{ node: rect({ id: "z", x: 0, y: 0, width: 10, height: 10, fill: "#FFFFFF" }), before: "ghost" }],
+    });
+    expect(unknownBefore.report.orphans).toHaveLength(1);
+
+    const missingTarget = composeScene(base, {
+      reframeOverlay: 1, name: "z", target: "demo",
+      insertTimeline: [{ into: "group", step: beat("b", {}, [tween("ghost", { opacity: 0.5 }, { duration: 0.5 })]) }],
+    });
+    expect(missingTarget.report.orphans).toHaveLength(1);
+  });
+
   it("scale stretches the interior proportionally", () => {
     const c = compileScene(
       scene({

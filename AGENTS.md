@@ -154,8 +154,11 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   start, the address a clip `start`/anchored title resolves to). Because no shot references
   another, a shot is **structurally editable by overlay and survives regen**: reorder via the
   beat `order` patch, drop via `removeTimeline: ["shot-2"]` (its layer just stays invisible),
-  swap its image via a `nodes.<id>.src` patch — see `docs/guides/regen-contract.md` and
-  `examples/overlays/montage-restructure.json`. Stable addresses `${id}-${i}`; labels
+  insert via `insertNodes` + `insertTimeline {into:"montage"}` (the "montage" beat groups the
+  shots directly so its play order is addressable; the new shot's node+beat JSON is authored by
+  the consumer, not generated), swap its image via a `nodes.<id>.src` patch — see
+  `docs/guides/regen-contract.md`, `examples/overlays/montage-restructure.json`, and
+  `examples/overlays/montage-insert.json`. Stable addresses `${id}-${i}`; labels
   `shot-${i}` (beat = shot start), `shot-${i}-in`/`-kb` (fade-in / Ken Burns), `cross-${i}`
   (crossfade into shot i), `shot-${last}-out` (closing fade) — every generated tween is
   labelled, so the motion is fully addressable / lint-clean. Each layer uses the image

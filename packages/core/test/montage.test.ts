@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { compileScene } from "../src/compile.js";
 import { composeScene } from "../src/compose.js";
 import { lintScene } from "../src/manifest.js";
-import { image, scene, video } from "../src/dsl.js";
+import { beat, image, scene, tween, video } from "../src/dsl.js";
 import { evaluate } from "../src/evaluate.js";
 import { photoMontage, videoMontage } from "../src/montage.js";
 import { SceneValidationError } from "../src/validate.js";
@@ -112,6 +112,31 @@ describe("structural editing (regen-surviving)", () => {
     const d = c.labelTimes.get("shot-0")!.t0;
     expect(a).toBeLessThan(b);
     expect(b).toBeLessThan(d);
+  });
+
+  it("insert: a hand-authored shot lands in play order, under the grade (0 orphans)", () => {
+    const m = photoMontage(imgs, { hold: 2 }); // grade on → has shot-vignette/shot-scrim
+    // the "manual / studio payload": a new layer + its self-contained shot beat
+    const layer = image({ id: "shot-x", src: "x.jpg", x: 960, y: 540, width: 1920, height: 1080, anchor: "center", fit: "cover", scale: 1, opacity: 0 });
+    const shotBeat = beat("shot-x", { nodes: ["shot-x"], parallel: true, gap: -0.6 }, [
+      tween("shot-x", { opacity: 1 }, { duration: 0.6, ease: "linear", label: "shot-x-in" }),
+      tween("shot-x", { scale: 1.12 }, { duration: 2, ease: "easeInOutQuad", label: "shot-x-kb" }),
+    ]);
+    const { ir, report } = composeScene(scene({ id: "m", size, nodes: m.nodes, timeline: m.timeline }), {
+      reframeOverlay: 1,
+      name: "insert-shot",
+      target: "m",
+      insertNodes: [{ node: layer, before: "shot-vignette" }], // paints under the grade
+      insertTimeline: [{ into: "montage", after: "shot-1", step: shotBeat }], // plays between shot-1 and shot-2
+    });
+    const c = compileScene(ir);
+    expect(report.orphans).toHaveLength(0);
+    // node landed before the grade overlays
+    expect(ir.nodes.findIndex((n) => n.id === "shot-x")).toBeLessThan(ir.nodes.findIndex((n) => n.id === "shot-vignette"));
+    // beat plays in order: shot-1 < shot-x < shot-2
+    const t = (l: string) => c.beatTimes.get(l)!.t0;
+    expect(t("shot-1")).toBeLessThan(t("shot-x"));
+    expect(t("shot-x")).toBeLessThan(t("shot-2"));
   });
 
   it("remove: removeTimeline drops a shot; survivors ripple and its layer goes invisible", () => {

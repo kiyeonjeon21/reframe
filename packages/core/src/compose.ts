@@ -81,6 +81,25 @@ export interface OverlayDoc {
    * to a number — or post-compose validation rejects the dangling anchor.
    */
   removeTimeline?: string[];
+  /**
+   * Insert complete nodes at a POSITION (vs `addNodes`, which only appends at the
+   * root end / paints on top). Owned by this overlay. Position is `before`/`after`
+   * a sibling root-node id, or a numeric `index`; absent = append. Lets an inserted
+   * layer land UNDER later nodes — e.g. a new montage shot below the vignette/scrim
+   * grade (`{ node, before: "shot-vignette" }`). An unknown `before`/`after` id is an
+   * orphan; a duplicate id surfaces via post-compose validation.
+   */
+  insertNodes?: { node: NodeIR; before?: string; after?: string; index?: number }[];
+  /**
+   * Insert a timeline step/beat at a POSITION inside a named beat (vs `addTimeline`,
+   * which appends a fragment in `par`). `into` = a beat NAME (the only addressable
+   * timeline container); position is `before`/`after` a child's label/beat-name, or a
+   * numeric `index`; absent = append. The STRUCTURAL insert complement of
+   * `removeTimeline` — e.g. splice a hand-authored shot beat into a montage:
+   * `{ into: "montage", after: "shot-1", step }`. The step's tween/motionPath targets
+   * must exist (orphan otherwise), as must `into` and any `before`/`after`.
+   */
+  insertTimeline?: { into: string; before?: string; after?: string; index?: number; step: TimelineIR }[];
 }
 
 export interface ComposeReport {
@@ -95,7 +114,9 @@ export interface ComposeReport {
       | "behavior-set"
       | "behavior-remove"
       | "add-timeline"
-      | "remove-timeline";
+      | "remove-timeline"
+      | "insert-node"
+      | "insert-timeline";
   }[];
   orphans: { layer: string; address: string; reason: string }[];
   warnings: string[];
@@ -393,6 +414,29 @@ function applyOverlay(
     applied(`removeNodes.${id}`, "remove-node");
   }
 
+  // --- inserted nodes: positioned at root (vs addNodes which only appends on top) ---
+  for (const spec of overlay.insertNodes ?? []) {
+    const node = spec.node;
+    let at = ir.nodes.length; // default = append
+    if (spec.before !== undefined || spec.after !== undefined) {
+      const refId = spec.before ?? spec.after!;
+      const refIdx = ir.nodes.findIndex((n) => n.id === refId);
+      if (refIdx < 0) {
+        orphan(
+          `insertNodes.${node.id}`,
+          `unknown ${spec.before !== undefined ? "before" : "after"} node "${refId}" — known root ids: ${ir.nodes.map((n) => n.id).join(", ") || "(none)"}`,
+        );
+        continue;
+      }
+      at = spec.before !== undefined ? refIdx : refIdx + 1;
+    } else if (spec.index !== undefined) {
+      at = Math.max(0, Math.min(ir.nodes.length, spec.index));
+    }
+    ir.nodes.splice(at, 0, structuredClone(node));
+    nodeById.set(node.id, node);
+    applied(`insertNodes.${node.id}`, "insert-node");
+  }
+
   // --- added timeline fragments (motion ops): appended in par with the base ---
   if (overlay.addTimeline && overlay.addTimeline.length > 0) {
     const collectTargets = (tl: TimelineIR, out: Set<string>) => {
@@ -417,6 +461,63 @@ function applyOverlay(
         : valid.length === 1
           ? valid[0]!
           : { kind: "par", children: valid };
+      delete ir.duration;
+      ir.duration = compileScene(ir).duration;
+    }
+  }
+
+  // --- inserted timeline steps/beats: positioned inside a named beat ---
+  if (overlay.insertTimeline && overlay.insertTimeline.length > 0) {
+    // beats are the only addressable timeline containers (seq/par have no name)
+    const beatByName = new Map<string, TimelineIR & { children: TimelineIR[] }>();
+    const walkBeats = (tl: TimelineIR) => {
+      if (!("children" in tl)) return;
+      if (tl.kind === "beat") beatByName.set(tl.name, tl as TimelineIR & { children: TimelineIR[] });
+      tl.children.forEach(walkBeats);
+    };
+    if (ir.timeline) walkBeats(ir.timeline);
+    // a child's stable handle: a beat by name, any other step by its label
+    const childKey = (c: TimelineIR): string | undefined =>
+      c.kind === "beat" ? c.name : "label" in c && c.label !== undefined ? c.label : undefined;
+    const collectTargets = (tl: TimelineIR, out: Set<string>) => {
+      if (tl.kind === "tween" || tl.kind === "motionPath") out.add(tl.target);
+      if ("children" in tl) tl.children.forEach((c) => collectTargets(c, out));
+    };
+
+    let inserted = false;
+    overlay.insertTimeline.forEach((spec, i) => {
+      const parent = beatByName.get(spec.into);
+      if (!parent) {
+        orphan(`insertTimeline[${i}]`, `unknown beat "${spec.into}" — known beats: ${[...beatByName.keys()].join(", ") || "(none)"}`);
+        return;
+      }
+      const targets = new Set<string>();
+      collectTargets(spec.step, targets);
+      const missing = [...targets].filter((id) => !nodeById.has(id));
+      if (missing.length > 0) {
+        orphan(`insertTimeline[${i}]`, `step targets unknown node(s) ${missing.join(", ")} — known ids: ${knownIds()}`);
+        return;
+      }
+      let at = parent.children.length; // default = append
+      if (spec.before !== undefined || spec.after !== undefined) {
+        const refKey = spec.before ?? spec.after!;
+        const refIdx = parent.children.findIndex((c) => childKey(c) === refKey);
+        if (refIdx < 0) {
+          orphan(
+            `insertTimeline[${i}]`,
+            `unknown ${spec.before !== undefined ? "before" : "after"} step "${refKey}" in beat "${spec.into}" — children: ${parent.children.map(childKey).filter(Boolean).join(", ") || "(none)"}`,
+          );
+          return;
+        }
+        at = spec.before !== undefined ? refIdx : refIdx + 1;
+      } else if (spec.index !== undefined) {
+        at = Math.max(0, Math.min(parent.children.length, spec.index));
+      }
+      parent.children.splice(at, 0, structuredClone(spec.step));
+      applied(`insertTimeline[${i}]`, "insert-timeline");
+      inserted = true;
+    });
+    if (inserted && overlay.scene?.duration === undefined) {
       delete ir.duration;
       ir.duration = compileScene(ir).duration;
     }
