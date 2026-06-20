@@ -16,7 +16,7 @@
 
 import type { CompiledScene } from "./compile.js";
 import type { AudioCueIR, AutoFoleyOptions, NodeIR, SfxName } from "./ir.js";
-import { sampleProp } from "./evaluate.js";
+import { sampleProp, nodeParentMatrix } from "./evaluate.js";
 
 // thresholds (px/s) at sensitivity 1, tuned for 1920-wide scenes
 const V_MIN = 360; // a node counts as "moving" above this peak speed
@@ -76,6 +76,13 @@ export function autoFoley(compiled: CompiledScene, opts: AutoFoleyOptions = {}):
       os.push(num(compiled, t, id, "opacity", (node.props as { opacity?: number }).opacity ?? 1));
     }
     const speed = (i: number) => (i <= 0 ? 0 : Math.hypot(xs[i]! - xs[i - 1]!, ys[i]! - ys[i - 1]!) * fps);
+    // pan needs the node's WORLD x (a child's local x is ~0 inside an offset
+    // group → everything would pan left). Resolve the parent transform at the
+    // event moment only (cheap — once per emitted cue, not per frame).
+    const worldX = (frame: number): number => {
+      const m = nodeParentMatrix(compiled, id, frame / fps);
+      return m ? m[0] * xs[frame]! + m[2] * ys[frame]! + m[4] : xs[frame]!;
+    };
 
     // ── translation gestures → whoosh + settle → impact ──
     let i = 1;
@@ -90,13 +97,14 @@ export function autoFoley(compiled: CompiledScene, opts: AutoFoleyOptions = {}):
       if (peakV > vMin && durS >= MIN_DUR && visible) {
         if (wantWhoosh) {
           const quickFlick = durS < 0.25; // short = swish, sustained slide = whoosh
-          cands.push({ t: peak / fps, sfx: quickFlick ? "swish" : "whoosh", gain: master * loud(peakV), pan: panOf(xs[peak]!), rank: peakV });
+          cands.push({ t: peak / fps, sfx: quickFlick ? "swish" : "whoosh", gain: master * loud(peakV), pan: panOf(worldX(peak)), rank: peakV });
         }
         // settle: moving fast then halts on-screen (an off-screen exit doesn't "land")
         const stopped = (b >= N) || (speed(b + 1) < vStop && speed(Math.min(N, b + 2)) < vStop);
-        const landsOnScreen = xs[b]! >= 0 && xs[b]! <= W && os[b]! > 0.1;
+        const wxb = worldX(b);
+        const landsOnScreen = wxb >= 0 && wxb <= W && os[b]! > 0.1;
         if (wantImpact && peakV > vDecel && stopped && landsOnScreen && b < N) {
-          cands.push({ t: (b + 1) / fps, sfx: size > 220 ? "thud" : "knock", gain: master * loud(peakV), pan: panOf(xs[b]!), rank: peakV * 1.1 });
+          cands.push({ t: (b + 1) / fps, sfx: size > 220 ? "thud" : "knock", gain: master * loud(peakV), pan: panOf(worldX(b)), rank: peakV * 1.1 });
         }
       }
     }
@@ -105,7 +113,7 @@ export function autoFoley(compiled: CompiledScene, opts: AutoFoleyOptions = {}):
     if (wantPop && ss[0]! < 0.25) {
       for (let k = 1; k <= N; k++) {
         if (ss[k - 1]! < 0.5 && ss[k]! >= 0.5 && os[k]! > 0.05) {
-          cands.push({ t: k / fps, sfx: "pop", gain: master * 0.7, pan: panOf(xs[k]!), rank: 600 });
+          cands.push({ t: k / fps, sfx: "pop", gain: master * 0.7, pan: panOf(worldX(k)), rank: 600 });
           break;
         }
       }
