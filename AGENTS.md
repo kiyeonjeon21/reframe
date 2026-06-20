@@ -17,6 +17,10 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 - `pnpm reframe labels <scene.ts>` — print the compiled event clock (every timeline label → exact seconds; the timing source for `audio.cues` and beat debugging)
 - `pnpm reframe compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]` — bundle + validate eDSL source into SceneIR JSON, NO render (no ffmpeg/chromium; fast). On failure: a concise classified error (`bundle`/`eval`/`validation`), never the base64 bundle; `--json` makes it `{ok:false,error,kind}`. The in-process equivalent is exported as `reframe-video/compile` (`loadScene`/`loadSceneFromCode`, server-only). Entry `packages/render-cli/src/compile.ts`; loader `loadScene.ts`.
 - `pnpm reframe frame <scene.ts|.json> [--t <sec>] [-o out.png]` — render ONE frame at time `t` to a PNG (same renderer as `render`, no ffmpeg muxing; chromium only). For an agentic render-and-look loop (feed the frame back to a model). Reuses `renderFrameAt` (`frameLoop.ts`); entry `packages/render-cli/src/frame.ts`.
+- `pnpm reframe assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]` — the **files → scene** path: probe each image/video for its real duration (ffprobe) and scaffold an editable montage scene `.ts` wiring `photoMontage` (clip-aware holds, no freeze) + an optional `title` + a music bed. Probed numbers are baked in → the emitted scene is a normal deterministic scene. Probe `packages/render-cli/src/media/probe.ts`; entry `assemble.ts`.
+- `pnpm reframe manifest <scene.ts|.json> [--json]` — dump the scene's **addressable surface**: every node (+ its `editableProps` and `animatedProps`), state, timeline label (+ `patchable` params), beat, and behavior, each with the overlay address that reaches it. The map an AI/human editor reads to patch a scene surgically (vs regenerating). Core `sceneManifest(compiled)` (`packages/core/src/manifest.ts`, exported); entry `packages/render-cli/src/manifest.ts`.
+- `pnpm reframe lint <scene.ts|.json> [--json] [--strict]` — flag un-addressable motion (a tween/to/motionPath with no `label` can't be retimed by an overlay and a regen can silently drop it) + a `motionAddressableRatio` summary. `--strict` exits non-zero on findings (CI gate). Core `lintScene(compiled)` (same module); entry `lint.ts`.
+- `pnpm reframe verify-overlay <base.ts|.json> <overlay.json>... [--json]` — compose an overlay onto a base and report applied-vs-orphaned, NO render. The regen-survival check: run vs the original base (all applied), then vs the AI-regenerated base — any orphan is a broken stable address. Non-zero exit on orphans (CI gate). Reuses `composeScene`/`formatComposeReport`; entry `verifyOverlay.ts`.
 - `pnpm reframe skill [--path]` — print the authoring skill (`plugin/skills/reframe/SKILL.md`) for a programmatic/agent consumer; `--path` prints the plugin root dir. The skill + `.claude-plugin/` ship in the npm package (`files`) so an Agent-SDK consumer can load the plugin from `node_modules/reframe-video` (no repo checkout). Inline in `reframe.ts`.
 - `pnpm reframe player <scene.ts|.json> [-o out.html]` — bundle a scene into ONE self-contained HTML that plays the motion live in any browser (and pastes into a Claude.ai Artifact). esbuild IIFE of core + `renderer-canvas` + the scene on a `<canvas>` rAF loop, with the Inter fonts inlined; visual-only (no audio / image-node sources). Entry `packages/render-cli/src/player.ts`.
 - `pnpm reframe preview` / `new <name>` / `motion <mp4>` / `trace <ref.mp4>` / `guide [--directing|--regen|--html]` / `demo` — `guide` prints the eDSL syntax (default), the high-end directing workflow (`--directing`), the stable-address contract (`--regen`), or the HTML/GSAP scene guide (`--html`); sources live in `docs/guides/`
@@ -121,6 +125,17 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   seeded `textIn` (typewriter/cascade/rise/bounce/assemble/decode), `textLoop`
   (wave/shimmer/wobble/float → behaviors), `textOut` (shatter/fly/dissolve/fall/
   collapse), `textTypeCues` (per-glyph keypress audio). The text analog of motionPreset.
+- Titles / lower-thirds (`packages/core/src/titles.ts`) — `title(opts)` (kinetic headline:
+  `splitText` + `textIn` entrance + optional `textOut` exit; returns `{ nodes, timeline, block }`,
+  labels `${id}-in`/`${id}-out`) and `lowerThird(opts)` (name/role strap with an accent bar,
+  `{ nodes, timeline }`, ids `${id}-bar`/`-name`/`-role`). The motion-graphic overlay vocabulary
+  for a media piece; what `reframe assemble` wires over a montage. Pure/seeded/golden-safe.
+- Label-anchored beats (`packages/core/src/compile.ts`) — a `beat`'s `at` accepts a
+  **label string** (not just a number): `beat("cap", { at: "shot-2" }, […])` starts at the
+  `shot-2` label's time (`gap` = offset), so an overlaid title/strap stays synced when the cut
+  is retimed (overlay or regen) — the retime-survival `audio.cues` already have. A gated
+  `labelClock` pre-pass resolves it (order-independent); numeric/absent `at` is byte-identical
+  (goldens unchanged). Keep anchored beats in a `par` branch. Validated against known labels.
 - Authoring ergonomics — `text` `prefix`/`suffix` wrap a numeric count-up so `$2.4M`/`+32%`
   read from ONE node (`packages/core/src/evaluate.ts` text case; golden-safe). Layout helpers
   `row`/`column`/`grid` (`packages/core/src/layout.ts`) return evenly-spaced coordinates to
@@ -142,7 +157,11 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   analog of motionPreset.
 - Video clip (`video` node, `packages/core/src/ir.ts` + `render-cli/src/videos.ts`) — draw a
   clip as a layer; plays on the scene clock (`frame = round((clipStart + max(0,t-start)*rate)*fps)`,
-  computed purely in `evaluate` from `compiled.ir.fps`). Deterministic by **frame extraction**:
+  computed purely in `evaluate` from `compiled.ir.fps`). **`start` may be a label string** (not just
+  a number): it resolves to that timeline label's t0 (in `evaluate` + `collectClipAudio`, via
+  `compiled.labelTimes`), so a clip **ripples** when its shot is retimed; `photoMontage` anchors each
+  clip to its `shot-${i}` label. Numeric `start` is byte-identical (render-cli over-extracts for a
+  string `start`). Deterministic by **frame extraction**:
   render-cli runs `ffmpeg -vf fps=<sceneFps>` (`buildVideoFrameAssets`), the capture page decodes
   them into a `VideoRegistry`, and the renderer draws `frame` via the shared `drawRaster` (cover
   like image) — NOT a live `<video>` seek, so byte-identical (same machine). Props src/width/height/

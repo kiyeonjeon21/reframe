@@ -92,14 +92,11 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
 
   const nodes: NodeIR[] = [];
   const shots: TimelineIR[] = [];
-  let clock = 0; // scene-time each shot begins (drives video clip `start`)
 
   slides.forEach((slide, i) => {
     const nid = `${id}-${i}`;
     const slideHold = Math.max(0.5, slide.hold ?? hold);
     const transition = Math.min(opts.transition ?? 0.6, slideHold * 0.9);
-    const shotStart = clock;
-    clock += slideHold;
 
     // Seeded framing (draw in a fixed order → deterministic).
     const kind: KenBurns = slide.ken ?? (["in", "out", "pan"] as const)[Math.floor(rand() * 3)] ?? "in";
@@ -130,7 +127,9 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
     const box = { id: nid, src: slide.src, x: xA, y: yA, width: W, height: H, anchor: "center" as const, fit: "cover" as const, scale: kA, opacity: i === 0 ? 1 : 0 };
     nodes.push(
       isVideoSrc(slide.src)
-        ? video({ ...box, start: shotStart, volume: slide.volume ?? 0 }) // clips muted by default in a montage
+        // anchor the clip's playback start to its shot label, so it ripples when the
+        // montage is retimed (an overlay or AI regen) instead of staying baked at shotStart.
+        ? video({ ...box, start: `shot-${i}`, volume: slide.volume ?? 0 }) // clips muted by default in a montage
         : image(box),
     );
 

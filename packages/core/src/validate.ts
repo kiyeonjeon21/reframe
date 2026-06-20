@@ -39,6 +39,9 @@ export class SceneValidationError extends Error {
 export function validateScene(ir: SceneIR): void {
   const problems: string[] = [];
   const nodeById = new Map<string, NodeIR>();
+  // video `start: "<label>"` anchors — collected during the node walk, checked
+  // after all timeline labels are known.
+  const startAnchors: { id: string; at: string }[] = [];
 
   // a fill/stroke is a color string (unchecked, as today) OR a gradient object
   const checkPaint = (where: string, value: unknown) => {
@@ -74,6 +77,7 @@ export function validateScene(ir: SceneIR): void {
       if (typeof props.shadowBlur === "number" && props.shadowBlur < 0) problems.push(`node "${node.id}": shadowBlur must be >= 0`);
       if (typeof props.blend === "string" && !BLEND_MODES.has(props.blend)) problems.push(`node "${node.id}": unknown blend "${props.blend}" — use ${[...BLEND_MODES].join(", ")}`);
       if (typeof props.fit === "string" && !IMAGE_FITS.has(props.fit)) problems.push(`node "${node.id}": unknown fit "${props.fit}" — use ${[...IMAGE_FITS].join(", ")}`);
+      if (node.type === "video" && typeof node.props.start === "string") startAnchors.push({ id: node.id, at: node.props.start });
       if (node.type === "group") {
         const clip = node.props.clip;
         if (clip) {
@@ -140,6 +144,8 @@ export function validateScene(ir: SceneIR): void {
   }
 
   const labels = new Set<string>();
+  // beat label-anchors (`at: "<label>"`) — checked after all labels are collected.
+  const beatAnchors: { name: string; at: string; path: string }[] = [];
   const checkEase = (path: string, ease: unknown) => {
     if (ease === undefined) return;
     if (typeof ease === "string") {
@@ -232,6 +238,7 @@ export function validateScene(ir: SceneIR): void {
           );
         }
         labels.add(tl.name);
+        if (typeof tl.at === "string") beatAnchors.push({ name: tl.name, at: tl.at, path });
         if (tl.duration !== undefined && tl.duration <= 0) {
           problems.push(`${path}: beat "${tl.name}" duration must be > 0`);
         }
@@ -250,6 +257,24 @@ export function validateScene(ir: SceneIR): void {
     }
   };
   if (ir.timeline) checkTimeline(ir.timeline, "timeline");
+
+  // beat label-anchors: the target label must exist and not be the beat itself.
+  for (const a of beatAnchors) {
+    if (a.at === a.name) {
+      problems.push(`${a.path}: beat "${a.name}" at: "${a.at}" cannot anchor to itself`);
+    } else if (!labels.has(a.at)) {
+      problems.push(
+        `${a.path}: beat "${a.name}" at: "${a.at}" — unknown timeline label — known labels: ${[...labels].join(", ") || "(none)"}`,
+      );
+    }
+  }
+  for (const a of startAnchors) {
+    if (!labels.has(a.at)) {
+      problems.push(
+        `video "${a.id}" start: "${a.at}" — unknown timeline label — known labels: ${[...labels].join(", ") || "(none)"}`,
+      );
+    }
+  }
 
   for (const [i, b] of (ir.behaviors ?? []).entries()) {
     checkProps(`behaviors[${i}]`, b.target, { [b.prop]: 0 });

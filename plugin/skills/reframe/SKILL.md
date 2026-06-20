@@ -72,8 +72,34 @@ to handle explicitly:
   mask (update the scene AND remove/update the superseded overlay entry) and
   tell them why.
 
+Addressability tooling (read-only, no render — use it when editing):
+
+- `npx -y reframe-video manifest <scene> [--json]` — list the scene's editable
+  surface (every node + its editable/animated props, states, timeline labels
+  with patchable params, beats, behaviors, each with its overlay address). Read
+  this BEFORE patching so you target real, stable addresses instead of guessing.
+- `npx -y reframe-video lint <scene> [--strict]` — flag motion with no `label`
+  (timing a later overlay can't reach, and a regen can silently drop) plus a
+  `motionAddressableRatio`. When authoring motion the user may want to tweak,
+  give the step a stable `label`.
+- `npx -y reframe-video verify-overlay <base> <overlay>... ` — after you rewrite
+  a base that has overlays, run this to confirm every edit still applies (it
+  reports orphans and exits non-zero if any address broke). The regen-survival
+  check, without a full render.
+
 ## Other capabilities
 
+- **Assemble media → scene**: when the user hands you images/videos for a piece,
+  `npx -y reframe-video assemble <media...> [-o name] [--title "…"] [--bgm <synth>]`
+  probes each clip's real duration and scaffolds an editable montage scene `.ts`
+  (clip-aware holds, so a short clip never freezes) wiring `photoMontage` + an
+  optional `title` + a bed. Then edit the `.ts` (reorder shots, retime, swap a
+  `src`) and `render` it. For motion-graphic overlays use the `title()` (kinetic
+  headline) and `lowerThird()` (name/role strap) generators — both return
+  `{ nodes, timeline }` you compose over the montage; see the guide. **Anchor an
+  overlay beat to a shot label** — `beat("cap", { at: "shot-2" }, [lt.timeline])`
+  in a `par` branch — so the caption stays synced to its shot if the cut is
+  retimed (don't pin it to a fixed `wait`).
 - **Batch**: `npx -y reframe-video batch scene.ts data.json` — one mp4 per
   data row; row keys are overlay addresses (`nodes.<id>.<prop>`,
   `timeline.<label>.duration`, ...). CSV works too (headers = addresses).

@@ -82,13 +82,15 @@ export interface AudioPlan {
 }
 
 /** Walk video nodes → clip-audio entries (skipping muted, default volume 1). */
-function collectClipAudio(ir: SceneIR, duration: number, warnings: string[]): ClipAudio[] {
+function collectClipAudio(ir: SceneIR, duration: number, labelTimes: Map<string, { t0: number }>, warnings: string[]): ClipAudio[] {
   const out: ClipAudio[] = [];
   const walk = (nodes: NodeIR[]) => {
     for (const node of nodes) {
       if (node.type === "video") {
         const gain = node.props.volume ?? 1;
-        const start = node.props.start ?? 0;
+        // a string `start` anchors to a timeline label's t0 (so clip audio follows a retime)
+        const startRaw = node.props.start;
+        const start = typeof startRaw === "string" ? labelTimes.get(startRaw)?.t0 ?? 0 : startRaw ?? 0;
         if (gain <= 0) continue;
         if (start >= duration) {
           warnings.push(`video "${node.id}": start ${start.toFixed(2)}s past the scene end — audio dropped`);
@@ -107,7 +109,7 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
   const audio = compiled.ir.audio;
   const warnings: string[] = [];
   const duration = compiled.duration;
-  const clipAudio = collectClipAudio(compiled.ir, duration, warnings);
+  const clipAudio = collectClipAudio(compiled.ir, duration, compiled.labelTimes, warnings);
   // motion-derived cues, generated fresh from the compiled IR (retime-safe)
   const autoCues = audio?.autoFoley
     ? autoFoley(compiled, audio.autoFoley === true ? {} : audio.autoFoley)

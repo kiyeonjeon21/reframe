@@ -135,6 +135,16 @@ them with normal TS (`Object.fromEntries`, `.map`) for data-driven scenes.
   `curviness` shapes the path: `1` smooth (default), `0` sharp corners, `>1` loopier.
 - `wait(seconds, label?)` — hold; the optional `label` names the hold so audio
   cues and overlay retiming can address it.
+- `beat(name, opts, children)` — a named, retimable, reorderable span (the unit
+  humans/AI revise; its `name` is a stable overlay address). `opts`: `parallel`,
+  `at` (absolute start — a NUMBER, or a **label string to anchor to**), `gap`,
+  `scale`/`duration` (time-stretch), `order` (reorder within a `seq`), `nodes`.
+  **Label anchor**: `beat("caption", { at: "shot-2" }, [...])` starts the beat at
+  the `shot-2` label's time (with `gap` as the offset), so a title/lower-third/
+  caption laid over a montage stays locked to its shot when the cut is retimed
+  (via an overlay or AI regen) — the same retime-survival `audio.cues` get. Put
+  anchored beats in a `par` branch (an overlay layer), not inside a sequential
+  flow. See `examples/scenes/media-story.ts`.
 
 Eases: `linear`, `easeIn/Out/InOutQuad`, `easeIn/Out/InOutCubic`,
 `easeIn/Out/InOutQuart`, `easeIn/Out/InOutExpo`, or `{ cubicBezier: [x1,y1,x2,y2] }`.
@@ -421,6 +431,37 @@ scene({ size, nodes: [...m.nodes, ...titles], timeline: par(m.timeline, titleTra
 - Seeded + pure (same `(shots, opts)` → identical IR). Note: image/video sources do
   not render in `reframe player` / artifacts — montage ships as mp4. See
   `examples/scenes/video-montage.ts`.
+- **Assemble from files**: `reframe assemble <media...> [-o name] [--title "…"]
+  [--bgm <synth>] [--hold s] [--seed N]` probes each clip's real duration (so a
+  video shot's `hold` = its actual length, never a freeze) and scaffolds an editable
+  scene `.ts` wiring `photoMontage` + an optional `title` + a bed. The probed
+  numbers are baked in, so the emitted scene is a normal deterministic scene — edit
+  it (reorder, retime, swap a `src`), then `reframe render` it.
+
+## Titles & lower-thirds (`title` / `lowerThird`)
+
+The motion-graphic overlay vocabulary for a media piece — generators that return
+`{ nodes, timeline }` to compose over a montage (or anything). Stable ids so overlays
+address them; pure + deterministic.
+
+- `title({ text, id?, x?, y?, fontSize?, fontWeight?, fill?, letterSpacing?,
+  entrance?, exit?, speed?, seed?, hold? })` → `{ nodes, timeline, block }`. A kinetic
+  headline built on `splitText` + `textIn` (entrance presets: `cascade` `rise`
+  `bounce` `typewriter` `assemble` `decode`). Set `exit` (a `textOut` preset) and it
+  plays in, holds `hold`s, then exits. Glyph ids `${id}-${i}`; labels `${id}-in` /
+  `${id}-out`. `block` is returned so you can add `textLoop` behaviors or extra tweens.
+- `lowerThird({ name, role?, id?, x?, y?, accent?, fill?, subFill?, fontSize?, hold? })`
+  → `{ nodes, timeline }`. A name/role strap: an accent bar grows in, the text slides +
+  fades. Ids `${id}` (group) / `${id}-bar` / `${id}-name` / `${id}-role`; labels
+  `${id}-in` / `${id}-out`. Defaults to a bottom-left title-safe position.
+
+```ts
+const ttl = title({ text: "OUR YEAR", id: "ttl", x: 960, y: 540, fontSize: 132, entrance: "rise", exit: "dissolve", hold: 1.6 });
+const lt  = lowerThird({ name: "Nantes, France", role: "spring 2026", id: "lt" });
+// nodes:    [...m.nodes, ...ttl.nodes, ...lt.nodes]
+// timeline: par(m.timeline, ttl.timeline, seq(wait(6.6), lt.timeline))
+```
+See `examples/scenes/media-story.ts`.
 
 ## Video clips (`video`)
 
@@ -437,6 +478,9 @@ tween("clip", { scale: 1.08 }, { duration: 5 })  // transform composes with play
   `fit` (`"cover"` like the image node), `start` (scene-time playback begins), `rate`
   (speed), `clipStart` (source in-point s), `volume` (clip-audio gain, default 1; `0` mutes).
   Transform/opacity/effects compose as usual.
+- **`start` can be a label** (not just a number): `start: "shot-2"` anchors playback to that
+  timeline label's time (like `beat.at`), so the clip **ripples** when its shot is retimed (by an
+  overlay or AI regen) instead of desyncing. `photoMontage` does this automatically for video shots.
 - **Deterministic by frame extraction**: render-cli runs `ffmpeg -vf fps=<sceneFps>` to pull
   the clip's frames, and the renderer draws frame `round(t·fps)` — no live `<video>` seek, so
   it stays byte-identical (same machine).
@@ -506,6 +550,20 @@ vector frame (bezel, rounded body, phone notch / dynamic island, browser chrome)
   (overlay/regen addresses) — keep `id` across rewrites.
 - It's one node: animate the device group for the float/entrance (`tween`/
   `motionPath` its `x`/`y`/`scale`/`rotation`, `oscillate` for an idle drift).
+- **Premium by default** — `material:"premium"` (the default) gives a gradient
+  body, an ambient screen glow, a soft contact shadow and (glass) a sheen; the
+  `style` knob picks `"glass"` (realistic glass/metal, default) or `"neon"` (flat
+  body + additive accent edge-glow, graphic punch). `material:"flat"` opts back to
+  clean solid fills. All of this is purely cosmetic — the screen rect, the clip,
+  and the stable ids are identical across materials/styles, so `deviceScreen`
+  coords and existing `content`/overlays are unaffected.
+- **Auto-varied per instance** — each device's look (bezel, corner, glare angle,
+  neon hue) is derived deterministically from its `id`, so two devices differ
+  while staying on-model. Pass `seed` to pin or explore a variation; same `seed`
+  → identical, different `seed` → same family. Reproducible (no `Math.random`).
+- `notch?: "island" | "notch" | "punch" | "none"` selects the phone front-camera
+  treatment (default `"island"` — keep it explicit for an iOS vs Android read).
+- See `examples/scenes/device-gallery.ts` for glass/neon + seed variation.
 
 ```ts
 // a phone floating centre, a chat bubble inside the screen:

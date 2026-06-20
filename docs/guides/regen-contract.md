@@ -27,3 +27,17 @@ each joint is `${id}-${jointName}` (e.g. `hero-armUpperR`) and its bone art is
 joint `name`s** for any character/device that survives the redesign — overlay
 edits (a retimed wave, a nudged limb angle) reference those exact ids. Renaming a
 joint orphans the edit, exactly like renaming a hand-authored node id.
+
+## Tooling
+
+Three read-only commands make the address namespace queryable and the contract
+checkable (no render):
+
+- `reframe manifest <scene> [--json]` — list every editable address (nodes +
+  their editable/animated props, states, timeline labels with patchable params,
+  beats, behaviors). Read it before patching so you target real, stable addresses.
+- `reframe lint <scene> [--strict]` — flag motion with no `label` (timing an
+  overlay can't reach and a regen can silently drop) + a `motionAddressableRatio`.
+- `reframe verify-overlay <base> <overlay>...` — compose the overlay onto a base
+  and report applied vs orphaned. Run it against the regenerated base to prove
+  every edit survived; it exits non-zero if any address broke.

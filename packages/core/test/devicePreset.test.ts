@@ -92,4 +92,80 @@ describe("devicePreset", () => {
     expect(String(url.props.content).length).toBeLessThanOrEqual(70);
     expect(String(url.props.content).endsWith("…")).toBe(true);
   });
+
+  // ── redesign: material / style / seeded variation ──
+
+  const bodyOf = (n: ReturnType<typeof asGroup>, id: string) =>
+    n.children.find((c) => c.id === `${id}-body`) as Extract<import("../src/ir.js").NodeIR, { type: "rect" }>;
+
+  it("is premium by default — the phone body has a gradient fill + a contact shadow", () => {
+    const n = asGroup(devicePreset("phone", { id: "d" }));
+    const body = bodyOf(n, "d");
+    expect(typeof body.props.fill).toBe("object"); // a Gradient, not a string
+    expect(body.props.shadowColor).toBeDefined();
+  });
+
+  it("material:'flat' opts out — solid string fill, no shadow (golden-style)", () => {
+    const n = asGroup(devicePreset("phone", { id: "d", material: "flat" }));
+    const body = bodyOf(n, "d");
+    expect(typeof body.props.fill).toBe("string");
+    expect(body.props.shadowColor).toBeUndefined();
+    expect(body.props.blur).toBeUndefined();
+  });
+
+  it("flat and premium both keep the stable ${id}-screen (clip) + ${id}-content", () => {
+    for (const material of ["flat", "premium"] as const) {
+      for (const style of ["glass", "neon"] as const) {
+        const n = asGroup(devicePreset("phone", { id: "d", material, style }));
+        const screen = asGroup(n.children.find((c) => c.id === "d-screen")!);
+        expect(screen.props.clip).toBeDefined();
+        expect(screen.children.some((c) => c.id === "d-content")).toBe(true);
+      }
+    }
+  });
+
+  it("style:'neon' validates and gives the body an additive glow", () => {
+    const n = asGroup(devicePreset("phone", { id: "d", style: "neon" }));
+    const body = bodyOf(n, "d");
+    expect(body.props.shadowColor).toBeDefined();
+    // neon body fill stays a solid (the accent rides the stroke + glow, not a gradient)
+    expect(typeof body.props.fill).toBe("string");
+    const s = scene({ id: "s", size: { width: 1920, height: 1080 }, nodes: [devicePreset("phone", { id: "d", style: "neon" })] });
+    expect(() => validateScene(s)).not.toThrow();
+  });
+
+  it("auto-varies from id: a fixed seed is identical across ids; default differs by id", () => {
+    // explicit seed pins the variation regardless of id
+    const a = JSON.stringify(asGroup(devicePreset("phone", { id: "x", seed: 7 })).children).replace(/"x-/g, '"@-');
+    const b = JSON.stringify(asGroup(devicePreset("phone", { id: "y", seed: 7 })).children).replace(/"y-/g, '"@-');
+    expect(a).toBe(b);
+    // without a seed, two different ids land on different variations (cosmetic, bounded)
+    const p = JSON.stringify(asGroup(devicePreset("phone", { id: "alpha" })).children).replace(/"alpha-/g, '"@-');
+    const q = JSON.stringify(asGroup(devicePreset("phone", { id: "bravo" })).children).replace(/"bravo-/g, '"@-');
+    expect(p).not.toBe(q);
+  });
+
+  it("seed changes the output within the same family (different seed → different bytes)", () => {
+    const s1 = JSON.stringify(devicePreset("phone", { id: "d", seed: 1 }));
+    const s2 = JSON.stringify(devicePreset("phone", { id: "d", seed: 2 }));
+    expect(s1).not.toBe(s2);
+    // but a seed is reproducible
+    expect(JSON.stringify(devicePreset("phone", { id: "d", seed: 1 }))).toBe(s1);
+  });
+
+  it("notch styles all keep the ${id}-notch address; 'none' omits it", () => {
+    for (const notch of ["island", "notch", "punch"] as const) {
+      const n = asGroup(devicePreset("phone", { id: "d", notch }));
+      expect(n.children.some((c) => c.id === "d-notch")).toBe(true);
+    }
+    const none = asGroup(devicePreset("phone", { id: "d", notch: "none" }));
+    expect(none.children.some((c) => c.id === "d-notch")).toBe(false);
+  });
+
+  it("screen dims are unchanged by the redesign (content-authoring contract)", () => {
+    expect(deviceScreen("phone")).toEqual({ x: 0, y: 0, width: 352, height: 736, radius: 38 });
+    expect(deviceScreenCenter("browser")).toEqual({ x: 0, y: 24 });
+    // dims do not depend on material/style/seed
+    expect(deviceScreen("phone", { material: "flat", seed: 99 })).toEqual(deviceScreen("phone"));
+  });
 });

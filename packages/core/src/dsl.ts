@@ -124,9 +124,10 @@ export interface BeatOpts {
   nodes?: string[];
   /** Group children in parallel instead of sequence. */
   parallel?: boolean;
-  /** Absolute start (rigid placement). */
-  at?: number;
-  /** Relative shift before the beat. */
+  /** Absolute start (number), or a timeline label to anchor to (string) — the
+   *  beat starts at that label's time, `gap` offsetting it. Keep anchor beats in a `par`. */
+  at?: number | string;
+  /** Relative shift before the beat (with a label `at`, the offset from the label). */
   gap?: number;
   /** Interior time-stretch factor. */
   scale?: number;

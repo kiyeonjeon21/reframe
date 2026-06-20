@@ -90,6 +90,19 @@ export interface ComposeReport {
 
 const SCENE_PATCHABLE = ["background", "duration", "fps"] as const;
 
+/**
+ * Which params an overlay may patch on a labeled timeline step, per kind — the
+ * single source of truth for both `applyOverlay` (what it accepts) and
+ * `sceneManifest` (what it advertises as patchable). Keep them from drifting.
+ */
+export const TIMELINE_PATCHABLE: Record<string, string[]> = {
+  to: ["duration", "ease", "stagger"],
+  tween: ["duration", "ease"],
+  wait: ["duration"],
+  motionPath: ["points", "duration", "ease", "curviness", "autoRotate"],
+  beat: ["at", "gap", "scale", "duration", "order"],
+};
+
 export function composeScene(
   base: SceneIR,
   ...overlays: OverlayDoc[]
@@ -260,14 +273,6 @@ function applyOverlay(
     };
     if (ir.timeline) walkTimeline(ir.timeline);
 
-    const PATCHABLE: Record<string, string[]> = {
-      to: ["duration", "ease", "stagger"],
-      tween: ["duration", "ease"],
-      wait: ["duration"],
-      motionPath: ["points", "duration", "ease", "curviness", "autoRotate"],
-      beat: ["at", "gap", "scale", "duration", "order"],
-    };
-
     let timingPatched = false;
     for (const [label, patch] of Object.entries(overlay.timeline)) {
       const step = byLabel.get(label);
@@ -278,7 +283,7 @@ function applyOverlay(
         );
         continue;
       }
-      const allowed = PATCHABLE[step.kind] ?? [];
+      const allowed = TIMELINE_PATCHABLE[step.kind] ?? [];
       for (const [key, value] of Object.entries(patch)) {
         if (value === undefined) continue;
         if (!allowed.includes(key)) {

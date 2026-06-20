@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { compileScene } from "../src/compile.js";
-import { image, scene } from "../src/dsl.js";
+import { image, scene, video } from "../src/dsl.js";
 import { evaluate } from "../src/evaluate.js";
 import { photoMontage, videoMontage } from "../src/montage.js";
 import { SceneValidationError } from "../src/validate.js";
@@ -92,17 +92,36 @@ describe("videoMontage (mixed media)", () => {
     expect(props(m.nodes[1]!).fit).toBe("cover");
   });
 
-  it("a clip's start = cumulative hold; muted by default; per-shot volume honored", () => {
+  it("a clip's start is anchored to its shot label; muted by default; per-shot volume honored", () => {
     const m = videoMontage([{ src: "a.mp4", hold: 2 }, { src: "b.mp4", hold: 3, volume: 1 }], { grade: false });
-    expect(props(m.nodes[0]!).start).toBe(0);
+    // start is a LABEL now (ripples on retime), resolving to the cumulative hold
+    expect(props(m.nodes[0]!).start).toBe("shot-0");
     expect(props(m.nodes[0]!).volume).toBe(0); // muted by default in a montage
-    expect(props(m.nodes[1]!).start).toBe(2); // begins after the first shot's hold
+    expect(props(m.nodes[1]!).start).toBe("shot-1");
     expect(props(m.nodes[1]!).volume).toBe(1);
+    const c = compileScene(scene({ id: "s", size, nodes: m.nodes, timeline: m.timeline }));
+    expect(c.labelTimes.get("shot-0")!.t0).toBe(0);
+    expect(c.labelTimes.get("shot-1")!.t0).toBe(2); // begins after the first shot's hold
+  });
+
+  it("clip ripple: lengthening an earlier shot moves the clip's resolved start in step", () => {
+    // shot-0 longer → shot-1 (the clip) starts later, and its label-anchored start follows
+    const m = videoMontage([{ src: "a.mp4", hold: 2 }, { src: "b.mp4", hold: 3 }], { grade: false });
+    const longer = videoMontage([{ src: "a.mp4", hold: 5 }, { src: "b.mp4", hold: 3 }], { grade: false });
+    const at = (mont: typeof m) => compileScene(scene({ id: "s", size, nodes: mont.nodes, timeline: mont.timeline })).labelTimes.get("shot-1")!.t0;
+    expect(at(m)).toBe(2);
+    expect(at(longer)).toBe(5); // the clip's anchor (start: "shot-1") rode the retime, not pinned to 2
   });
 
   it("is deterministic with mixed media", () => {
     const j = () => JSON.stringify(videoMontage(["a.mp4", "b.jpg", "c.mov"], { seed: 4 }));
     expect(j()).toBe(j());
+  });
+
+  it("a video start anchored to an unknown label fails validation", () => {
+    expect(() =>
+      scene({ id: "s", size, nodes: [video({ id: "v", src: "a.mp4", x: 0, y: 0, width: 10, height: 10, start: "nope" })] }),
+    ).toThrow(/start: "nope" — unknown timeline label/);
   });
 });
 

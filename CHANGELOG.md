@@ -8,6 +8,113 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.39] - 2026-06-20
+
+### Added
+
+#### Clip ripple — label-anchored `video.start` (Spine 2b)
+
+- A `video` node's **`start` now accepts a timeline label string**, not just a number:
+  `video({ start: "shot-2" })` anchors playback to that label's t0 (resolved from `compiled.labelTimes`
+  in `evaluate` and the clip-audio mux), so a clip **ripples** when its shot is retimed — by an overlay
+  (`timeline.shot-0.duration`) or an AI regeneration — instead of staying baked and playing the wrong
+  frames / showing a black gap. `photoMontage`/`videoMontage` now anchor each video shot to its
+  `shot-${i}` label, so montage clips ripple automatically.
+- This completes retime-survival for media pieces: **stills** (the montage `seq`), **titles/straps**
+  (`beat.at`, 0.6.38), and now **video clips** all follow a retiming together. **Additive and
+  golden-safe**: numeric `start` is unchanged and a label resolves to the same time for a non-retimed
+  render → byte-identical output (render-cli over-extracts conservatively for a string `start`).
+  `validateScene` rejects an unknown label.
+
+## [0.6.38] - 2026-06-20
+
+### Added
+
+#### Label-anchored timeline placement (Spine 2a)
+
+- A `beat`'s **`at` now accepts a timeline label string**, not just a number:
+  `beat("caption", { at: "shot-2" }, [...])` starts the beat at the `shot-2` label's time (`gap`
+  is the offset from it). So a title / lower-third / caption laid over a montage **stays synced to
+  its shot when the cut is retimed** — by an overlay (`timeline.shot-0.duration`) or an AI
+  regeneration — instead of being pinned to a fixed time. The same retime-survival `audio.cues`
+  already have, now for timeline placement.
+- Resolved by a gated `labelClock` pre-pass in `compileScene` (order-independent — the anchor target
+  may be defined anywhere). **Additive and golden-safe**: numeric/absent `at` skips the pre-pass and
+  stays byte-identical; the snapshot suite is unchanged. `validateScene` rejects an unknown or self
+  anchor. `examples/scenes/media-story.ts` anchors its lower-third to the clip's `shot-2`.
+
+## [0.6.37] - 2026-06-20
+
+### Added
+
+#### Media-first montage to story (Spine 1)
+
+Turn a few images + clips into an outstanding, deterministic piece — assembled, titled, with a bed.
+
+- **`reframe assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]`** — the
+  "files → scene" path. Probes each image/video with ffprobe (`packages/render-cli/src/media/probe.ts`)
+  so a **video shot's hold equals its real duration** (a short clip no longer freezes on its last
+  frame), then scaffolds an **editable scene `.ts`** wiring `photoMontage` + an optional `title` + a
+  music bed. The probed durations are baked in as literals, so the emitted scene is a normal
+  deterministic scene — reorder shots, retime, or swap a `src`, then `render` it.
+- **`title(opts)`** (core, exported) — a kinetic headline generator: `splitText` + a `textIn` entrance
+  (cascade/rise/bounce/typewriter/assemble/decode) + an optional `textOut` exit; returns
+  `{ nodes, timeline, block }`, labels `${id}-in`/`${id}-out`.
+- **`lowerThird(opts)`** (core, exported) — a name/role strap with an accent bar that grows in and text
+  that slides + fades; returns `{ nodes, timeline }`, ids `${id}-bar`/`${id}-name`/`${id}-role`.
+  Generalizes the hand-rolled lower-third pattern into a reusable seeded generator.
+- Showcase: `examples/scenes/media-story.ts` (montage of stills + a clip, a title opener, a lower-third,
+  a bed). Additive — `photoMontage` unchanged, goldens unchanged.
+
+## [0.6.36] - 2026-06-20
+
+### Added
+
+#### Addressability toolkit — make the override namespace queryable
+
+reframe's edit-survival rests entirely on the node-id / timeline-label namespace (both override
+stacks can only find things by it), but that surface was implicit and unguarded. Three read-only
+tools expose and protect it (no IR/evaluate/compile changes; goldens unchanged):
+
+- **`sceneManifest(compiled)`** (core, exported) + **`reframe manifest <scene> [--json]`** — enumerate
+  a scene's editable surface: every node (with its `editableProps` from `PROPS_BY_TYPE` and the
+  `animatedProps` it actually tweens), state, timeline label (with the `patchable` params per kind),
+  beat, and behavior, each with the overlay address that reaches it. The map an AI/human editor reads
+  to patch surgically instead of regenerating.
+- **`lintScene(compiled)`** (core, exported) + **`reframe lint <scene> [--json] [--strict]`** — flag
+  motion (tween/to/motionPath) with no `label` — timing a later overlay can't reach and a regen can
+  silently drop — plus a `motionAddressableRatio` summary. `--strict` exits non-zero (CI gate).
+- **`reframe verify-overlay <base> <overlay>... [--json]`** — compose an overlay onto a (possibly
+  regenerated) base and report applied-vs-orphaned with NO render; non-zero exit on orphans. Turns the
+  "edits survive AI regeneration" thesis into a CI-able check. Reuses `composeScene`/`formatComposeReport`.
+- `TIMELINE_PATCHABLE` is now exported from core (was inline in `composeScene`), so the manifest's
+  advertised patchable params can't drift from what compose actually accepts.
+
+## [0.6.35] - 2026-06-20
+
+### Changed
+
+#### `devicePreset` redesign — spec-driven, seeded, premium by default
+
+- **Premium look by default.** Device frames now ship a gradient body, an ambient screen glow, and a
+  soft contact shadow; a `style` knob picks `"glass"` (realistic glass/metal + a diagonal sheen,
+  default) or `"neon"` (flat body + an additive accent edge-glow). `material:"flat"` opts back to the
+  old clean solid fills. All of this is purely cosmetic — the screen rect, the clip, and the stable ids
+  (`${id}-screen` / `${id}-screenbg` / `${id}-content`) are identical across materials and styles, so
+  `deviceScreen` coords, existing `content`, and overlays are unaffected.
+- **Auto-varied per instance.** Each device's cosmetics (bezel, corner, glare angle, neon hue) are
+  derived deterministically from its `id`, so two devices differ while staying on-model. A new `seed`
+  option pins or explores a variation (same seed → identical; different → same family). Reproducible —
+  mulberry32, no `Math.random`/`Date`.
+- **`notch?: "island" | "notch" | "punch" | "none"`** selects the phone front-camera treatment
+  (default `"island"`). New opts `material` / `style` / `seed` / `notch`; new exported types
+  `DeviceMaterial` / `DeviceStyle` / `DeviceNotch`.
+- **Architecture.** The per-device `switch` is replaced by a `DeviceContext` + a reusable parts
+  vocabulary (the material/lighting lives once) + a chassis registry, so adding a device is one entry,
+  and the premium treatment is inherited for free. Back-compat: all public exports, the 10 names, the
+  landscape transpose, the dimension tables, and the stable ids are preserved (goldens unchanged —
+  devices are not in the snapshot set). Showcase: `examples/scenes/device-gallery.ts`.
+
 ## [0.6.34] - 2026-06-20
 
 ### Fixed
