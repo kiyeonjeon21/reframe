@@ -1,0 +1,49 @@
+{
+  "reframeOverlay": 1,
+  "name": "montage-insert",
+  "target": "photo-montage",
+  "insertNodes": [
+    {
+      "before": "shot-vignette",
+      "node": {
+        "type": "image",
+        "id": "shot-x",
+        "props": {
+          "src": "photo-montage/03.jpg",
+          "x": 960,
+          "y": 540,
+          "width": 1920,
+          "height": 1080,
+          "anchor": "center",
+          "fit": "cover",
+          "scale": 1,
+          "opacity": 0
+        }
+      }
+    }
+  ],
+  "insertTimeline": [
+    {
+      "into": "montage",
+      "after": "shot-2",
+      "step": {
+        "kind": "beat",
+        "name": "shot-x",
+        "parallel": true,
+        "gap": -0.7,
+        "nodes": ["shot-x"],
+        "children": [
+          { "kind": "tween", "target": "shot-x", "props": { "opacity": 1 }, "duration": 0.7, "ease": "linear", "label": "shot-x-in" },
+          { "kind": "tween", "target": "shot-x", "props": { "scale": 1.14, "x": 1010 }, "duration": 3.4, "ease": "easeInOutQuad", "label": "shot-x-kb" },
+          {
+            "kind": "seq",
+            "children": [
+              { "kind": "wait", "duration": 2.7 },
+              { "kind": "tween", "target": "shot-x", "props": { "opacity": 0 }, "duration": 0.7, "ease": "linear", "label": "cross-x" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

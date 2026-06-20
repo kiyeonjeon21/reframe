@@ -224,7 +224,11 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
     );
   }
 
-  return { nodes, timeline: beat("montage", { nodes: nodes.map((n) => n.id) }, [seq(...shots)]) };
+  // shots are the DIRECT children of the "montage" beat (a beat groups its children as a
+  // seq), so the play-order list is addressable as the beat "montage" — an overlay can
+  // `insertTimeline { into: "montage", ... }` a shot, and reorder/removeTimeline operate
+  // on these same shot beats. (Equivalent to wrapping them in an explicit seq.)
+  return { nodes, timeline: beat("montage", { nodes: nodes.map((n) => n.id) }, shots) };
 }
 
 /**

@@ -41,6 +41,14 @@ timeline — and those edits survive regen the same way, keyed by stable labels:
   by label. The surrounding `seq` re-accumulates, so later steps ripple up and any
   label-anchored dependent (a clip `start`, an anchored title) follows. An unknown
   label is reported as an orphan, never a silent drop.
+- **Insert** — `insertNodes` places a new node at a position (`before`/`after` a
+  sibling id, or an `index`) instead of appending on top like `addNodes`, and
+  `insertTimeline` splices a step/beat into a named beat (`{ into, after, step }`).
+  Together they add a whole new unit. Unlike reorder/remove (which patch existing
+  addressable elements), insert *creates* elements, so the overlay carries the full
+  node + beat JSON — a consumer (reframe-studio) or you author it; reframe does not
+  generate the shot payload. Unknown `into`/`before`/`after` or a step targeting a
+  missing node is an orphan.
 
 These ride the addressable surface a `photoMontage` already exposes — each shot is
 the named beat `shot-${i}`, so `removeTimeline: ["shot-3"]` drops a shot (its layer
@@ -52,7 +60,8 @@ or post-compose validation rejects the dangling anchor. Reordering a shot to the
 first slot drops its opening fade-up, since the crossfade offset was baked for the
 original order — a cosmetic detail, not a break.)
 
-See `examples/overlays/montage-restructure.json`.
+See `examples/overlays/montage-restructure.json` (reorder + remove) and
+`examples/overlays/montage-insert.json` (insert a hand-authored shot).
 
 ## Tooling
 

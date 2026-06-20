@@ -8,6 +8,29 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.41] - 2026-06-21
+
+### Added
+
+#### Structural insert — `insertNodes` + `insertTimeline` overlay verbs (Spine 2c)
+
+- Two positioned-insert compose verbs complete the structural-editing CRUD surface
+  (add / remove / reorder / **insert**):
+  - **`insertNodes`** — insert a node at a position (`before`/`after` a sibling root id,
+    or an `index`) instead of appending on top like `addNodes`, so a new layer can land
+    UNDER later nodes (e.g. a montage shot below the vignette/scrim grade).
+  - **`insertTimeline`** — splice a step/beat into a named beat (`{ into, before/after/index,
+    step }`). The step's tween/motionPath targets must exist; unknown `into`/`before`/`after`
+    or a missing target is reported as an orphan, never a silent drop.
+- `photoMontage`/`videoMontage` now group the shot beats **directly** under the `"montage"`
+  beat (the redundant inner `seq` wrapper is gone — timing-equivalent), so the play order is
+  addressable: `insertTimeline { into: "montage", after: "shot-1", step }` splices a shot into
+  the sequence. Reorder (`order`) and `removeTimeline` are unaffected.
+- Unlike reorder/remove (which patch existing addressable elements), insert *creates*
+  elements, so the overlay carries the full node + beat JSON — a consumer (reframe-studio) or
+  the author supplies it; reframe does not generate the montage shot payload. See
+  `examples/overlays/montage-insert.json` and `docs/guides/regen-contract.md`.
+
 ## [0.6.40] - 2026-06-21
 
 ### Added
