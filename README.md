@@ -303,7 +303,7 @@ The [`docs/`](docs/) folder is a [Mintlify](https://mintlify.com)-ready site (`d
 |---|---|
 | [Introduction](docs/introduction.mdx) · [Quickstart](docs/quickstart.mdx) · [The loop](docs/the-loop.mdx) | the pitch, install, and the AI-write / human-edit / deterministic-render model |
 | [Gallery](docs/gallery.mdx) | a curated visual reel of scenes |
-| [Examples](examples/README.md) | all 73 example scenes, by category |
+| [Examples](examples/README.md) | all 65 example scenes, by category |
 | [Guides](docs/guides/) | the eDSL, directing, HTML/GSAP, and regeneration-contract guides (also `pnpm reframe guide`) |
 
 Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumulate via `pnpm gallery` (the committed home; `out/` stays scratch).
@@ -316,7 +316,7 @@ Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumu
 | `packages/renderer-canvas` | DisplayList → Canvas 2D (browser + capture shared) |
 | `packages/render-cli` | Playwright capture + ffmpeg encode; also renders arbitrary HTML/GSAP deterministically via a virtual clock |
 | `packages/preview` | the Vite editor |
-| `examples/` | 73 example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
+| `examples/` | 65 example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
 | `labs/` | experiments and product probes (live-data → baked scene → render), kept out of `examples/` so it stays purely demonstrative |
 | `docs/` | the [Mintlify](https://mintlify.com)-ready docs site + the authoring guides (also `pnpm reframe guide`) |
 | `benchmark/` | **measurement artifacts, not product code**: LLM generation benchmark (RESULTS/ANALYSIS.md), regeneration-contract experiment (regen/), calibrated motion profiler (harness/motion/, MOTION.md) |

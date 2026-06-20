@@ -12,3 +12,11 @@ data into a deterministic reframe scene, then renders it.
 These follow the same boundary as the rest of the repo: fetch/probe live data,
 **bake it into a plain scene**, then render deterministically. They live here
 (not `examples/`) so `examples/` stays purely demonstrative scenes.
+
+## scenes/
+
+Overflow scenes pulled out of `examples/scenes` to keep that set curated — extra
+variants of a capability already shown by a kept example (a second device mockup,
+more character poses, a logo orbit) plus the `motion-lab` scratchpad. Still valid,
+still render the same way (`pnpm reframe render labs/scenes/<name>.ts`); just not
+part of the featured example set.

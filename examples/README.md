@@ -1,6 +1,6 @@
 # Examples
 
-73 scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
+65 curated scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
 
 ```bash
 pnpm reframe render examples/scenes/<scene>.ts        # in this repo
@@ -9,7 +9,7 @@ npx reframe-video render examples/scenes/<scene>.ts   # from npm
 
 Add `--overlay <file>` to layer human edits, or `frame <scene> --t <sec>` for a single PNG. A curated visual reel is in the [gallery](../docs/gallery.mdx); the full syntax is `pnpm reframe guide`.
 
-Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compositions) (multi-scene cuts), [`logo-sting/`](logo-sting), [`data/`](data) (batch inputs), [`scripts/`](scripts) (the edit-survival + gallery renderers).
+Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compositions) (multi-scene cuts), [`logo-sting/`](logo-sting), [`data/`](data) (batch inputs), [`scripts/`](scripts) (the edit-survival + gallery renderers). Overflow variants (extra device mockups, character poses, the `motion-lab` scratchpad) live in [`../labs/scenes/`](../labs/scenes) to keep this set curated.
 
 ## Hero / flagship
 
@@ -25,7 +25,6 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 | Scene | What it shows |
 |---|---|
 | `bloom` | 300 dots on a golden-angle spiral: bloom, breathing wave, color ripple, vortex. |
-| `motion-lab` | A scratchpad for tuning text position, motionPath, and tween easing by hand. |
 | `spring-demo` | Four spring-physics easings showing overshoot and settling behavior. |
 | `transition` | Two scene groups with a card wipe and a slide behind an orange sweep. |
 
@@ -60,8 +59,6 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 | `cursor-fx` | An arrow cursor arcs between buttons, clicking each with a tap + ripple. |
 | `device-gallery` | The redesigned `devicePreset`: glass + neon styles, seeded per-instance variation. |
 | `device-hero` | One device with a dramatic arc — drop / rise / spin / settle (motionPath + skew). |
-| `device-mockup` | A phone mockup with a scrollable feed clipped inside the screen. |
-| `device-mockup-tilted` | The same phone leaned into a 2.5D tilt (skewX + scaleY fake perspective). |
 | `device-presets` | Three devices side by side, content clipped + scrolling. |
 | `device-teardown` | A carousel of every device type performing its signature move. |
 | `imessage-chat` | A hero iPhone with an iMessage thread, typing indicator, and a punchline. |
@@ -74,12 +71,8 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 
 | Scene | What it shows |
 |---|---|
-| `character-morph` | A rigged character squashing + face expressions via path tweens. |
-| `character-rig` | A poseable humanoid skeleton: FK poses and IK hand targeting. |
 | `character-show` | A humanoid rig doing walk → run → jump → dance → cheer via `characterPreset`. |
 | `figure-styles` | One `figure()` rig with three swappable skins (clean / re-skin / cute). |
-| `one-line-character` | A one-line figure rigged into a character: neon glow, face, wave, blink. |
-| `one-line-figure` | One continuous line drawing itself into a human figure via `progress`. |
 
 ## Data viz
 
@@ -105,7 +98,6 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 
 | Scene | What it shows |
 |---|---|
-| `logo-orbit` | A star mark draws on, then a reveal-orbit swoop. |
 | `logo-reveal` | A mark assembles, a disc pops, an inner square spins, a wordmark rises. |
 | `logo-reveal-regen` | A simulated AI regeneration: horizontal lockup + underline flourish (same addresses). |
 
