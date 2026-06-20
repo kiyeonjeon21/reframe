@@ -8,7 +8,15 @@ versions may change them.
 
 ## [Unreleased]
 
-## [0.6.31] - 2026-06-20
+## [0.6.32] - 2026-06-20
+
+### Changed
+
+- **The 6 "hero" sfx default to their curated CC0 sample again** (`whoosh`/`rise`/`shimmer`/`thud`/`pop`/
+  `tick`) — these recordings sound better than the synth for one-shot use, so a bare `sfx:` uses the
+  sample (no audition needed). Unlike the old blanket name-override (removed in 0.6.29), this is an
+  explicit curated set: every OTHER sfx name still synthesizes and auto-varies. Force the varying synth
+  for a hero name per cue with `params: { synth: 1 }`. Tested both directions.
 
 ### Added
 

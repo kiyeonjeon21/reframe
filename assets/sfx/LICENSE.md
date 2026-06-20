@@ -21,7 +21,8 @@ Verified against each asset page's license field on 2026-06-11.
 (The three `bgm-{synthwave,piano,battle}.mp3` are re-encoded to mono 96 kbps to keep the package small.)
 
 CC0 requires no attribution; this file records provenance anyway.
-These files are loaded only by an explicit `file:` cue (e.g.
-`{ sfx: undefined, file: "whoosh.wav" }`). A bare `sfx:` name always uses the
-procedural synthesizer (so its pitch/auto-variation applies) — it is no longer
-auto-overridden by a same-named `.wav` here.
+Six names (`whoosh`/`rise`/`shimmer`/`thud`/`pop`/`tick`) ship a curated `.wav`
+that sounds better than the synth, so a bare `sfx:` uses that sample by default
+(fixed — it doesn't pitch-vary); pass `params: { synth: 1 }` to force the varying
+synth. Every other name synthesizes. Any `.wav`/`.ogg` here is also playable
+directly via an explicit `file:` cue.
