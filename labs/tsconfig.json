@@ -4,5 +4,5 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"]
   },
-  "include": ["gh-year-probe", "gh-video", "scenes"]
+  "include": ["gh-year-probe", "gh-video", "logo-sting", "scenes"]
 }

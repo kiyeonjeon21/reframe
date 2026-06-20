@@ -176,8 +176,9 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   `cursorClick`/`cursorDouble` (tap + ripple + button press). `deviceScreenPoint`
   (`devicePreset.ts`) maps screen-local UI coords → scene so the cursor clicks UI
   inside a device. The UI-demo motion vocabulary; see `examples/scenes/product-promo.ts`.
-- Logo sting: `examples/logo-sting/` (`generate.mts` + `template.ts`); a sample
-  `logo.svg` is committed.
+- Logo sting: `labs/logo-sting/` (`generate.mts` + `template.ts`); a sample
+  `logo.svg` is committed. (The published `reframe logo` command is separate —
+  `packages/render-cli/src/logoSting.ts`; this is a standalone generator example.)
 
 ## Regeneration contract — stable addresses
 

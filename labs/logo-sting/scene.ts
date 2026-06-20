@@ -2,7 +2,7 @@ import { buildLogoSting } from "./template.js";
 
 // Preview/example with a sample mark (a self-contained star — no network).
 // Real stings come from generate.mts:
-//   npx tsx examples/logo-sting/generate.mts <brand-slug | logo.svg>
+//   npx tsx labs/logo-sting/generate.mts <brand-slug | logo.svg>
 export default buildLogoSting({
   name: "reframe",
   viewBox: { minX: 0, minY: 0, w: 24, h: 24 },

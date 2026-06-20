@@ -2,7 +2,7 @@
 /**
  * Logo → sting: one command, your logo as a share-worthy animated reveal.
  *
- *   npx tsx examples/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"] \
+ *   npx tsx labs/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"] \
  *       [--motion <preset>] [--energy 0..1] [--speed n] [--intensity 0..1] \
  *       [--from left|right|top|bottom] [--seed n]
  *
@@ -110,7 +110,7 @@ async function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const arg = positional[0];
   if (!arg) {
-    console.error('usage: npx tsx examples/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"] [--motion <preset>] [--energy 0..1] [--speed n] [--intensity 0..1] [--from left|right|top|bottom] [--seed n]');
+    console.error('usage: npx tsx labs/logo-sting/generate.mts <logo.svg | brand-slug> ["Display Name"] [--motion <preset>] [--energy 0..1] [--speed n] [--intensity 0..1] [--from left|right|top|bottom] [--seed n]');
     process.exit(2);
   }
   if (flags.motion && !MOTIONS.includes(flags.motion)) {

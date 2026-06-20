@@ -1,6 +1,6 @@
 # Examples
 
-65 curated scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
+66 curated scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
 
 ```bash
 pnpm reframe render examples/scenes/<scene>.ts        # in this repo
@@ -9,7 +9,7 @@ npx reframe-video render examples/scenes/<scene>.ts   # from npm
 
 Add `--overlay <file>` to layer human edits, or `frame <scene> --t <sec>` for a single PNG. A curated visual reel is in the [gallery](../docs/gallery.mdx); the full syntax is `pnpm reframe guide`.
 
-Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compositions) (multi-scene cuts), [`logo-sting/`](logo-sting), [`data/`](data) (batch inputs), [`scripts/`](scripts) (the edit-survival + gallery renderers). Overflow variants (extra device mockups, character poses, the `motion-lab` scratchpad) live in [`../labs/scenes/`](../labs/scenes) to keep this set curated.
+Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compositions) (multi-scene cuts), [`lib/`](lib) (shared scene helpers), [`data/`](data) (batch inputs), [`scripts/`](scripts) (the edit-survival + gallery renderers). Overflow variants (extra device mockups, character poses, the `motion-lab` scratchpad), the SVG→logo-sting generator, and live-data probes live in [`../labs/`](../labs) to keep this set curated.
 
 ## Hero / flagship
 
@@ -132,6 +132,7 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 | `glyph-reveal` | A stop-motion reveal: 18 archival styles of one symbol, hard-cut at ~7fps. |
 | `lower-third` | A broadcast lower-third strap: name, role, accent bar. |
 | `photo-montage` | Six CC0 stills: crossfades, Ken Burns, vignette, kinetic titles. |
+| `player-sting` | A short visual-only logo sting — proves the standalone HTML `player`. |
 | `video-demo` | A video clip with a slow push-in, a vignette/scrim grade, a kinetic title. |
 | `video-montage` | Photos + a video clip in one auto-edited cut with seeded Ken Burns. |
 | `worldcup-glyph` | A World Cup 2026 archival glyph-reveal with football materials + a stadium bed. |
