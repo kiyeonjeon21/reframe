@@ -90,6 +90,14 @@ row(3, { center: 960, gap: 60, itemWidth: 440 }).map((x, i) =>
 
 `column` is `row` for the y axis.
 
+**Charts/widgets in a panel — derive geometry from the box, and `clip` it.** Don't
+hand-pick a pixels-per-unit scale (bars routinely overflow the panel that way).
+Define the panel rect ONCE, then size from it — bar height `(v/max) · innerH`, x via
+`row(...)` across the panel width — so a tall value can't exceed the box. As a safety
+net, wrap the chart in a clipped group so nothing can ever punch out the panel:
+`group({ clip: { kind: "rect", x, y, width, height, radius } }, [ ...bars ])`. See
+`examples/scenes/annual-report.ts` (and `cameraFit` above to frame the panel).
+
 ## States: declare looks, not motion
 
 Base props on nodes describe the **finished design**. A state is a sparse
@@ -178,6 +186,14 @@ scene({
   `tween` on the `"camera"` target, so `motionPath("camera", pts, …)` (pan along
   a curve) and `oscillate/wiggle("camera", "rotation"|"x"|…)` (handheld drift)
   also work.
+- **Frame a region without clipping — use `cameraFit`, not a guessed `zoom`.** The
+  visible scene rect is `W/zoom × H/zoom` centred on `(camera.x, camera.y)`, so a
+  hand-picked `zoom` that's too big crops the target. `cameraFit(box, { margin })`
+  returns `{ x, y, zoom }` that frames a scene-space bbox (top-left `{x,y,width,
+  height}`) with padding, guaranteed in-bounds: `cameraTo(cameraFit({ x, y, width,
+  height }, { margin: 80 }), { duration: 1, ease: "easeInOutCubic" })`. A centre-
+  anchored panel at `(px,py)` size `(pw,ph)` is `{ x: px-pw/2, y: py-ph/2, width:
+  pw, height: ph }`. `maxZoom` (default 2.4) caps absurd close-ups.
 - **Pin HUD/titles to the screen** with `fixed: true` on a TOP-LEVEL node — the
   camera won't move it (for overlays, watermarks, captions).
 - Defaults are the identity, so a scene without a camera is unchanged. Don't name

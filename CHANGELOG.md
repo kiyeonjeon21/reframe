@@ -8,6 +8,23 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.26] - 2026-06-20
+
+### Added
+
+#### `cameraFit` — frame a region without clipping
+
+- **New `cameraFit(box, { margin?, maxZoom?, size? })`** returns `{ x, y, zoom }` to spread into
+  `cameraTo`, framing a scene-space bbox with padding and GUARANTEED not to clip it (the visible rect
+  is `W/zoom × H/zoom`, so a hand-picked over-zoom crops the target; this computes the exact safe
+  zoom). Fixes the recurring "push-in zooms past the content" problem. Pure math, no IR/golden change.
+
+### Changed
+
+- **Guide: two container-safety patterns.** The eDSL guide now documents `cameraTo(cameraFit(box))`
+  for camera push-ins and the chart-in-a-panel pattern (size geometry from the container + wrap in a
+  `clip`ped group) so charts can't overflow their boxes. `examples/scenes/annual-report.ts` rewritten
+  to demonstrate both (bars/line normalized to their panels + clipped; the tour uses `cameraFit`).
 ## [0.6.25] - 2026-06-20
 
 ### Changed

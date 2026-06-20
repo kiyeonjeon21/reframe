@@ -43,6 +43,31 @@ export function cameraMatrix(cam: CameraIR, size: Size): Mat2D {
   return [a, b, c, d, W / 2 - a * x - c * y, H / 2 - b * x - d * y];
 }
 
+/**
+ * Frame a scene-space bounding box in the viewport — returns `{ x, y, zoom }` to
+ * spread into `cameraTo`, GUARANTEED not to clip the box. The visible scene rect
+ * is `W/zoom × H/zoom` centred on `(x, y)`; fitting `box` (+ `margin` padding on
+ * the tight axis) means `zoom = min(W/(box.w+2m), H/(box.h+2m))`, capped by
+ * `maxZoom` so a tiny target doesn't zoom absurdly close.
+ *
+ *   cameraTo(cameraFit({ x: 200, y: 760, width: 740, height: 360 }, { margin: 90 }),
+ *            { duration: 1, ease: "easeInOutCubic" })
+ *
+ * `box` is a top-left rect in scene coords (a centre-anchored panel at (px,py) of
+ * size (pw,ph) is `{ x: px-pw/2, y: py-ph/2, width: pw, height: ph }`).
+ */
+export function cameraFit(
+  box: { x: number; y: number; width: number; height: number },
+  opts: { size?: Size; margin?: number; maxZoom?: number } = {},
+): { x: number; y: number; zoom: number } {
+  const W = opts.size?.width ?? 1920;
+  const H = opts.size?.height ?? 1080;
+  const m = opts.margin ?? 80;
+  const fit = Math.min(W / (box.width + 2 * m), H / (box.height + 2 * m));
+  const zoom = Math.min(fit, opts.maxZoom ?? 2.4);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2, zoom };
+}
+
 /** Keyframe the camera: a `tween` on the reserved "camera" target. */
 export function cameraTo(
   props: CameraIR,
