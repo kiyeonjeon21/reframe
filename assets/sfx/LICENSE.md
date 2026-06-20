@@ -14,6 +14,11 @@ Verified against each asset page's license field on 2026-06-11.
 | thud.wav (trimmed) | [Muffled Distant Explosion](https://opengameart.org/content/muffled-distant-explosion) | NenadSimic | CC0 |
 | footstep_001/002/003.ogg (footstep00/03/06) | [RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney (kenney.nl) | CC0 |
 | bgm-song21.mp3 | [Mysterious Ambience (song21)](https://opengameart.org/content/mysterious-ambience-song21) | cynicmusic (pixelsphere.org) | multi-licensed; used under its CC0 option |
+| bgm-synthwave.mp3 | [Calm Ambient 1 (Synthwave)](https://opengameart.org/content/calm-ambient-1-synthwave-4k) | cynicmusic (pixelsphere.org) | multi-licensed; used under its CC0 option |
+| bgm-piano.mp3 | [Calm Piano 1 (Vaporware)](https://opengameart.org/content/calm-piano-1-vaporware) | cynicmusic (pixelsphere.org) | multi-licensed; used under its CC0 option |
+| bgm-battle.mp3 | [Battle Theme B for RPG](https://opengameart.org/content/battle-theme-b-for-rpg) | cynicmusic (pixelsphere.org) | multi-licensed; used under its CC0 option |
+
+(The three `bgm-{synthwave,piano,battle}.mp3` are re-encoded to mono 96 kbps to keep the package small.)
 
 CC0 requires no attribution; this file records provenance anyway.
 These files are loaded only by an explicit `file:` cue (e.g.

@@ -8,7 +8,18 @@ versions may change them.
 
 ## [Unreleased]
 
-## [0.6.30] - 2026-06-20
+## [0.6.31] - 2026-06-20
+
+### Added
+
+- **3 CC0 music beds** from cynicmusic (pixelsphere.org), via `bgm: { file }`: `bgm-synthwave.mp3`
+  (chill), `bgm-piano.mp3` (elegant), `bgm-battle.mp3` (energetic) — alongside the existing
+  `bgm-song21.mp3`. Re-encoded to mono 96 kbps to keep the package small; provenance in
+  `assets/sfx/LICENSE.md`.
+- `examples/scenes/sfx-compare.ts` — plays the six original sounds (whoosh/rise/shimmer/thud/pop/tick)
+  **synth (`sfx:`) vs sample (`file: "<name>.wav"`)** back to back, to A/B which to keep as each
+  name's default. (Both versions remain available; the synth recipes can be retuned, or a sample
+  re-instated per name, after listening.)
 
 ### Added
 

@@ -578,8 +578,10 @@ explicitly with `params`: `{ sfx: "blip", params: { seed: 4 } }` (pick the varia
 `{ sfx: "tick", params: { pitch: 1.5 } }` (an explicit frequency multiplier; `2` = octave
 up). `params.gainDb` trims a single hit.
 
-**bgm beds** (`bgm.synth`): `ambient-pad` `lofi` `pulse` `tension` `uplift` — or
-`bgm.file` for your own. **Mixing**: any cue takes `fadeIn`/`fadeOut` (seconds) and `pan`
+**bgm beds**: synthesized via `bgm.synth` (`ambient-pad` `lofi` `pulse` `tension`
+`uplift`), or a file via `bgm.file` — bundled CC0 music: `bgm-song21.mp3` (ambient),
+`bgm-synthwave.mp3` (chill), `bgm-piano.mp3` (elegant), `bgm-battle.mp3` (energetic),
+or your own path. **Mixing**: any cue takes `fadeIn`/`fadeOut` (seconds) and `pan`
 (-1 left … 0 centre … +1 right). A `video` clip's audio takes `fadeIn` and `pan` too
 (clip fade-out isn't supported yet). The bed auto-ducks under cues (`bgm.duck`).
 
