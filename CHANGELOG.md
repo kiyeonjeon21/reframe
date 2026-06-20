@@ -8,7 +8,16 @@ versions may change them.
 
 ## [Unreleased]
 
-## [0.6.29] - 2026-06-20
+## [0.6.30] - 2026-06-20
+
+### Added
+
+- **31 curated CC0 sample sounds** (Kenney, public domain) in `assets/sfx/`, played via `file:` cues:
+  - **UI** (Interface Sounds): `back` `close` `drop` `error` `glitch` `minimize` `switch` `toggle`
+    (×2 each) + `scroll_001` `scratch_001`.
+  - **impact / foley** (RPG Audio): `chop` `knifeSlice`(×2) `metalClick` `metalLatch` `metalPot1/2`
+    `handleCoins`(×2) `doorOpen_1` `doorClose_1` `creak1` `bookFlip1`.
+  - Provenance recorded in `assets/sfx/LICENSE.md`; `examples/scenes/sample-showcase.ts` auditions them.
 
 ### Changed
 
