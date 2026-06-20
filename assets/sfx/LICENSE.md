@@ -14,5 +14,7 @@ Verified against each asset page's license field on 2026-06-11.
 | bgm-song21.mp3 | [Mysterious Ambience (song21)](https://opengameart.org/content/mysterious-ambience-song21) | cynicmusic (pixelsphere.org) | multi-licensed; used under its CC0 option |
 
 CC0 requires no attribution; this file records provenance anyway.
-Files placed here named after a procedural SFX (e.g. `whoosh.wav`) override
-the synthesizer for that name.
+These files are loaded only by an explicit `file:` cue (e.g.
+`{ sfx: undefined, file: "whoosh.wav" }`). A bare `sfx:` name always uses the
+procedural synthesizer (so its pitch/auto-variation applies) — it is no longer
+auto-overridden by a same-named `.wav` here.

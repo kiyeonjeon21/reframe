@@ -581,8 +581,14 @@ up). `params.gainDb` trims a single hit.
 **bgm beds** (`bgm.synth`): `ambient-pad` `lofi` `pulse` `tension` `uplift` — or
 `bgm.file` for your own. **Mixing**: any cue takes `fadeIn`/`fadeOut` (seconds) and `pan`
 (-1 left … 0 centre … +1 right). A `video` clip's audio takes `fadeIn` and `pan` too
-(clip fade-out isn't supported yet). The bed auto-ducks under cues (`bgm.duck`). See
-`examples/scenes/sfx-showcase.ts` to audition the whole palette.
+(clip fade-out isn't supported yet). The bed auto-ducks under cues (`bgm.duck`).
+
+**Recorded samples** are a separate layer from the synth palette: use a `file:` cue to
+play a CC0 file from `assets/sfx/` — keyboard typing (`keypress-*.wav`, also driven by
+`textTypeCues`), `footstep_*`, and the Kenney UI pack (`click_*`/`confirmation_*`/
+`select_*`/…). A bare `sfx:` name always synthesizes (so it pitch-varies); pass
+`file: "whoosh.wav"` to play the recorded version instead. Audition the procedural set
+with `examples/scenes/sfx-showcase.ts` and the samples with `sample-showcase.ts`.
 
 ## Rules
 
