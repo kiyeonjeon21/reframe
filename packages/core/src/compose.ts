@@ -69,6 +69,18 @@ export interface OverlayDoc {
       autoRotate?: boolean;
     }
   >;
+  /**
+   * Remove timeline steps/beats by stable label (or beat name) — splice them out
+   * of their parent group. The STRUCTURAL complement of a `timeline` retiming
+   * patch: drop a montage shot (`removeTimeline: ["shot-2"]`), cut a beat, etc.
+   * The surrounding `seq` re-accumulates, so later steps ripple up and any
+   * label-anchored dependents follow. An unknown label is an orphan (did the base
+   * regen drop it?). Reorder is the existing `timeline.<beat>.order` patch; this
+   * is its delete counterpart. NB a node that still anchors to a removed label
+   * (e.g. a video `start: "shot-2"`) must also be neutralised — patch its `start`
+   * to a number — or post-compose validation rejects the dangling anchor.
+   */
+  removeTimeline?: string[];
 }
 
 export interface ComposeReport {
@@ -82,7 +94,8 @@ export interface ComposeReport {
       | "remove-node"
       | "behavior-set"
       | "behavior-remove"
-      | "add-timeline";
+      | "add-timeline"
+      | "remove-timeline";
   }[];
   orphans: { layer: string; address: string; reason: string }[];
   warnings: string[];
@@ -301,6 +314,50 @@ function applyOverlay(
     // scene() bakes the inferred duration into ir.duration, so a patched step
     // duration leaves it stale. Re-infer unless this overlay pins it explicitly.
     if (timingPatched && overlay.scene?.duration === undefined) {
+      delete ir.duration;
+      ir.duration = compileScene(ir).duration;
+    }
+  }
+
+  // --- removed timeline steps/beats: spliced from their parent by stable label ---
+  if (overlay.removeTimeline && overlay.removeTimeline.length > 0) {
+    // walk recording each labelled step / named beat with its parent + the child ref
+    // (splice by identity, not index, so removing siblings can't shift positions out
+    // from under each other).
+    const located = new Map<string, { parent: TimelineIR; child: TimelineIR }>();
+    const walkParents = (tl: TimelineIR) => {
+      if (!("children" in tl)) return;
+      for (const child of tl.children) {
+        if ("label" in child && child.label !== undefined) located.set(child.label, { parent: tl, child });
+        if (child.kind === "beat") located.set(child.name, { parent: tl, child });
+        walkParents(child);
+      }
+    };
+    if (ir.timeline) walkParents(ir.timeline);
+
+    const toRemove = new Map<TimelineIR, Set<TimelineIR>>();
+    let removed = false;
+    for (const label of overlay.removeTimeline) {
+      const hit = located.get(label);
+      if (!hit) {
+        orphan(
+          `removeTimeline.${label}`,
+          `unknown timeline label "${label}" — known labels: ${[...located.keys()].join(", ") || "(none)"}; did the base regeneration drop it?`,
+        );
+        continue;
+      }
+      let set = toRemove.get(hit.parent);
+      if (!set) toRemove.set(hit.parent, (set = new Set()));
+      set.add(hit.child);
+      applied(`removeTimeline.${label}`, "remove-timeline");
+      removed = true;
+    }
+    for (const [parent, children] of toRemove) {
+      const p = parent as { children: TimelineIR[] };
+      p.children = p.children.filter((c) => !children.has(c));
+    }
+    // removal shifts later steps (the seq re-accumulates) → re-infer the duration.
+    if (removed && overlay.scene?.duration === undefined) {
       delete ir.duration;
       ir.duration = compileScene(ir).duration;
     }

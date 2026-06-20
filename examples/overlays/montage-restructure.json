@@ -1,0 +1,13 @@
+{
+  "reframeOverlay": 1,
+  "name": "montage-restructure",
+  "target": "photo-montage",
+  "removeTimeline": ["shot-4"],
+  "timeline": {
+    "shot-1": { "order": 2 },
+    "shot-2": { "order": 1 }
+  },
+  "nodes": {
+    "shot-0": { "src": "photo-montage/06.jpg" }
+  }
+}

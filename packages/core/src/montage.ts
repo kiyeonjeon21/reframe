@@ -14,10 +14,18 @@
  * ratio fill the frame (cropped, centered) with no distortion — no pre-cropping. The
  * Ken Burns keeps `scale >= 1` with the pan bounded to the scale's slack, so an edge
  * is never revealed.
+ *
+ * STRUCTURE — each shot is a SELF-CONTAINED named beat `shot-${i}` that owns only its
+ * own layer's motion (fade-in + Ken Burns + fade-out); every layer starts at
+ * `opacity: 0`. Adjacent shots overlap by the crossfade duration via a negative `gap`
+ * in the `seq`, so the outgoing tail and incoming head cross. Because no shot references
+ * another, a shot can be reordered (beat `order`), dropped (`removeTimeline`), or its
+ * image swapped (a `src` patch) by an overlay and survive AI regeneration of the base.
+ * The montage opens on a fade-up and closes on a fade-out (symmetric → edit-safe).
  */
 
 import type { ColorStop, NodeIR, TimelineIR } from "./ir.js";
-import { beat, image, par, rect, seq, tween, video } from "./dsl.js";
+import { beat, image, rect, seq, tween, video, wait } from "./dsl.js";
 import { linearGradient, radialGradient } from "./gradient.js";
 
 export type KenBurns = "in" | "out" | "pan";
@@ -38,7 +46,7 @@ export interface MontageOpts {
   id?: string;
   /** Frame size; must match the scene size. Default 1920×1080. */
   size?: { width: number; height: number };
-  /** Seconds each slide is held (incl. its incoming crossfade). Default 3.2. */
+  /** Seconds each slide is held (its full beat, incl. its fade-in/out). Default 3.2. */
   hold?: number;
   /** Crossfade seconds between slides. Default 0.6. */
   transition?: number;
@@ -84,21 +92,23 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
   const hold = Math.max(0.5, opts.hold ?? 3.2);
   const zoom = Math.max(1.001, opts.zoom ?? 1.18);
   const grade = opts.grade !== false;
+  const T = opts.transition ?? 0.6;
   const rand = makeRng((opts.seed ?? 0) + 1);
 
   const slides = images.map(norm);
   const cx = W / 2;
   const cy = H / 2;
+  const n = slides.length;
 
-  const nodes: NodeIR[] = [];
-  const shots: TimelineIR[] = [];
-
-  slides.forEach((slide, i) => {
-    const nid = `${id}-${i}`;
+  // First pass — seeded framing + per-slide hold. Drawn in slide order so the RNG
+  // sequence is fixed → deterministic. Holds are precomputed because each crossfade is
+  // capped by BOTH neighbours' holds (needs the next slide's hold while building this one).
+  interface Frame {
+    slideHold: number;
+    kA: number; kB: number; xA: number; xB: number; yA: number; yB: number;
+  }
+  const frames: Frame[] = slides.map((slide) => {
     const slideHold = Math.max(0.5, slide.hold ?? hold);
-    const transition = Math.min(opts.transition ?? 0.6, slideHold * 0.9);
-
-    // Seeded framing (draw in a fixed order → deterministic).
     const kind: KenBurns = slide.ken ?? (["in", "out", "pan"] as const)[Math.floor(rand() * 3)] ?? "in";
     const angle = rand() * Math.PI * 2;
     const panFrac = 0.4 + rand() * 0.35; // 0.40..0.75 of the available slack
@@ -123,8 +133,26 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
       yA = cy + dy * (kA - 1) * (H / 2) * panFrac;
       yB = cy + dy * (kB - 1) * (H / 2) * panFrac;
     }
+    return { slideHold, kA, kB, xA, xB, yA, yB };
+  });
 
-    const box = { id: nid, src: slide.src, x: xA, y: yA, width: W, height: H, anchor: "center" as const, fit: "cover" as const, scale: kA, opacity: i === 0 ? 1 : 0 };
+  // Crossfade durations. The boundary fade between shot i-1 and i (`tb`) is capped by
+  // both neighbours so neither hold is overwhelmed; it is BOTH shot i's fade-in and shot
+  // i-1's fade-out, so the overlap regions line up exactly. The opening (shot 0 fade-in)
+  // and closing (last shot fade-out) are capped by their own hold.
+  const cap = (h: number) => Math.min(T, h * 0.9);
+  const tb = (i: number) => Math.min(T, frames[i - 1]!.slideHold * 0.9, frames[i]!.slideHold * 0.9);
+  const fadeIn = (i: number) => (i === 0 ? cap(frames[0]!.slideHold) : tb(i));
+  const fadeOut = (i: number) => (i === n - 1 ? cap(frames[i]!.slideHold) : tb(i + 1));
+
+  const nodes: NodeIR[] = [];
+  const shots: TimelineIR[] = [];
+
+  frames.forEach((fr, i) => {
+    const nid = `${id}-${i}`;
+    const slide = slides[i]!;
+    // every layer starts hidden — each shot fades itself in/out, so any shot can be first
+    const box = { id: nid, src: slide.src, x: fr.xA, y: fr.yA, width: W, height: H, anchor: "center" as const, fit: "cover" as const, scale: fr.kA, opacity: 0 };
     nodes.push(
       isVideoSrc(slide.src)
         // anchor the clip's playback start to its shot label, so it ripples when the
@@ -133,19 +161,24 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
         : image(box),
     );
 
-    const ken = tween(
-      nid,
-      { scale: kB, x: xB, y: yB },
-      { duration: slideHold, ease: "easeInOutQuad", label: `shot-${i}` },
+    const inDur = fadeIn(i);
+    const outDur = fadeOut(i);
+    // a self-contained shot: fade-in ∥ Ken Burns ∥ (hold then fade-out). The beat NAME is
+    // the stable `shot-${i}` address (its t0 = the shot's start — same semantic the Ken
+    // Burns label used to carry; carrying it on the beat avoids a duplicate label).
+    const shot = beat(
+      `shot-${i}`,
+      { nodes: [nid], parallel: true, ...(i > 0 && { gap: -inDur }) },
+      [
+        tween(nid, { opacity: 1 }, { duration: inDur, ease: "linear" }),
+        tween(nid, { scale: fr.kB, x: fr.xB, y: fr.yB }, { duration: fr.slideHold, ease: "easeInOutQuad" }),
+        seq(
+          wait(fr.slideHold - outDur),
+          // label the crossfade INTO the next shot `cross-${i+1}` (no label on the closing fade)
+          tween(nid, { opacity: 0 }, { duration: outDur, ease: "linear", ...(i < n - 1 && { label: `cross-${i + 1}` }) }),
+        ),
+      ],
     );
-    const shot =
-      i === 0
-        ? par(ken)
-        : par(
-            ken,
-            tween(`${id}-${i - 1}`, { opacity: 0 }, { duration: transition, ease: "linear", label: `cross-${i}` }),
-            tween(nid, { opacity: 1 }, { duration: transition, ease: "linear" }),
-          );
     shots.push(shot);
   });
 
