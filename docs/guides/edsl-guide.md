@@ -421,6 +421,37 @@ scene({ size, nodes: [...m.nodes, ...titles], timeline: par(m.timeline, titleTra
 - Seeded + pure (same `(shots, opts)` → identical IR). Note: image/video sources do
   not render in `reframe player` / artifacts — montage ships as mp4. See
   `examples/scenes/video-montage.ts`.
+- **Assemble from files**: `reframe assemble <media...> [-o name] [--title "…"]
+  [--bgm <synth>] [--hold s] [--seed N]` probes each clip's real duration (so a
+  video shot's `hold` = its actual length, never a freeze) and scaffolds an editable
+  scene `.ts` wiring `photoMontage` + an optional `title` + a bed. The probed
+  numbers are baked in, so the emitted scene is a normal deterministic scene — edit
+  it (reorder, retime, swap a `src`), then `reframe render` it.
+
+## Titles & lower-thirds (`title` / `lowerThird`)
+
+The motion-graphic overlay vocabulary for a media piece — generators that return
+`{ nodes, timeline }` to compose over a montage (or anything). Stable ids so overlays
+address them; pure + deterministic.
+
+- `title({ text, id?, x?, y?, fontSize?, fontWeight?, fill?, letterSpacing?,
+  entrance?, exit?, speed?, seed?, hold? })` → `{ nodes, timeline, block }`. A kinetic
+  headline built on `splitText` + `textIn` (entrance presets: `cascade` `rise`
+  `bounce` `typewriter` `assemble` `decode`). Set `exit` (a `textOut` preset) and it
+  plays in, holds `hold`s, then exits. Glyph ids `${id}-${i}`; labels `${id}-in` /
+  `${id}-out`. `block` is returned so you can add `textLoop` behaviors or extra tweens.
+- `lowerThird({ name, role?, id?, x?, y?, accent?, fill?, subFill?, fontSize?, hold? })`
+  → `{ nodes, timeline }`. A name/role strap: an accent bar grows in, the text slides +
+  fades. Ids `${id}` (group) / `${id}-bar` / `${id}-name` / `${id}-role`; labels
+  `${id}-in` / `${id}-out`. Defaults to a bottom-left title-safe position.
+
+```ts
+const ttl = title({ text: "OUR YEAR", id: "ttl", x: 960, y: 540, fontSize: 132, entrance: "rise", exit: "dissolve", hold: 1.6 });
+const lt  = lowerThird({ name: "Nantes, France", role: "spring 2026", id: "lt" });
+// nodes:    [...m.nodes, ...ttl.nodes, ...lt.nodes]
+// timeline: par(m.timeline, ttl.timeline, seq(wait(6.6), lt.timeline))
+```
+See `examples/scenes/media-story.ts`.
 
 ## Video clips (`video`)
 

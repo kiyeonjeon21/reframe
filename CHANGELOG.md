@@ -8,6 +8,29 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.37] - 2026-06-20
+
+### Added
+
+#### Media-first montage to story (Spine 1)
+
+Turn a few images + clips into an outstanding, deterministic piece — assembled, titled, with a bed.
+
+- **`reframe assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]`** — the
+  "files → scene" path. Probes each image/video with ffprobe (`packages/render-cli/src/media/probe.ts`)
+  so a **video shot's hold equals its real duration** (a short clip no longer freezes on its last
+  frame), then scaffolds an **editable scene `.ts`** wiring `photoMontage` + an optional `title` + a
+  music bed. The probed durations are baked in as literals, so the emitted scene is a normal
+  deterministic scene — reorder shots, retime, or swap a `src`, then `render` it.
+- **`title(opts)`** (core, exported) — a kinetic headline generator: `splitText` + a `textIn` entrance
+  (cascade/rise/bounce/typewriter/assemble/decode) + an optional `textOut` exit; returns
+  `{ nodes, timeline, block }`, labels `${id}-in`/`${id}-out`.
+- **`lowerThird(opts)`** (core, exported) — a name/role strap with an accent bar that grows in and text
+  that slides + fades; returns `{ nodes, timeline }`, ids `${id}-bar`/`${id}-name`/`${id}-role`.
+  Generalizes the hand-rolled lower-third pattern into a reusable seeded generator.
+- Showcase: `examples/scenes/media-story.ts` (montage of stills + a clip, a title opener, a lower-third,
+  a bed). Additive — `photoMontage` unchanged, goldens unchanged.
+
 ## [0.6.36] - 2026-06-20
 
 ### Added

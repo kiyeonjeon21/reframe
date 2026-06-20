@@ -33,6 +33,7 @@ export { linearGradient, radialGradient, conicGradient, isGradient } from "./gra
 export { glow, dropShadow } from "./effects.js";
 export { row, column, grid, type RowOpts, type GridOpts } from "./layout.js";
 export { photoMontage, videoMontage, type MontageImage, type MontageOpts, type MontageResult, type KenBurns } from "./montage.js";
+export { title, lowerThird, type TitleOpts, type TitleResult, type LowerThirdOpts, type LowerThirdResult } from "./titles.js";
 export { motionPreset, PRESET_NAMES, type PresetName, type PresetRig, type PresetOpts } from "./presets.js";
 export { devicePreset, deviceScreen, deviceScreenCenter, deviceBounds, deviceScreenPoint, DEVICE_PRESET_NAMES, type DevicePresetName, type DevicePresetOpts, type DeviceMaterial, type DeviceStyle, type DeviceNotch } from "./devicePreset.js";
 export { cursor, cursorTo, cursorPath, cursorClick, cursorDouble, type CursorStyle, type CursorOpts, type CursorToOpts, type CursorPathOpts, type CursorClickOpts } from "./cursor.js";

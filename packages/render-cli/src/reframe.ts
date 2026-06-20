@@ -38,6 +38,9 @@ const LABELS = PACKAGED
 const COMPILE = PACKAGED
   ? join(ROOT, "dist", "compile.js")
   : join(ROOT, "packages", "render-cli", "src", "compile.ts");
+const ASSEMBLE = PACKAGED
+  ? join(ROOT, "dist", "assemble.js")
+  : join(ROOT, "packages", "render-cli", "src", "assemble.ts");
 const MANIFEST = PACKAGED
   ? join(ROOT, "dist", "manifest.js")
   : join(ROOT, "packages", "render-cli", "src", "manifest.ts");
@@ -94,6 +97,8 @@ usage:
                                  player (plays live in any browser or a Claude.ai artifact; visual only)
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
+  ${CMD} assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]
+                                 probe images/videos → scaffold a clip-aware montage scene .ts (then render it)
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
   ${CMD} manifest <scene.ts|.json> [--json]  list the editable surface (node/state/label/beat/behavior addresses + patchable props)
   ${CMD} lint <scene.ts|.json> [--json] [--strict]  flag un-addressable motion (regen-unsafe) + an addressability summary
@@ -263,6 +268,15 @@ async function main() {
       if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
       process.exit(
         await (PACKAGED ? run(process.execPath, [LABELS, inputPath]) : run("npx", ["tsx", LABELS, inputPath])),
+      );
+    }
+
+    case "assemble": {
+      // needs ffprobe (bundled with ffmpeg). Path resolution + probing happen in
+      // the entry (relative to INIT_CWD) — just forward the args.
+      if (rest.length === 0) fail(`assemble needs at least one media file\n\n${USAGE}`);
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [ASSEMBLE, ...rest]) : run("npx", ["tsx", ASSEMBLE, ...rest])),
       );
     }
 

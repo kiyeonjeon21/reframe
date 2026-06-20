@@ -17,6 +17,7 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 - `pnpm reframe labels <scene.ts>` — print the compiled event clock (every timeline label → exact seconds; the timing source for `audio.cues` and beat debugging)
 - `pnpm reframe compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]` — bundle + validate eDSL source into SceneIR JSON, NO render (no ffmpeg/chromium; fast). On failure: a concise classified error (`bundle`/`eval`/`validation`), never the base64 bundle; `--json` makes it `{ok:false,error,kind}`. The in-process equivalent is exported as `reframe-video/compile` (`loadScene`/`loadSceneFromCode`, server-only). Entry `packages/render-cli/src/compile.ts`; loader `loadScene.ts`.
 - `pnpm reframe frame <scene.ts|.json> [--t <sec>] [-o out.png]` — render ONE frame at time `t` to a PNG (same renderer as `render`, no ffmpeg muxing; chromium only). For an agentic render-and-look loop (feed the frame back to a model). Reuses `renderFrameAt` (`frameLoop.ts`); entry `packages/render-cli/src/frame.ts`.
+- `pnpm reframe assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]` — the **files → scene** path: probe each image/video for its real duration (ffprobe) and scaffold an editable montage scene `.ts` wiring `photoMontage` (clip-aware holds, no freeze) + an optional `title` + a music bed. Probed numbers are baked in → the emitted scene is a normal deterministic scene. Probe `packages/render-cli/src/media/probe.ts`; entry `assemble.ts`.
 - `pnpm reframe manifest <scene.ts|.json> [--json]` — dump the scene's **addressable surface**: every node (+ its `editableProps` and `animatedProps`), state, timeline label (+ `patchable` params), beat, and behavior, each with the overlay address that reaches it. The map an AI/human editor reads to patch a scene surgically (vs regenerating). Core `sceneManifest(compiled)` (`packages/core/src/manifest.ts`, exported); entry `packages/render-cli/src/manifest.ts`.
 - `pnpm reframe lint <scene.ts|.json> [--json] [--strict]` — flag un-addressable motion (a tween/to/motionPath with no `label` can't be retimed by an overlay and a regen can silently drop it) + a `motionAddressableRatio` summary. `--strict` exits non-zero on findings (CI gate). Core `lintScene(compiled)` (same module); entry `lint.ts`.
 - `pnpm reframe verify-overlay <base.ts|.json> <overlay.json>... [--json]` — compose an overlay onto a base and report applied-vs-orphaned, NO render. The regen-survival check: run vs the original base (all applied), then vs the AI-regenerated base — any orphan is a broken stable address. Non-zero exit on orphans (CI gate). Reuses `composeScene`/`formatComposeReport`; entry `verifyOverlay.ts`.
@@ -124,6 +125,11 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   seeded `textIn` (typewriter/cascade/rise/bounce/assemble/decode), `textLoop`
   (wave/shimmer/wobble/float → behaviors), `textOut` (shatter/fly/dissolve/fall/
   collapse), `textTypeCues` (per-glyph keypress audio). The text analog of motionPreset.
+- Titles / lower-thirds (`packages/core/src/titles.ts`) — `title(opts)` (kinetic headline:
+  `splitText` + `textIn` entrance + optional `textOut` exit; returns `{ nodes, timeline, block }`,
+  labels `${id}-in`/`${id}-out`) and `lowerThird(opts)` (name/role strap with an accent bar,
+  `{ nodes, timeline }`, ids `${id}-bar`/`-name`/`-role`). The motion-graphic overlay vocabulary
+  for a media piece; what `reframe assemble` wires over a montage. Pure/seeded/golden-safe.
 - Authoring ergonomics — `text` `prefix`/`suffix` wrap a numeric count-up so `$2.4M`/`+32%`
   read from ONE node (`packages/core/src/evaluate.ts` text case; golden-safe). Layout helpers
   `row`/`column`/`grid` (`packages/core/src/layout.ts`) return evenly-spaced coordinates to
