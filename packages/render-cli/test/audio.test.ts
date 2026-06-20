@@ -1,39 +1,57 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import type { AudioPlan } from "@reframe/core";
+import { BGM_SYNTHS, SFX_NAMES } from "@reframe/core";
 import { atempoChain, buildFilterGraph } from "../src/audio/mux.js";
-import { synthAmbientPad, synthSfx } from "../src/audio/synth.js";
+import { synthBgm, synthSfx } from "../src/audio/synth.js";
 import { encodeWavMono16 } from "../src/audio/wav.js";
 
 const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex").slice(0, 16);
+const stats = (samples: Float32Array) => {
+  let peak = 0, sum = 0;
+  for (const s of samples) { peak = Math.max(peak, Math.abs(s)); sum += s * s; }
+  return { peak, rms: Math.sqrt(sum / samples.length) };
+};
 
 describe("procedural synth determinism", () => {
-  it("same name+seed produce byte-identical WAVs", () => {
-    for (const name of ["whoosh", "pop", "tick", "rise", "shimmer", "thud"] as const) {
+  it("every sfx: same name+seed → byte-identical WAV; different seed → different", () => {
+    for (const name of SFX_NAMES) {
       const a = encodeWavMono16(synthSfx(name, { seed: 7 }));
       const b = encodeWavMono16(synthSfx(name, { seed: 7 }));
       expect(sha(a), name).toBe(sha(b));
       expect(a.length, name).toBeGreaterThan(1000);
+      // a different seed shifts pitch/texture → different bytes
+      expect(sha(encodeWavMono16(synthSfx(name, { seed: 1 })))).not.toBe(
+        sha(encodeWavMono16(synthSfx(name, { seed: 4 }))),
+      );
     }
-    expect(sha(encodeWavMono16(synthSfx("pop", { seed: 1 })))).not.toBe(
-      sha(encodeWavMono16(synthSfx("pop", { seed: 2 }))),
-    );
   });
 
-  it("synthesized audio is audible and clamp-safe", () => {
-    for (const name of ["whoosh", "pop", "tick", "rise", "shimmer", "thud"] as const) {
-      const samples = synthSfx(name);
-      let peak = 0;
-      let sum = 0;
-      for (const s of samples) {
-        peak = Math.max(peak, Math.abs(s));
-        sum += s * s;
-      }
+  it("every sfx is audible and clamp-safe", () => {
+    for (const name of SFX_NAMES) {
+      const { peak, rms } = stats(synthSfx(name, { seed: 1 }));
       expect(peak, name).toBeGreaterThan(0.1); // not silence
-      expect(Math.sqrt(sum / samples.length), name).toBeGreaterThan(0.005);
+      expect(peak, `${name} clamp`).toBeLessThanOrEqual(1.0001);
+      expect(rms, name).toBeGreaterThan(0.004);
     }
-    const pad = synthAmbientPad(2);
-    expect(pad.length).toBe(2 * 44100);
+  });
+
+  it("pitch param shifts the sound (explicit) and seed=0 is the neutral pitch", () => {
+    // explicit pitch changes the bytes
+    expect(sha(encodeWavMono16(synthSfx("blip", { seed: 0 })))).not.toBe(
+      sha(encodeWavMono16(synthSfx("blip", { seed: 0, pitch: 1.5 }))),
+    );
+    // seed 0 == no params (neutral)
+    expect(sha(encodeWavMono16(synthSfx("ding")))).toBe(sha(encodeWavMono16(synthSfx("ding", { seed: 0 }))));
+  });
+
+  it("every bgm synth is deterministic, audible, and the right length", () => {
+    for (const name of BGM_SYNTHS) {
+      const a = synthBgm(name, 2);
+      expect(a.length, name).toBe(2 * 44100);
+      expect(sha(encodeWavMono16(a)), name).toBe(sha(encodeWavMono16(synthBgm(name, 2))));
+      expect(stats(a).peak, name).toBeGreaterThan(0.1);
+    }
   });
 });
 

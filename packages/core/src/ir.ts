@@ -410,7 +410,27 @@ export interface BehaviorIR {
     | { kind: "named"; name: "wiggle"; params: { amplitude: number; frequency: number; seed: number } };
 }
 
-export type SfxName = "whoosh" | "pop" | "tick" | "rise" | "shimmer" | "thud";
+/**
+ * The procedural sfx palette — the single source of truth (the type, validation,
+ * and the render-cli synth recipes all key off this). Grouped by use:
+ *   transition: whoosh swish rise riser warp   · ui: tick click blip pop select
+ *   impact: thud boom knock   · positive: chime ding coin sparkle shimmer success
+ *   alert: zap error
+ * Every cue's pitch/texture varies with its `seed` (auto-seeded by cue order), so
+ * repeated cues sound different; `params.pitch` is an explicit multiplier.
+ */
+export const SFX_NAMES = [
+  "whoosh", "swish", "rise", "riser", "warp",
+  "tick", "click", "blip", "pop", "select",
+  "thud", "boom", "knock",
+  "chime", "ding", "coin", "sparkle", "shimmer", "success",
+  "zap", "error",
+] as const;
+export type SfxName = (typeof SFX_NAMES)[number];
+
+/** Synthesized background-music beds (license-free). */
+export const BGM_SYNTHS = ["ambient-pad", "lofi", "pulse", "tension", "uplift"] as const;
+export type BgmSynth = (typeof BGM_SYNTHS)[number];
 
 export interface AudioCueIR {
   /** Anchor: a timeline label (the step's start) or absolute seconds. */
@@ -429,15 +449,19 @@ export interface AudioCueIR {
   fadeOut?: number;
   /** Stereo balance: -1 full left, 0 centre (default), +1 full right. */
   pan?: number;
-  /** Synth parameter overrides (seed, duration, …) — numbers only. */
+  /**
+   * Synth parameter overrides — numbers only. `seed` varies pitch/texture
+   * (defaults to the cue's order so repeats differ); `pitch` is an explicit
+   * frequency multiplier (1 = unchanged, 2 = an octave up); `gainDb` trims level.
+   */
   params?: Record<string, number>;
 }
 
 export interface AudioIR {
   bgm?: {
     file?: string;
-    /** License-free synthesized bed. */
-    synth?: "ambient-pad";
+    /** License-free synthesized bed (see {@link BGM_SYNTHS}). */
+    synth?: BgmSynth;
     gain?: number;
     fadeIn?: number;
     fadeOut?: number;

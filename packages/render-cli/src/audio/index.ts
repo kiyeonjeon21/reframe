@@ -38,5 +38,5 @@ export async function buildAudioTrack(
 }
 
 export { buildFilterGraph, muxAudio } from "./mux.js";
-export { synthSfx, synthAmbientPad } from "./synth.js";
+export { synthSfx, synthAmbientPad, synthBgm } from "./synth.js";
 export { encodeWavMono16 } from "./wav.js";

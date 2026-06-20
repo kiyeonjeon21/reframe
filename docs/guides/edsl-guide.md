@@ -558,12 +558,28 @@ audio: {
 }
 ```
 
-Procedural sfx names: `whoosh` `pop` `tick` `rise` `shimmer` `thud` (deterministic,
-seedable via `params: { seed }`). Exactly one of `sfx`/`file` per cue.
-**Mixing**: any cue takes `fadeIn`/`fadeOut` (seconds) and `pan` (-1 left … 0 centre …
-+1 right). A `video` clip's audio takes `fadeIn` and `pan` too (clip fade-out isn't
-supported yet — a clip has no fixed length in the plan). The bed auto-ducks under cues
-(`bgm.duck`).
+**Procedural sfx palette** (deterministic; exactly one of `sfx`/`file` per cue):
+
+| group | names |
+| --- | --- |
+| transition | `whoosh` `swish` `rise` `riser` `warp` |
+| ui | `tick` `click` `blip` `pop` `select` |
+| impact | `thud` `boom` `knock` |
+| positive | `chime` `ding` `coin` `sparkle` `shimmer` `success` |
+| alert | `zap` `error` |
+
+**Variation — repeats don't sound the same.** Each cue's `seed` shifts the sound's
+PITCH (a musical step) and texture, and it **defaults to the cue's order**, so a run of
+the same sfx becomes a little phrase instead of a stuck note — no setup needed. Override
+explicitly with `params`: `{ sfx: "blip", params: { seed: 4 } }` (pick the variant) or
+`{ sfx: "tick", params: { pitch: 1.5 } }` (an explicit frequency multiplier; `2` = octave
+up). `params.gainDb` trims a single hit.
+
+**bgm beds** (`bgm.synth`): `ambient-pad` `lofi` `pulse` `tension` `uplift` — or
+`bgm.file` for your own. **Mixing**: any cue takes `fadeIn`/`fadeOut` (seconds) and `pan`
+(-1 left … 0 centre … +1 right). A `video` clip's audio takes `fadeIn` and `pan` too
+(clip fade-out isn't supported yet). The bed auto-ducks under cues (`bgm.duck`). See
+`examples/scenes/sfx-showcase.ts` to audition the whole palette.
 
 ## Rules
 

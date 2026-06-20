@@ -5,6 +5,7 @@
  */
 
 import type { CompositionIR, NodeIR, SceneIR, TimelineIR } from "./ir.js";
+import { BGM_SYNTHS, SFX_NAMES } from "./ir.js";
 import { EASE_NAMES } from "./interpolate.js";
 
 const EASE_SET = new Set<string>(EASE_NAMES);
@@ -278,7 +279,6 @@ export function validateScene(ir: SceneIR): void {
     }
   }
 
-  const SFX_NAMES = ["whoosh", "pop", "tick", "rise", "shimmer", "thud"];
   for (const [i, cue] of (ir.audio?.cues ?? []).entries()) {
     if (typeof cue.at === "string" && !labels.has(cue.at)) {
       problems.push(
@@ -291,7 +291,7 @@ export function validateScene(ir: SceneIR): void {
     if ((cue.sfx === undefined) === (cue.file === undefined)) {
       problems.push(`audio.cues[${i}]: exactly one of "sfx" or "file" is required`);
     }
-    if (cue.sfx !== undefined && !SFX_NAMES.includes(cue.sfx)) {
+    if (cue.sfx !== undefined && !(SFX_NAMES as readonly string[]).includes(cue.sfx)) {
       problems.push(`audio.cues[${i}]: unknown sfx "${cue.sfx}" — valid: ${SFX_NAMES.join(", ")}`);
     }
     if (cue.gain !== undefined && cue.gain < 0) {
@@ -313,6 +313,10 @@ export function validateScene(ir: SceneIR): void {
   }
   if (ir.audio?.bgm?.file !== undefined && ir.audio.bgm.synth !== undefined) {
     problems.push('audio.bgm: use either "file" or "synth", not both');
+  }
+  const bgmSynth = ir.audio?.bgm?.synth;
+  if (bgmSynth !== undefined && !(BGM_SYNTHS as readonly string[]).includes(bgmSynth)) {
+    problems.push(`audio.bgm.synth: unknown synth "${bgmSynth}" — valid: ${BGM_SYNTHS.join(", ")}`);
   }
 
   if (problems.length > 0) throw new SceneValidationError(problems);
