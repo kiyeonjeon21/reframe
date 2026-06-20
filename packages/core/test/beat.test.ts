@@ -75,6 +75,53 @@ describe("beats", () => {
     expect(c.labelTimes.get("La")?.t0).toBe(0.5);
   });
 
+  it("removeTimeline splices a beat out of its seq and later steps ripple up", () => {
+    const base = scene({
+      id: "demo",
+      size,
+      nodes: [card()],
+      timeline: seq(
+        beat("a", {}, [tween("card", { opacity: 1 }, { duration: 0.5, label: "La" })]),
+        beat("b", {}, [tween("card", { opacity: 0.5 }, { duration: 0.5, label: "Lb" })]),
+        beat("c", {}, [tween("card", { opacity: 0.2 }, { duration: 0.5, label: "Lc" })]),
+      ),
+    });
+    expect(compileScene(base).labelTimes.get("Lc")?.t0).toBe(1.0);
+
+    const { ir, report } = composeScene(base, {
+      reframeOverlay: 1,
+      name: "drop",
+      target: "demo",
+      removeTimeline: ["b"],
+    });
+    const c = compileScene(ir);
+    expect(report.orphans).toHaveLength(0);
+    expect(report.applied.some((a) => a.action === "remove-timeline" && a.address === "removeTimeline.b")).toBe(true);
+    expect(c.beatTimes.has("b")).toBe(false); // gone
+    expect(c.labelTimes.has("Lb")).toBe(false); // its child went with it
+    expect(c.labelTimes.get("La")?.t0).toBe(0); // a unchanged
+    expect(c.labelTimes.get("Lc")?.t0).toBe(0.5); // c rippled up by b's 0.5s
+    expect(c.duration).toBeCloseTo(1.0, 6); // two 0.5s beats remain
+  });
+
+  it("removeTimeline orphans an unknown label and leaves the timeline intact", () => {
+    const base = scene({
+      id: "demo",
+      size,
+      nodes: [card()],
+      timeline: seq(beat("a", {}, [tween("card", { opacity: 1 }, { duration: 0.5, label: "La" })])),
+    });
+    const { ir, report } = composeScene(base, {
+      reframeOverlay: 1,
+      name: "x",
+      target: "demo",
+      removeTimeline: ["nope"],
+    });
+    expect(report.orphans).toHaveLength(1);
+    expect(report.orphans[0]!.address).toBe("removeTimeline.nope");
+    expect(compileScene(ir).labelTimes.get("La")?.t0).toBe(0); // untouched
+  });
+
   it("scale stretches the interior proportionally", () => {
     const c = compileScene(
       scene({

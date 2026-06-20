@@ -147,11 +147,19 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   (video detected by src extension, plays as a clip for its `hold`, audio muted by default
   unless a shot sets `volume`) — into a slideshow: crossfades + **seeded Ken Burns**
   (pan/zoom) + an optional cinematic grade (vignette + scrim via gradient + blend). Returns
-  `{ nodes, timeline }` (owns its image/video layers, like `splitText` owns glyphs); stable
-  addresses `${id}-${i}`, labels `shot-${i}`/`cross-${i}`. Each layer uses the image
-  node's `fit: "cover"` (crop-to-fill at the image's aspect, renderer-side via
-  `coverRect` — no pre-cropping, any aspect); the Ken Burns keeps `scale ≥ 1` + bounded
-  pan so no edge shows. Pure/seeded. Image sources
+  `{ nodes, timeline }` (owns its image/video layers, like `splitText` owns glyphs). **Each
+  shot is a SELF-CONTAINED named beat `shot-${i}`** that owns only its own layer's motion
+  (fade-in ∥ Ken Burns ∥ fade-out); every layer starts at `opacity: 0` and adjacent shots
+  overlap by the crossfade via a negative `gap` in the `seq` (so `shot-${i}` t0 = the shot's
+  start, the address a clip `start`/anchored title resolves to). Because no shot references
+  another, a shot is **structurally editable by overlay and survives regen**: reorder via the
+  beat `order` patch, drop via `removeTimeline: ["shot-2"]` (its layer just stays invisible),
+  swap its image via a `nodes.<id>.src` patch — see `docs/guides/regen-contract.md` and
+  `examples/overlays/montage-restructure.json`. Stable addresses `${id}-${i}`, labels
+  `shot-${i}`/`cross-${i}`. Each layer uses the image node's `fit: "cover"` (crop-to-fill at
+  the image's aspect, renderer-side via `coverRect` — no pre-cropping, any aspect); the Ken
+  Burns keeps `scale ≥ 1` + bounded pan so no edge shows. The montage opens on a fade-up and
+  closes on a fade-out (symmetric → edit-safe). Pure/seeded. Image sources
   don't render in `player`/artifacts → mp4 only. Demo: `examples/scenes/photo-montage.ts`
   (CC0 images under `examples/scenes/photo-montage/`, NOT bundled to npm). The photo
   analog of motionPreset.

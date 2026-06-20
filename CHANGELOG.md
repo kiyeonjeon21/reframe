@@ -8,6 +8,30 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.40] - 2026-06-20
+
+### Added
+
+#### Structural montage editing — reorder + remove (Spine 2c)
+
+- **`photoMontage`/`videoMontage` rewritten so each shot is a SELF-CONTAINED named beat
+  `shot-${i}`** that owns only its own layer's motion (fade-in ∥ Ken Burns ∥ fade-out). Every
+  layer now starts at `opacity: 0`, and adjacent shots overlap by the crossfade via a negative
+  `gap` in the `seq` — no shot references its neighbour anymore. This makes a shot an
+  independent unit you can **reorder, drop, or swap by overlay and survive AI regeneration**:
+  - **Reorder** — the existing beat `order` patch (`timeline.shot-2.order`) re-sorts shots.
+  - **Remove** — a new generic compose verb **`removeTimeline: ["shot-2"]`** splices a beat/step
+    out of its parent by label; the `seq` re-accumulates so later shots ripple up and
+    label-anchored dependents (clip `start`, anchored titles) follow. A dropped shot's layer just
+    stays invisible (it never fades in).
+  - **Swap an image** — already a plain `nodes.<id>.src` patch.
+- `removeTimeline` is the structural complement of the `timeline` retiming patch (parallel to
+  `removeNodes`); an unknown label is reported as an orphan, never a silent drop. See
+  `docs/guides/regen-contract.md` and `examples/overlays/montage-restructure.json`.
+- The montage now opens on a fade-up and closes on a fade-out (symmetric → edit-safe). **Note:**
+  montage timing shifts slightly (shots overlap by the crossfade); the montage has no golden
+  snapshot, so this is a behaviour change in the generator output only, not a determinism break.
+
 ## [0.6.39] - 2026-06-20
 
 ### Added

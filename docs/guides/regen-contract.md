@@ -28,6 +28,32 @@ joint `name`s** for any character/device that survives the redesign — overlay
 edits (a retimed wave, a nudged limb angle) reference those exact ids. Renaming a
 joint orphans the edit, exactly like renaming a hand-authored node id.
 
+## Structural edits (reorder / remove a beat)
+
+Beyond patching props and timing, an overlay can change the **structure** of the
+timeline — and those edits survive regen the same way, keyed by stable labels:
+
+- **Reorder** — patch a beat's `order` (the existing `timeline.<beat>.order`
+  param): `{ "timeline": { "shot-2": { "order": 0 }, "shot-0": { "order": 2 } } }`
+  re-sorts beats within their parent `seq`. Beats move as whole units, so child
+  labels and any overlay edits on them ride along.
+- **Remove** — `removeTimeline: ["shot-2"]` splices a beat/step out of its parent
+  by label. The surrounding `seq` re-accumulates, so later steps ripple up and any
+  label-anchored dependent (a clip `start`, an anchored title) follows. An unknown
+  label is reported as an orphan, never a silent drop.
+
+These ride the addressable surface a `photoMontage` already exposes — each shot is
+the named beat `shot-${i}`, so `removeTimeline: ["shot-3"]` drops a shot (its layer
+just stays invisible — it never fades in) and an `order` patch reshuffles the cut,
+both without touching the base. Swapping a shot's image is a plain `nodes.<id>.src`
+patch. (Caveat: a node that still **anchors** to a removed label — e.g. a video
+`start: "shot-3"` — must also be neutralised, by patching its `start` to a number,
+or post-compose validation rejects the dangling anchor. Reordering a shot to the
+first slot drops its opening fade-up, since the crossfade offset was baked for the
+original order — a cosmetic detail, not a break.)
+
+See `examples/overlays/montage-restructure.json`.
+
 ## Tooling
 
 Three read-only commands make the address namespace queryable and the contract
