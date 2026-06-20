@@ -506,6 +506,20 @@ vector frame (bezel, rounded body, phone notch / dynamic island, browser chrome)
   (overlay/regen addresses) — keep `id` across rewrites.
 - It's one node: animate the device group for the float/entrance (`tween`/
   `motionPath` its `x`/`y`/`scale`/`rotation`, `oscillate` for an idle drift).
+- **Premium by default** — `material:"premium"` (the default) gives a gradient
+  body, an ambient screen glow, a soft contact shadow and (glass) a sheen; the
+  `style` knob picks `"glass"` (realistic glass/metal, default) or `"neon"` (flat
+  body + additive accent edge-glow, graphic punch). `material:"flat"` opts back to
+  clean solid fills. All of this is purely cosmetic — the screen rect, the clip,
+  and the stable ids are identical across materials/styles, so `deviceScreen`
+  coords and existing `content`/overlays are unaffected.
+- **Auto-varied per instance** — each device's look (bezel, corner, glare angle,
+  neon hue) is derived deterministically from its `id`, so two devices differ
+  while staying on-model. Pass `seed` to pin or explore a variation; same `seed`
+  → identical, different `seed` → same family. Reproducible (no `Math.random`).
+- `notch?: "island" | "notch" | "punch" | "none"` selects the phone front-camera
+  treatment (default `"island"` — keep it explicit for an iOS vs Android read).
+- See `examples/scenes/device-gallery.ts` for glass/neon + seed variation.
 
 ```ts
 // a phone floating centre, a chat bubble inside the screen:

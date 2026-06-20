@@ -8,6 +8,31 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.35] - 2026-06-20
+
+### Changed
+
+#### `devicePreset` redesign — spec-driven, seeded, premium by default
+
+- **Premium look by default.** Device frames now ship a gradient body, an ambient screen glow, and a
+  soft contact shadow; a `style` knob picks `"glass"` (realistic glass/metal + a diagonal sheen,
+  default) or `"neon"` (flat body + an additive accent edge-glow). `material:"flat"` opts back to the
+  old clean solid fills. All of this is purely cosmetic — the screen rect, the clip, and the stable ids
+  (`${id}-screen` / `${id}-screenbg` / `${id}-content`) are identical across materials and styles, so
+  `deviceScreen` coords, existing `content`, and overlays are unaffected.
+- **Auto-varied per instance.** Each device's cosmetics (bezel, corner, glare angle, neon hue) are
+  derived deterministically from its `id`, so two devices differ while staying on-model. A new `seed`
+  option pins or explores a variation (same seed → identical; different → same family). Reproducible —
+  mulberry32, no `Math.random`/`Date`.
+- **`notch?: "island" | "notch" | "punch" | "none"`** selects the phone front-camera treatment
+  (default `"island"`). New opts `material` / `style` / `seed` / `notch`; new exported types
+  `DeviceMaterial` / `DeviceStyle` / `DeviceNotch`.
+- **Architecture.** The per-device `switch` is replaced by a `DeviceContext` + a reusable parts
+  vocabulary (the material/lighting lives once) + a chassis registry, so adding a device is one entry,
+  and the premium treatment is inherited for free. Back-compat: all public exports, the 10 names, the
+  landscape transpose, the dimension tables, and the stable ids are preserved (goldens unchanged —
+  devices are not in the snapshot set). Showcase: `examples/scenes/device-gallery.ts`.
+
 ## [0.6.34] - 2026-06-20
 
 ### Fixed
