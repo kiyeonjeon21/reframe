@@ -8,6 +8,18 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.25] - 2026-06-20
+
+### Changed
+
+#### Ease names are validated at compile time
+
+- **`validateScene` (and therefore `reframe compile`) now rejects an unknown `ease`** with an
+  actionable error listing the valid set, instead of letting it through to fail at render in the
+  browser. A typo like `easeInOutSine` (there are no `*Sine` eases) is now caught in the ~1s cheap
+  loop, not after a full render. Covers `tween` / `to` / `motionPath`; the `{ spring }` and
+  `{ cubicBezier }` object forms still pass. Additive validation only — valid scenes and goldens are
+  unchanged.
 ## [0.6.24] - 2026-06-20
 
 ### Changed
