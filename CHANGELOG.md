@@ -8,7 +8,7 @@ versions may change them.
 
 ## [Unreleased]
 
-## [0.6.40] - 2026-06-20
+## [0.6.40] - 2026-06-21
 
 ### Added
 
@@ -31,6 +31,10 @@ versions may change them.
 - The montage now opens on a fade-up and closes on a fade-out (symmetric → edit-safe). **Note:**
   montage timing shifts slightly (shots overlap by the crossfade); the montage has no golden
   snapshot, so this is a behaviour change in the generator output only, not a determinism break.
+- **Every generated montage tween now carries a stable label** (`shot-${i}-in`/`-kb` for the
+  fade-in / Ken Burns, `cross-${i}` for a crossfade, `shot-${last}-out` for the closing fade)
+  alongside the `shot-${i}` beat name, so the motion is fully addressable by an overlay and
+  `reframe lint` reports no unaddressable motion on a montage.
 
 ## [0.6.39] - 2026-06-20
 

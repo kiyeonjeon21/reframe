@@ -165,17 +165,20 @@ export function photoMontage(images: MontageImage[], opts: MontageOpts = {}): Mo
     const outDur = fadeOut(i);
     // a self-contained shot: fade-in ∥ Ken Burns ∥ (hold then fade-out). The beat NAME is
     // the stable `shot-${i}` address (its t0 = the shot's start — same semantic the Ken
-    // Burns label used to carry; carrying it on the beat avoids a duplicate label).
+    // Burns label used to carry; carrying it on the beat avoids a duplicate label). Every
+    // interior tween is labelled too, so the generated motion is fully addressable (an
+    // overlay can retime just the fade-in / Ken Burns / fade-out) and lint-clean.
     const shot = beat(
       `shot-${i}`,
       { nodes: [nid], parallel: true, ...(i > 0 && { gap: -inDur }) },
       [
-        tween(nid, { opacity: 1 }, { duration: inDur, ease: "linear" }),
-        tween(nid, { scale: fr.kB, x: fr.xB, y: fr.yB }, { duration: fr.slideHold, ease: "easeInOutQuad" }),
+        tween(nid, { opacity: 1 }, { duration: inDur, ease: "linear", label: `shot-${i}-in` }),
+        tween(nid, { scale: fr.kB, x: fr.xB, y: fr.yB }, { duration: fr.slideHold, ease: "easeInOutQuad", label: `shot-${i}-kb` }),
         seq(
           wait(fr.slideHold - outDur),
-          // label the crossfade INTO the next shot `cross-${i+1}` (no label on the closing fade)
-          tween(nid, { opacity: 0 }, { duration: outDur, ease: "linear", ...(i < n - 1 && { label: `cross-${i + 1}` }) }),
+          // the fade-out is the crossfade INTO the next shot (`cross-${i+1}`); the last
+          // shot has no next shot, so its closing fade is `shot-${i}-out`.
+          tween(nid, { opacity: 0 }, { duration: outDur, ease: "linear", label: i < n - 1 ? `cross-${i + 1}` : `shot-${i}-out` }),
         ),
       ],
     );

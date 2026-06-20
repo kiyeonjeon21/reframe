@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { compileScene } from "../src/compile.js";
 import { composeScene } from "../src/compose.js";
+import { lintScene } from "../src/manifest.js";
 import { image, scene, video } from "../src/dsl.js";
 import { evaluate } from "../src/evaluate.js";
 import { photoMontage, videoMontage } from "../src/montage.js";
@@ -34,6 +35,13 @@ describe("photoMontage", () => {
     const json = JSON.stringify(photoMontage(imgs).timeline);
     for (const l of ["shot-0", "shot-1", "shot-2", "cross-1", "cross-2"]) expect(json).toContain(l);
     expect(json).not.toContain("cross-0"); // slide 0 has no incoming crossfade
+  });
+
+  it("every generated tween is labelled — the montage is fully addressable (lint-clean)", () => {
+    const m = photoMontage(imgs, { grade: false }); // no title glyphs, just the montage
+    const c = compileScene(scene({ id: "lint", size, nodes: m.nodes, timeline: m.timeline }));
+    const unlabeled = lintScene(c).filter((f) => f.rule === "unlabeled-motion");
+    expect(unlabeled).toEqual([]); // fade-in/Ken Burns/fade-out all carry a stable label
   });
 
   it("is deterministic — same (images, opts) → identical IR", () => {

@@ -155,8 +155,11 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   another, a shot is **structurally editable by overlay and survives regen**: reorder via the
   beat `order` patch, drop via `removeTimeline: ["shot-2"]` (its layer just stays invisible),
   swap its image via a `nodes.<id>.src` patch — see `docs/guides/regen-contract.md` and
-  `examples/overlays/montage-restructure.json`. Stable addresses `${id}-${i}`, labels
-  `shot-${i}`/`cross-${i}`. Each layer uses the image node's `fit: "cover"` (crop-to-fill at
+  `examples/overlays/montage-restructure.json`. Stable addresses `${id}-${i}`; labels
+  `shot-${i}` (beat = shot start), `shot-${i}-in`/`-kb` (fade-in / Ken Burns), `cross-${i}`
+  (crossfade into shot i), `shot-${last}-out` (closing fade) — every generated tween is
+  labelled, so the motion is fully addressable / lint-clean. Each layer uses the image
+  node's `fit: "cover"` (crop-to-fill at
   the image's aspect, renderer-side via `coverRect` — no pre-cropping, any aspect); the Ken
   Burns keeps `scale ≥ 1` + bounded pan so no edge shows. The montage opens on a fade-up and
   closes on a fade-out (symmetric → edit-safe). Pure/seeded. Image sources
