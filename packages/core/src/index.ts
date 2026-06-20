@@ -9,9 +9,22 @@ export {
 export {
   composeScene,
   formatComposeReport,
+  TIMELINE_PATCHABLE,
   type OverlayDoc,
   type ComposeReport,
 } from "./compose.js";
+export {
+  sceneManifest,
+  lintScene,
+  type SceneManifest,
+  type NodeAddress,
+  type StateAddress,
+  type TimelineAddress,
+  type BeatAddress,
+  type BehaviorAddress,
+  type ManifestSummary,
+  type LintFinding,
+} from "./manifest.js";
 export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan, type MotionDriver } from "./compile.js";
 export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
 export { cameraTo, cameraFit, cameraMatrix, CAMERA_ID, CAMERA_PROPS } from "./camera.js";

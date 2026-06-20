@@ -72,6 +72,21 @@ to handle explicitly:
   mask (update the scene AND remove/update the superseded overlay entry) and
   tell them why.
 
+Addressability tooling (read-only, no render — use it when editing):
+
+- `npx -y reframe-video manifest <scene> [--json]` — list the scene's editable
+  surface (every node + its editable/animated props, states, timeline labels
+  with patchable params, beats, behaviors, each with its overlay address). Read
+  this BEFORE patching so you target real, stable addresses instead of guessing.
+- `npx -y reframe-video lint <scene> [--strict]` — flag motion with no `label`
+  (timing a later overlay can't reach, and a regen can silently drop) plus a
+  `motionAddressableRatio`. When authoring motion the user may want to tweak,
+  give the step a stable `label`.
+- `npx -y reframe-video verify-overlay <base> <overlay>... ` — after you rewrite
+  a base that has overlays, run this to confirm every edit still applies (it
+  reports orphans and exits non-zero if any address broke). The regen-survival
+  check, without a full render.
+
 ## Other capabilities
 
 - **Batch**: `npx -y reframe-video batch scene.ts data.json` — one mp4 per

@@ -8,6 +8,30 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.36] - 2026-06-20
+
+### Added
+
+#### Addressability toolkit — make the override namespace queryable
+
+reframe's edit-survival rests entirely on the node-id / timeline-label namespace (both override
+stacks can only find things by it), but that surface was implicit and unguarded. Three read-only
+tools expose and protect it (no IR/evaluate/compile changes; goldens unchanged):
+
+- **`sceneManifest(compiled)`** (core, exported) + **`reframe manifest <scene> [--json]`** — enumerate
+  a scene's editable surface: every node (with its `editableProps` from `PROPS_BY_TYPE` and the
+  `animatedProps` it actually tweens), state, timeline label (with the `patchable` params per kind),
+  beat, and behavior, each with the overlay address that reaches it. The map an AI/human editor reads
+  to patch surgically instead of regenerating.
+- **`lintScene(compiled)`** (core, exported) + **`reframe lint <scene> [--json] [--strict]`** — flag
+  motion (tween/to/motionPath) with no `label` — timing a later overlay can't reach and a regen can
+  silently drop — plus a `motionAddressableRatio` summary. `--strict` exits non-zero (CI gate).
+- **`reframe verify-overlay <base> <overlay>... [--json]`** — compose an overlay onto a (possibly
+  regenerated) base and report applied-vs-orphaned with NO render; non-zero exit on orphans. Turns the
+  "edits survive AI regeneration" thesis into a CI-able check. Reuses `composeScene`/`formatComposeReport`.
+- `TIMELINE_PATCHABLE` is now exported from core (was inline in `composeScene`), so the manifest's
+  advertised patchable params can't drift from what compose actually accepts.
+
 ## [0.6.35] - 2026-06-20
 
 ### Changed

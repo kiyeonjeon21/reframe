@@ -38,6 +38,15 @@ const LABELS = PACKAGED
 const COMPILE = PACKAGED
   ? join(ROOT, "dist", "compile.js")
   : join(ROOT, "packages", "render-cli", "src", "compile.ts");
+const MANIFEST = PACKAGED
+  ? join(ROOT, "dist", "manifest.js")
+  : join(ROOT, "packages", "render-cli", "src", "manifest.ts");
+const LINT = PACKAGED
+  ? join(ROOT, "dist", "lint.js")
+  : join(ROOT, "packages", "render-cli", "src", "lint.ts");
+const VERIFY_OVERLAY = PACKAGED
+  ? join(ROOT, "dist", "verifyOverlay.js")
+  : join(ROOT, "packages", "render-cli", "src", "verifyOverlay.ts");
 const DIFF = PACKAGED
   ? join(ROOT, "dist", "diff.js")
   : join(ROOT, "packages", "render-cli", "src", "diff.ts");
@@ -86,6 +95,9 @@ usage:
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
+  ${CMD} manifest <scene.ts|.json> [--json]  list the editable surface (node/state/label/beat/behavior addresses + patchable props)
+  ${CMD} lint <scene.ts|.json> [--json] [--strict]  flag un-addressable motion (regen-unsafe) + an addressability summary
+  ${CMD} verify-overlay <base.ts|.json> <overlay.json>... [--json]  compose an overlay onto a base, report survival (no render; non-zero exit on orphans)
   ${CMD} compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]
                                  bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium)
   ${CMD} frame <scene.ts|.json> [--t <sec>] [-o out.png]  render ONE frame at time t to a PNG (no mp4; for a render-and-look loop)
@@ -251,6 +263,35 @@ async function main() {
       if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
       process.exit(
         await (PACKAGED ? run(process.execPath, [LABELS, inputPath]) : run("npx", ["tsx", LABELS, inputPath])),
+      );
+    }
+
+    case "manifest":
+    case "lint": {
+      // read-only introspection — no ffmpeg/chromium. Scene file + pass-through flags.
+      const input = rest.find((a) => !a.startsWith("-"));
+      if (!input) fail(`${command} needs a scene file\n\n${USAGE}`);
+      const inputPath = userPath(input);
+      if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
+      const flags = rest.filter((a) => a.startsWith("-"));
+      const entry = command === "manifest" ? MANIFEST : LINT;
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [entry, inputPath, ...flags]) : run("npx", ["tsx", entry, inputPath, ...flags])),
+      );
+    }
+
+    case "verify-overlay": {
+      // base + one or more overlay files; compose-only, no render.
+      const fileArgs = rest.filter((a) => !a.startsWith("-"));
+      const flags = rest.filter((a) => a.startsWith("-"));
+      if (fileArgs.length < 2) fail(`verify-overlay needs a base scene and at least one overlay\n\n${USAGE}`);
+      const paths = fileArgs.map((p) => {
+        const ap = userPath(p);
+        if (!existsSync(ap)) fail(`no such file: ${ap}`);
+        return ap;
+      });
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [VERIFY_OVERLAY, ...paths, ...flags]) : run("npx", ["tsx", VERIFY_OVERLAY, ...paths, ...flags])),
       );
     }
 
