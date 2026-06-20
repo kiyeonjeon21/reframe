@@ -1,0 +1,53 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "reframe",
+  "description": "Declarative motion graphics that AI can write and humans can tweak — human edits survive AI regeneration. Deterministic mp4 from a plain-data scene.",
+  "colors": {
+    "primary": "#FF4D00",
+    "light": "#FF7A3A",
+    "dark": "#E84300"
+  },
+  "favicon": "/assets/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": ["introduction", "quickstart", "the-loop"]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/edsl-guide",
+              "guides/directing-guide",
+              "guides/html-guide",
+              "guides/regen-contract"
+            ]
+          },
+          {
+            "group": "Showcase",
+            "pages": ["gallery", "examples"]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      { "label": "npm", "href": "https://www.npmjs.com/package/reframe-video" }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "GitHub",
+      "href": "https://github.com/kiyeonjeon21/reframe"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/kiyeonjeon21/reframe"
+    }
+  }
+}

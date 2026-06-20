@@ -295,6 +295,19 @@ them with a diagnosis naming the likely rename. The failure hierarchy:
 
 ![The preview editor: knobs write into a non-destructive overlay](docs/assets/preview-editor.png)
 
+## Documentation
+
+The [`docs/`](docs/) folder is a [Mintlify](https://mintlify.com)-ready site (`docs/docs.json`):
+
+| page | what |
+|---|---|
+| [Introduction](docs/introduction.mdx) · [Quickstart](docs/quickstart.mdx) · [The loop](docs/the-loop.mdx) | the pitch, install, and the AI-write / human-edit / deterministic-render model |
+| [Gallery](docs/gallery.mdx) | a curated visual reel of scenes |
+| [Examples](examples/README.md) | all 73 example scenes, by category |
+| [Guides](docs/guides/) | the eDSL, directing, HTML/GSAP, and regeneration-contract guides (also `pnpm reframe guide`) |
+
+Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumulate via `pnpm gallery` (the committed home; `out/` stays scratch).
+
 ## Repo map
 
 | path | what |
