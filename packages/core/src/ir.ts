@@ -472,6 +472,32 @@ export interface AudioIR {
     duck?: { depth?: number; attack?: number; release?: number } | false;
   };
   cues?: AudioCueIR[];
+  /**
+   * Auto-generate sound cues from node motion (move→whoosh, settle→impact,
+   * scale-in→pop, panned by position). Deterministic + retime-safe (re-derived
+   * from the motion each render); manual `cues` still layer on top.
+   */
+  autoFoley?: boolean | AutoFoleyOptions;
+}
+
+/** Knobs for {@link AudioIR.autoFoley}. */
+export interface AutoFoleyOptions {
+  /** Master gain applied to every auto cue (default 0.5). */
+  gain?: number;
+  /** Emit a whoosh/swish at a fast move's velocity peak (default true). */
+  whoosh?: boolean;
+  /** Emit a thud/knock when a moving node settles to a stop (default true). */
+  impact?: boolean;
+  /** Emit a pop when a node scales in (default true). */
+  pop?: boolean;
+  /** Stereo-pan each cue by the node's x position (default true). */
+  pan?: boolean;
+  /** Only foley these node ids (default: every node). */
+  nodes?: string[];
+  /** Cap the number of cues, keeping the loudest (default 32). */
+  maxCues?: number;
+  /** Scale the detection thresholds: >1 = more sensitive / more cues (default 1). */
+  sensitivity?: number;
 }
 
 /**
