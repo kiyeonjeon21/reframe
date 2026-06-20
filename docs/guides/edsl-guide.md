@@ -562,11 +562,14 @@ audio: {
 
 | group | names |
 | --- | --- |
-| transition | `whoosh` `swish` `rise` `riser` `warp` |
+| transition | `whoosh` `swish` `swoosh` `rise` `riser` `warp` |
 | ui | `tick` `click` `blip` `pop` `select` |
-| impact | `thud` `boom` `knock` |
+| impact | `thud` `boom` `knock` `sub` |
 | positive | `chime` `ding` `coin` `sparkle` `shimmer` `success` |
 | alert | `zap` `error` |
+| tech | `glitch` `static` `scan` `powerup` `powerdown` |
+| rhythm | `snare` `hat` |
+| foley | `bubble` `notify` `camera` |
 
 **Variation — repeats don't sound the same.** Each cue's `seed` shifts the sound's
 PITCH (a musical step) and texture, and it **defaults to the cue's order**, so a run of

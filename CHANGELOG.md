@@ -8,6 +8,17 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.28] - 2026-06-20
+
+### Added
+
+- **12 more procedural sfx (21 → 33)** filling the categories the palette didn't reach:
+  `swoosh` (rising transition); `glitch` `static` `scan` `powerup` `powerdown` (tech/digital); `sub`
+  (sub-bass drop); `snare` `hat` (rhythm); `bubble` `notify` `camera` (foley). Same quality + guarantees
+  as the 0.6.27 batch — seeded, pitch varies with `seed` (auto-assigned by cue order), deterministic,
+  clamp-safe. `examples/scenes/sfx-showcase.ts` and the guide table cover them. (Keyboard/typing audio
+  stays on `textTypeCues` + the CC0 samples, as before.)
+
 ## [0.6.27] - 2026-06-20
 
 ### Added

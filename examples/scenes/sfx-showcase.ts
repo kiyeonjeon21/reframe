@@ -11,18 +11,23 @@ import {
 const W = 1920, H = 1080, CX = 960, CY = 480;
 const CAT = {
   transition: "#7C5CFF", ui: "#54D6C0", impact: "#FF6B6B",
-  positive: "#FFC861", alert: "#FF3D81",
+  positive: "#FFC861", alert: "#FF3D81", tech: "#3AA0FF",
+  rhythm: "#46E5A0", foley: "#E08CFF",
 } as const;
 
 const SFX: { n: string; c: keyof typeof CAT }[] = [
-  { n: "whoosh", c: "transition" }, { n: "swish", c: "transition" }, { n: "rise", c: "transition" },
-  { n: "riser", c: "transition" }, { n: "warp", c: "transition" },
+  { n: "whoosh", c: "transition" }, { n: "swish", c: "transition" }, { n: "swoosh", c: "transition" },
+  { n: "rise", c: "transition" }, { n: "riser", c: "transition" }, { n: "warp", c: "transition" },
   { n: "tick", c: "ui" }, { n: "click", c: "ui" }, { n: "blip", c: "ui" },
   { n: "pop", c: "ui" }, { n: "select", c: "ui" },
-  { n: "thud", c: "impact" }, { n: "boom", c: "impact" }, { n: "knock", c: "impact" },
+  { n: "thud", c: "impact" }, { n: "boom", c: "impact" }, { n: "knock", c: "impact" }, { n: "sub", c: "impact" },
   { n: "chime", c: "positive" }, { n: "ding", c: "positive" }, { n: "coin", c: "positive" },
   { n: "sparkle", c: "positive" }, { n: "shimmer", c: "positive" }, { n: "success", c: "positive" },
   { n: "zap", c: "alert" }, { n: "error", c: "alert" },
+  { n: "glitch", c: "tech" }, { n: "static", c: "tech" }, { n: "scan", c: "tech" },
+  { n: "powerup", c: "tech" }, { n: "powerdown", c: "tech" },
+  { n: "snare", c: "rhythm" }, { n: "hat", c: "rhythm" },
+  { n: "bubble", c: "foley" }, { n: "notify", c: "foley" }, { n: "camera", c: "foley" },
 ];
 
 const STEP = 0.6; // seconds between sounds
@@ -34,7 +39,7 @@ export default scene({
   background: "#0A0812",
   nodes: [
     text({ id: "title", x: CX, y: 150, anchor: "center", content: "SFX PALETTE", fontFamily: "Inter", fontSize: 64, fontWeight: 800, fill: "#F4F1FF", letterSpacing: 6 }),
-    text({ id: "sub", x: CX, y: 210, anchor: "center", content: "21 procedural sounds · seed varies pitch", fontFamily: "Inter", fontSize: 24, fontWeight: 600, fill: "#6E6A8A", letterSpacing: 2 }),
+    text({ id: "sub", x: CX, y: 210, anchor: "center", content: "33 procedural sounds · seed varies pitch", fontFamily: "Inter", fontSize: 24, fontWeight: 600, fill: "#6E6A8A", letterSpacing: 2 }),
     ellipse({ id: "pulse", x: CX, y: CY, width: 360, height: 360, anchor: "center", fill: "#7C5CFF", opacity: 0, scale: 0 }),
     text({ id: "name", x: CX, y: CY, anchor: "center", content: "", fontFamily: "Inter", fontSize: 90, fontWeight: 800, fill: "#FFFFFF", opacity: 0 }),
     text({ id: "cat", x: CX, y: CY + 110, anchor: "center", content: "", fontFamily: "Inter", fontSize: 28, fontWeight: 700, fill: "#8A86A8", letterSpacing: 4, opacity: 0 }),

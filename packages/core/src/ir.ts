@@ -413,18 +413,21 @@ export interface BehaviorIR {
 /**
  * The procedural sfx palette — the single source of truth (the type, validation,
  * and the render-cli synth recipes all key off this). Grouped by use:
- *   transition: whoosh swish rise riser warp   · ui: tick click blip pop select
- *   impact: thud boom knock   · positive: chime ding coin sparkle shimmer success
- *   alert: zap error
+ *   transition: whoosh swish swoosh rise riser warp   · ui: tick click blip pop select
+ *   impact: thud boom knock sub   · positive: chime ding coin sparkle shimmer success
+ *   alert: zap error   · tech: glitch static scan powerup powerdown
+ *   rhythm: snare hat   · foley: bubble notify camera
  * Every cue's pitch/texture varies with its `seed` (auto-seeded by cue order), so
  * repeated cues sound different; `params.pitch` is an explicit multiplier.
  */
 export const SFX_NAMES = [
-  "whoosh", "swish", "rise", "riser", "warp",
+  "whoosh", "swish", "swoosh", "rise", "riser", "warp",
   "tick", "click", "blip", "pop", "select",
-  "thud", "boom", "knock",
+  "thud", "boom", "knock", "sub",
   "chime", "ding", "coin", "sparkle", "shimmer", "success",
   "zap", "error",
+  "glitch", "static", "scan", "powerup", "powerdown",
+  "snare", "hat", "bubble", "notify", "camera",
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
