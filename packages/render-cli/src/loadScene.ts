@@ -16,7 +16,7 @@ import { build, type BuildOptions } from "esbuild";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateComposition, validateScene, type CompositionIR, type SceneIR } from "@reframe/core";
+import { validateComposition, validateScene, type CompositionIR, type SceneIR, type ValidationIssue } from "@reframe/core";
 
 // In the published package the loader sits at dist/cli.js and core is the
 // prebuilt dist/index.js; in the repo it aliases to core's TS source.
@@ -30,10 +30,13 @@ const CORE_ENTRY =
 /** A load failure with a coarse stage so callers can branch / report structured errors. */
 export class SceneLoadError extends Error {
   readonly kind: "bundle" | "eval" | "validation";
-  constructor(kind: "bundle" | "eval" | "validation", message: string, options?: { cause?: unknown }) {
+  /** Structured validation problems (code + path + message), present for `kind === "validation"`. */
+  readonly issues?: ValidationIssue[];
+  constructor(kind: "bundle" | "eval" | "validation", message: string, options?: { cause?: unknown; issues?: ValidationIssue[] }) {
     super(message, options);
     this.name = "SceneLoadError";
     this.kind = kind;
+    if (options?.issues) this.issues = options.issues;
   }
 }
 
@@ -78,9 +81,12 @@ async function importDefault(code: string, label: string): Promise<unknown> {
   } catch (err) {
     // scene() runs validateScene at construction; that SceneValidationError
     // surfaces here. It comes from the scene's own bundled core, so match by
-    // name (cross-bundle `instanceof` would not).
-    const kind = err instanceof Error && err.name === "SceneValidationError" ? "validation" : "eval";
-    throw new SceneLoadError(kind, clean(err), { cause: err });
+    // name (cross-bundle `instanceof` would not). `.issues` is a plain-object
+    // property, so it reads across the bundle boundary even though the class
+    // identity differs.
+    const isValidation = err instanceof Error && err.name === "SceneValidationError";
+    const issues = isValidation ? (err as { issues?: ValidationIssue[] }).issues : undefined;
+    throw new SceneLoadError(isValidation ? "validation" : "eval", clean(err), { cause: err, ...(issues && { issues }) });
   }
   if (mod.default === undefined) throw new SceneLoadError("eval", `${label} must default-export a scene or composition`);
   return mod.default;

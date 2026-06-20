@@ -66,8 +66,9 @@ async function main() {
 
 main().catch((err: unknown) => {
   const kind = err instanceof SceneLoadError ? err.kind : "eval";
+  const issues = err instanceof SceneLoadError ? err.issues : undefined;
   const message = err instanceof Error ? err.message : String(err);
-  if (jsonMode) process.stdout.write(`${JSON.stringify({ ok: false, error: message, kind })}\n`);
+  if (jsonMode) process.stdout.write(`${JSON.stringify({ ok: false, error: message, kind, ...(issues && { issues }) })}\n`);
   else console.error(`error: ${message}`);
   process.exit(1);
 });

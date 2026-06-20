@@ -100,12 +100,14 @@ await writeFile(join(PKG, "dist", "index.d.ts"), 'export * from "./types/index.j
 await writeFile(
   join(PKG, "dist", "compile-api.d.ts"),
   [
-    'import type { CompositionIR, SceneIR } from "./index.js";',
-    'export declare class SceneLoadError extends Error { readonly kind: "bundle" | "eval" | "validation"; }',
+    'import type { CompositionIR, SceneIR, ValidationIssue, LintFinding } from "./index.js";',
+    'export type { ValidationIssue } from "./index.js";',
+    'export declare class SceneLoadError extends Error { readonly kind: "bundle" | "eval" | "validation"; readonly issues?: ValidationIssue[]; }',
     "export declare function loadScene(path: string): Promise<SceneIR>;",
     "export declare function loadSceneFromCode(code: string, resolveDir?: string): Promise<SceneIR>;",
     "export declare function isComposition(def: unknown): def is CompositionIR;",
     'export declare function loadModule(path: string): Promise<{ kind: "scene"; ir: SceneIR } | { kind: "composition"; ir: CompositionIR }>;',
+    "export declare function checkDeterminism(path: string): Promise<{ deterministic: boolean; findings: LintFinding[] }>;",
     "",
   ].join("\n"),
 );
