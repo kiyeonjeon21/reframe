@@ -8,6 +8,22 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.29] - 2026-06-20
+
+### Changed
+
+- **`sfx:` cues always synthesize now.** Previously a same-named vendored `.wav` in `assets/sfx/`
+  (`whoosh`/`rise`/`tick`/`pop`/`thud`/`shimmer`) silently OVERRODE the synthesizer, so those six —
+  the most-used sounds — never got the 0.6.27 pitch/auto-variation and sounded identical every time.
+  The auto-override by name is removed: a bare `sfx:` name always uses the (varying) synth. A recorded
+  sample is still available via an explicit `file: "whoosh.wav"` cue, so scenes that opt in are
+  unchanged.
+
+### Added
+
+- `examples/scenes/sample-showcase.ts` auditions the CC0 sample library (keypress / footstep / the
+  Kenney UI pack) — the recorded-`file:` layer, distinct from the procedural `sfx-showcase.ts`.
+
 ## [0.6.28] - 2026-06-20
 
 ### Added

@@ -57,9 +57,8 @@ export async function resolveCueFile(cue: ResolvedCue, sceneDir: string): Promis
       `audio cue file "${p}" not found (tried absolute, scene-relative, assets/sfx/)`,
     );
   }
-  // vendored sample overrides the synth recipe when present (e.g. whoosh.wav)
-  const vendored = join(VENDORED, `${cue.source.name}.wav`);
-  if (existsSync(vendored)) return vendored;
+  // `sfx:` always synthesizes — so the pitch/auto-variation applies. (A real
+  // sample is still available by name via an explicit `file: "whoosh.wav"` cue.)
   const { name, params } = cue.source;
   return writeCached(`${name}-${fnv1a(JSON.stringify(params))}`, () => synthSfx(name, params));
 }
