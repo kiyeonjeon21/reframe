@@ -140,6 +140,8 @@ export function validateScene(ir: SceneIR): void {
   }
 
   const labels = new Set<string>();
+  // beat label-anchors (`at: "<label>"`) — checked after all labels are collected.
+  const beatAnchors: { name: string; at: string; path: string }[] = [];
   const checkEase = (path: string, ease: unknown) => {
     if (ease === undefined) return;
     if (typeof ease === "string") {
@@ -232,6 +234,7 @@ export function validateScene(ir: SceneIR): void {
           );
         }
         labels.add(tl.name);
+        if (typeof tl.at === "string") beatAnchors.push({ name: tl.name, at: tl.at, path });
         if (tl.duration !== undefined && tl.duration <= 0) {
           problems.push(`${path}: beat "${tl.name}" duration must be > 0`);
         }
@@ -250,6 +253,17 @@ export function validateScene(ir: SceneIR): void {
     }
   };
   if (ir.timeline) checkTimeline(ir.timeline, "timeline");
+
+  // beat label-anchors: the target label must exist and not be the beat itself.
+  for (const a of beatAnchors) {
+    if (a.at === a.name) {
+      problems.push(`${a.path}: beat "${a.name}" at: "${a.at}" cannot anchor to itself`);
+    } else if (!labels.has(a.at)) {
+      problems.push(
+        `${a.path}: beat "${a.name}" at: "${a.at}" — unknown timeline label — known labels: ${[...labels].join(", ") || "(none)"}`,
+      );
+    }
+  }
 
   for (const [i, b] of (ir.behaviors ?? []).entries()) {
     checkProps(`behaviors[${i}]`, b.target, { [b.prop]: 0 });

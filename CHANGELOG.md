@@ -8,6 +8,23 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.38] - 2026-06-20
+
+### Added
+
+#### Label-anchored timeline placement (Spine 2a)
+
+- A `beat`'s **`at` now accepts a timeline label string**, not just a number:
+  `beat("caption", { at: "shot-2" }, [...])` starts the beat at the `shot-2` label's time (`gap`
+  is the offset from it). So a title / lower-third / caption laid over a montage **stays synced to
+  its shot when the cut is retimed** — by an overlay (`timeline.shot-0.duration`) or an AI
+  regeneration — instead of being pinned to a fixed time. The same retime-survival `audio.cues`
+  already have, now for timeline placement.
+- Resolved by a gated `labelClock` pre-pass in `compileScene` (order-independent — the anchor target
+  may be defined anywhere). **Additive and golden-safe**: numeric/absent `at` skips the pre-pass and
+  stays byte-identical; the snapshot suite is unchanged. `validateScene` rejects an unknown or self
+  anchor. `examples/scenes/media-story.ts` anchors its lower-third to the clip's `shot-2`.
+
 ## [0.6.37] - 2026-06-20
 
 ### Added

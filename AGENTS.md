@@ -130,6 +130,12 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   labels `${id}-in`/`${id}-out`) and `lowerThird(opts)` (name/role strap with an accent bar,
   `{ nodes, timeline }`, ids `${id}-bar`/`-name`/`-role`). The motion-graphic overlay vocabulary
   for a media piece; what `reframe assemble` wires over a montage. Pure/seeded/golden-safe.
+- Label-anchored beats (`packages/core/src/compile.ts`) — a `beat`'s `at` accepts a
+  **label string** (not just a number): `beat("cap", { at: "shot-2" }, […])` starts at the
+  `shot-2` label's time (`gap` = offset), so an overlaid title/strap stays synced when the cut
+  is retimed (overlay or regen) — the retime-survival `audio.cues` already have. A gated
+  `labelClock` pre-pass resolves it (order-independent); numeric/absent `at` is byte-identical
+  (goldens unchanged). Keep anchored beats in a `par` branch. Validated against known labels.
 - Authoring ergonomics — `text` `prefix`/`suffix` wrap a numeric count-up so `$2.4M`/`+32%`
   read from ONE node (`packages/core/src/evaluate.ts` text case; golden-safe). Layout helpers
   `row`/`column`/`grid` (`packages/core/src/layout.ts`) return evenly-spaced coordinates to

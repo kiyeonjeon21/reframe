@@ -383,8 +383,14 @@ export type TimelineIR =
        */
       nodes?: string[];
       parallel?: boolean;
-      /** Absolute start (rigid placement). Overrides sequential flow. */
-      at?: number;
+      /**
+       * Start placement (overrides sequential flow). A NUMBER is an absolute time;
+       * a STRING anchors the beat to that timeline label's start (e.g.
+       * `at: "shot-2"`), so the beat stays synced when the target is retimed (the
+       * same idea as `audio.cues`). With a label anchor, `gap` is the offset from
+       * the label. Anchor beats should sit in a `par` branch, not a sequential flow.
+       */
+      at?: number | string;
       /** Relative shift: a leading delay before the beat (and everything after). */
       gap?: number;
       /** Interior time-stretch factor (every child offset and duration ×scale). */

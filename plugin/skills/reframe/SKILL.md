@@ -96,7 +96,10 @@ Addressability tooling (read-only, no render — use it when editing):
   optional `title` + a bed. Then edit the `.ts` (reorder shots, retime, swap a
   `src`) and `render` it. For motion-graphic overlays use the `title()` (kinetic
   headline) and `lowerThird()` (name/role strap) generators — both return
-  `{ nodes, timeline }` you compose over the montage; see the guide.
+  `{ nodes, timeline }` you compose over the montage; see the guide. **Anchor an
+  overlay beat to a shot label** — `beat("cap", { at: "shot-2" }, [lt.timeline])`
+  in a `par` branch — so the caption stays synced to its shot if the cut is
+  retimed (don't pin it to a fixed `wait`).
 - **Batch**: `npx -y reframe-video batch scene.ts data.json` — one mp4 per
   data row; row keys are overlay addresses (`nodes.<id>.<prop>`,
   `timeline.<label>.duration`, ...). CSV works too (headers = addresses).

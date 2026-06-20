@@ -222,11 +222,57 @@ export function compileScene(ir: SceneIR): CompiledScene {
         const grouping: TimelineIR = { kind: tl.parallel ? "par" : "seq", children: tl.children };
         const natural = durationOf(grouping, 0);
         const k = tl.scale ?? (tl.duration !== undefined ? tl.duration / Math.max(1e-9, natural) : 1);
-        const beatStart = tl.at ?? start + (tl.gap ?? 0);
+        // a string `at` (label anchor) is resolved in the real walk; here it's
+        // treated as sequential (its real placement drives `inferredEnd` instead).
+        const at = typeof tl.at === "number" ? tl.at : undefined;
+        const beatStart = at ?? start + (tl.gap ?? 0);
         return beatStart + k * natural;
       }
     }
   };
+
+  // Pre-pass: provisional times for every label + beat, so a `beat({ at: "<label>" })`
+  // anchor can resolve to a target defined anywhere (mirrors the real walk's timing;
+  // string-`at` beats are placed sequentially here). Built ONLY when some beat carries
+  // a string `at` → numeric/absent scenes skip it and stay byte-identical.
+  let labelClock: Map<string, LabelSpan> | undefined;
+  const anyAnchor = (tl: TimelineIR): boolean =>
+    (tl.kind === "beat" && typeof tl.at === "string") || ("children" in tl && tl.children.some(anyAnchor));
+  if (ir.timeline && anyAnchor(ir.timeline)) {
+    const clock = new Map<string, LabelSpan>();
+    const clockWalk = (tl: TimelineIR, start: number): number => {
+      let end = start;
+      switch (tl.kind) {
+        case "seq": { let t = start; for (const c of orderBeats(tl.children)) t = clockWalk(c, t); end = t; break; }
+        case "par": { for (const c of tl.children) end = Math.max(end, clockWalk(c, start)); break; }
+        case "stagger": { tl.children.forEach((c, i) => { end = Math.max(end, clockWalk(c, start + i * tl.interval)); }); break; }
+        case "wait": end = start + tl.duration; break;
+        case "tween": end = start + (tl.duration ?? DEFAULT_TWEEN_DURATION); break;
+        case "motionPath": end = start + (tl.duration ?? DEFAULT_MOTIONPATH_DURATION); break;
+        case "to": {
+          const override = ir.states?.[tl.state] ?? {};
+          const si = tl.stagger ?? 0;
+          const targets = nodeOrder.filter((id) => id in override && (tl.filter === undefined || tl.filter.includes(id)));
+          end = start + (tl.duration ?? DEFAULT_TO_DURATION) + Math.max(0, targets.length - 1) * si;
+          break;
+        }
+        case "beat": {
+          const grouping: TimelineIR = { kind: tl.parallel ? "par" : "seq", children: tl.children };
+          const k = tl.scale ?? (tl.duration !== undefined ? tl.duration / Math.max(1e-9, durationOf(grouping, 0)) : 1);
+          const inner = k === 1 ? grouping : scaleTimeline(grouping, k);
+          const at = typeof tl.at === "number" ? tl.at : undefined; // provisional: string → sequential
+          const beatStart = at ?? start + (tl.gap ?? 0);
+          end = clockWalk(inner, beatStart);
+          clock.set(tl.name, { t0: beatStart, t1: end });
+          break;
+        }
+      }
+      if ("label" in tl && tl.label !== undefined) clock.set(tl.label, { t0: start, t1: end });
+      return end;
+    };
+    clockWalk(ir.timeline, 0);
+    labelClock = clock;
+  }
 
   /** Walks a timeline node starting at `start`, returns its end time. */
   const walk = (tl: TimelineIR, start: number): number => {
@@ -247,7 +293,12 @@ export function compileScene(ir: SceneIR): CompiledScene {
         const grouping: TimelineIR = { kind: tl.parallel ? "par" : "seq", children: tl.children };
         const k = tl.scale ?? (tl.duration !== undefined ? tl.duration / Math.max(1e-9, durationOf(grouping, 0)) : 1);
         const inner = k === 1 ? grouping : scaleTimeline(grouping, k);
-        const beatStart = tl.at ?? start + (tl.gap ?? 0);
+        // string `at` anchors to a label's start (+ `gap` offset); number is absolute;
+        // absent is sequential. Unknown label (shouldn't pass validation) → sequential.
+        const anchored = typeof tl.at === "string" ? labelClock?.get(tl.at)?.t0 : tl.at;
+        const beatStart = anchored !== undefined
+          ? anchored + (typeof tl.at === "string" ? (tl.gap ?? 0) : 0)
+          : start + (tl.gap ?? 0);
         const end = walk(inner, beatStart);
         beatTimes.set(tl.name, { t0: beatStart, t1: end });
         labelTimes.set(tl.name, { t0: beatStart, t1: end });

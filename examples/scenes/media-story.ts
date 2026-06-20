@@ -1,4 +1,4 @@
-import { scene, photoMontage, title, lowerThird, par, seq, wait } from "@reframe/core";
+import { scene, photoMontage, title, lowerThird, par, beat } from "@reframe/core";
 
 // Media-first story: a montage of stills + a video clip, with a kinetic title
 // opener and a lower-third strap overlaid, plus a music bed. This is what
@@ -33,7 +33,9 @@ export default scene({
   timeline: par(
     m.timeline,
     ttl.timeline,
-    seq(wait(6.6), lt.timeline), // surfaces during the clip (~shot 3)
+    // anchored to the clip's shot label — if the montage is retimed (here or via an
+    // overlay), the strap follows `shot-2` instead of drifting to a fixed time.
+    beat("lt-anchor", { at: "shot-2" }, [lt.timeline]),
   ),
   audio: {
     bgm: { synth: "uplift", gain: 0.2, fadeIn: 1.4, fadeOut: 2.2 },

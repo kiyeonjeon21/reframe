@@ -135,6 +135,16 @@ them with normal TS (`Object.fromEntries`, `.map`) for data-driven scenes.
   `curviness` shapes the path: `1` smooth (default), `0` sharp corners, `>1` loopier.
 - `wait(seconds, label?)` — hold; the optional `label` names the hold so audio
   cues and overlay retiming can address it.
+- `beat(name, opts, children)` — a named, retimable, reorderable span (the unit
+  humans/AI revise; its `name` is a stable overlay address). `opts`: `parallel`,
+  `at` (absolute start — a NUMBER, or a **label string to anchor to**), `gap`,
+  `scale`/`duration` (time-stretch), `order` (reorder within a `seq`), `nodes`.
+  **Label anchor**: `beat("caption", { at: "shot-2" }, [...])` starts the beat at
+  the `shot-2` label's time (with `gap` as the offset), so a title/lower-third/
+  caption laid over a montage stays locked to its shot when the cut is retimed
+  (via an overlay or AI regen) — the same retime-survival `audio.cues` get. Put
+  anchored beats in a `par` branch (an overlay layer), not inside a sequential
+  flow. See `examples/scenes/media-story.ts`.
 
 Eases: `linear`, `easeIn/Out/InOutQuad`, `easeIn/Out/InOutCubic`,
 `easeIn/Out/InOutQuart`, `easeIn/Out/InOutExpo`, or `{ cubicBezier: [x1,y1,x2,y2] }`.
