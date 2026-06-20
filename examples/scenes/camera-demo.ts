@@ -7,11 +7,13 @@
 // "camera" target; no stage group, no manual pivots. Pure + deterministic.
 
 import {
-  scene, group, rect, text, seq, wait, cameraTo, oscillate,
+  scene, group, rect, text, seq, wait, cameraTo, cameraFit, oscillate,
   type NodeIR,
 } from "@reframe/core";
 
 const W = 1920, H = 1080;
+const PW = 600, PH = 408; // panel size — frame each one with cameraFit so it never clips
+const pbox = (c: [number, number]) => ({ x: c[0] - PW / 2, y: c[1] - PH / 2, width: PW, height: PH });
 const BG = "#0B0E16", CARD = "#161B28", LINE = "#2A3346";
 const FG = "#FFFFFF", MUTED = "#8A93A6";
 
@@ -66,11 +68,11 @@ export default scene({
   // a single moving viewport: establish → push into each panel → pull back
   timeline: seq(
     wait(0.5),
-    cameraTo({ x: A[0], y: A[1], zoom: 2.6 }, { duration: 1.5, ease: "easeInOutCubic", label: "to-a" }),
+    cameraTo(cameraFit(pbox(A), { margin: 52 }), { duration: 1.5, ease: "easeInOutCubic", label: "to-a" }),
     wait(0.9),
-    cameraTo({ x: B[0], y: B[1], zoom: 2.6, rotation: -5 }, { duration: 1.6, ease: "easeInOutCubic", label: "to-b" }),
+    cameraTo({ ...cameraFit(pbox(B), { margin: 52 }), rotation: -5 }, { duration: 1.6, ease: "easeInOutCubic", label: "to-b" }),
     wait(0.9),
-    cameraTo({ x: C[0], y: C[1], zoom: 2.6, rotation: 0 }, { duration: 1.6, ease: "easeInOutCubic", label: "to-c" }),
+    cameraTo({ ...cameraFit(pbox(C), { margin: 52 }), rotation: 0 }, { duration: 1.6, ease: "easeInOutCubic", label: "to-c" }),
     wait(0.9),
     cameraTo({ x: W / 2, y: H / 2, zoom: 1, rotation: 0 }, { duration: 1.8, ease: "easeInOutCubic", label: "to-wide" }),
     wait(0.8),
