@@ -578,6 +578,16 @@ explicitly with `params`: `{ sfx: "blip", params: { seed: 4 } }` (pick the varia
 `{ sfx: "tick", params: { pitch: 1.5 } }` (an explicit frequency multiplier; `2` = octave
 up). `params.gainDb` trims a single hit.
 
+**Auto-foley — the motion scores itself.** `audio: { autoFoley: true }` derives sound
+cues from node motion, no manual cues needed: a fast move → `whoosh`/`swish` at the
+velocity peak, a moving node that settles → `thud`/`knock`, a scale-in → `pop`, each
+panned by its on-screen x. It's a pure pass over the compiled motion, so it's
+deterministic AND **retime/regeneration-safe** — retime a step and the sound follows.
+Manual `cues` still layer on top (and win). Best for discrete-element scenes; on dense
+scenes use the options to stay tasteful: `autoFoley: { gain?, whoosh?, impact?, pop?,
+pan?, sensitivity?, maxCues?, nodes?: [ids] }` (`maxCues` keeps the loudest, `nodes`
+allowlists). See `examples/scenes/auto-foley-demo.ts` (zero manual cues).
+
 **bgm beds**: synthesized via `bgm.synth` (`ambient-pad` `lofi` `pulse` `tension`
 `uplift`), or a file via `bgm.file` — bundled CC0 music: `bgm-song21.mp3` (ambient),
 `bgm-synthwave.mp3` (chill), `bgm-piano.mp3` (elegant), `bgm-battle.mp3` (energetic),

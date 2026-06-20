@@ -8,7 +8,21 @@ versions may change them.
 
 ## [Unreleased]
 
-## [0.6.32] - 2026-06-20
+## [0.6.33] - 2026-06-20
+
+### Added
+
+#### `autoFoley` — the animation scores its own SFX, deterministically
+
+- **`audio: { autoFoley: true }`** derives sound cues from node motion with zero manual cues: a fast move
+  → `whoosh`/`swish` at the velocity peak, a moving node that settles → `thud`/`knock`, a scale-in →
+  `pop`, each panned by on-screen position. A pure analysis pass over the compiled motion (samples each
+  node via the same deterministic `sampleProp` `evaluate` uses), so it's **deterministic and
+  retime/regeneration-safe** — the sound follows when a step is retimed or the scene is regenerated.
+  Manual `cues` still layer on top. Options: `{ gain, whoosh, impact, pop, pan, sensitivity, maxCues,
+  nodes }` (co-moving nodes are de-duplicated; `maxCues` keeps the loudest). Also exported as `autoFoley`
+  from `reframe-video`. Demo: `examples/scenes/auto-foley-demo.ts`. No peer code-as-video tool generates
+  audio from motion — this is reframe's structural differentiator (research-backed).
 
 ### Changed
 

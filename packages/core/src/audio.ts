@@ -10,6 +10,7 @@
 import type { CompiledScene } from "./compile.js";
 import type { CompiledComposition } from "./composeComposition.js";
 import type { BgmSynth, NodeIR, SceneIR, SfxName } from "./ir.js";
+import { autoFoley } from "./autoFoley.js";
 
 /** Nominal cue lengths (s) for duck-window math; file cues use a default. */
 export const SFX_DURATION: Record<SfxName, number> = {
@@ -107,7 +108,12 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
   const warnings: string[] = [];
   const duration = compiled.duration;
   const clipAudio = collectClipAudio(compiled.ir, duration, warnings);
-  if (!audio || (!audio.bgm && (audio.cues ?? []).length === 0)) {
+  // motion-derived cues, generated fresh from the compiled IR (retime-safe)
+  const autoCues = audio?.autoFoley
+    ? autoFoley(compiled, audio.autoFoley === true ? {} : audio.autoFoley)
+    : [];
+  const manualCues = [...(audio?.cues ?? []), ...autoCues];
+  if (!audio || (!audio.bgm && manualCues.length === 0)) {
     // a scene with only video-clip audio still gets a plan
     return clipAudio.length === 0
       ? null
@@ -115,7 +121,7 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
   }
 
   const cues: ResolvedCue[] = [];
-  for (const [index, cue] of (audio.cues ?? []).entries()) {
+  for (const [index, cue] of manualCues.entries()) {
     let anchor: number;
     if (typeof cue.at === "number") {
       anchor = cue.at;

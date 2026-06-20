@@ -15,6 +15,7 @@ export {
 export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan, type MotionDriver } from "./compile.js";
 export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
 export { cameraTo, cameraFit, cameraMatrix, CAMERA_ID, CAMERA_PROPS } from "./camera.js";
+export { autoFoley } from "./autoFoley.js";
 export { linearGradient, radialGradient, conicGradient, isGradient } from "./gradient.js";
 export { glow, dropShadow } from "./effects.js";
 export { row, column, grid, type RowOpts, type GridOpts } from "./layout.js";
