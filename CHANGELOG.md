@@ -8,6 +8,18 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.24] - 2026-06-20
+
+### Changed
+
+#### Ship the current authoring skill in the package (for SDK/Agent consumers)
+
+- **Republish so the npm package bundles the current `skills/reframe/SKILL.md`** (the read-efficiency
+  guidance — read the core, skim the specialized sections by heading). The marketplace tracks git
+  `main`, but the npm-bundled skill only refreshes on a `reframe-video` publish, so SDK consumers that
+  load the plugin from `node_modules/reframe-video` (e.g. an Agent-SDK app) were a skill behind. No
+  code/IR/golden change — only the bundled skill bytes.
+
 ## [0.6.23] - 2026-06-20
 
 ### Changed

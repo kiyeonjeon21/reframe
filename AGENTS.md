@@ -240,6 +240,14 @@ fully decoupled from the CLI's `0.6.z`. The one exception: if a new CLI command/
 means you rewrite SKILL.md to teach it, that SKILL.md edit triggers the bump (the rule
 above) — not the npm publish itself.
 
+**Two skill channels: marketplace (git) and npm-bundled.** A skill change reaches
+Claude Code marketplace users on git push to `main` (it's their plugin source). But the
+copy bundled in the `reframe-video` npm package (`skills/` in `files`) only refreshes when
+`reframe-video` is **published** — so an **Agent-SDK consumer that loads the plugin from
+`node_modules/reframe-video`** (e.g. reframe-studio) stays a skill behind until the next
+npm release. When a skill change must reach those consumers, cut a `reframe-video` patch in
+addition to the git push, so both channels carry the same skill.
+
 ## Gotchas
 
 - ffmpeg is a system dependency; Playwright chromium needs a one-time
