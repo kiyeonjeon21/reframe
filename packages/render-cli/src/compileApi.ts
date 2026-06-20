@@ -10,3 +10,4 @@
  * misbehaving module can't do harm. True sandboxing is a separate concern.
  */
 export { isComposition, loadModule, loadScene, loadSceneFromCode, SceneLoadError } from "./loadScene.js";
+export { checkDeterminism } from "./determinism.js";
