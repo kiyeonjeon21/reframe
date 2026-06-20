@@ -1,0 +1,16 @@
+{
+  "name": "@reframe/labs",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@reframe/core": "workspace:*",
+    "@reframe/render-cli": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}

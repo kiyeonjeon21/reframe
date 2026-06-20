@@ -33,6 +33,28 @@ release). Read it before larger changes. Scene syntax lives in
   measurements.
 - Keep `pnpm test` and `pnpm typecheck` green. New behavior needs a test.
 
+## Repo layout (what's safe to touch)
+
+- **`docs/guides/*.md` are code-coupled — edit content deliberately.** They are
+  single-sourced: printed verbatim by `reframe guide`, bundled into the npm
+  package (the build copies only these 4 files), and rendered by the docs site.
+  Don't rename or restructure them.
+- **`docs/docs.json` + `docs/*.mdx` are the Mintlify presentation layer — safe to
+  edit freely.** They only *reference* the guides in the nav; editing them can't
+  affect `guides/` (separate files), and they never leak into the npm bundle. The
+  whole `docs/` folder is the Mintlify content root (kept together on purpose — a
+  page must live under the root to appear in the site, so the guides stay here
+  rather than being duplicated into a separate docs dir).
+- **`examples/scenes/` is the curated example set** (rendered, referenced,
+  test-fixtured). Overflow variants and scratch live in **`labs/scenes/`**; live-
+  data probes in `labs/`. Scenes can live anywhere — these dirs are the repo's
+  own convention, plus the preview picker and a few golden tests read
+  `examples/scenes/`.
+- **`out/` is gitignored render scratch** — the default output of `reframe render`.
+  Everything in it is reproducible; `pnpm clean` wipes it (keeping `out/_keep/`
+  for anything non-regenerable you parked there). Curated renders live in
+  `docs/assets/gallery/` via `pnpm gallery`, not in `out/`.
+
 ## Pull requests
 
 1. Fork and branch from `main`.

@@ -7,7 +7,9 @@
     "typecheck": "pnpm -r --no-bail exec tsc --noEmit",
     "test": "vitest run",
     "preview": "pnpm --filter @reframe/preview dev",
-    "demo:overlay": "npx tsx examples/scripts/demo-edit-survival.ts"
+    "demo:overlay": "npx tsx examples/scripts/demo-edit-survival.ts",
+    "gallery": "tsx examples/scripts/render-gallery.ts",
+    "clean": "mkdir -p out/_keep && find out -mindepth 1 -maxdepth 1 ! -name _keep -exec rm -rf {} +"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

@@ -1,0 +1,98 @@
+---
+title: Quickstart
+description: "Install, render your first scene, and open the editor."
+---
+
+No clone needed — [`reframe-video` is on npm](https://www.npmjs.com/package/reframe-video).
+
+<Steps>
+  <Step title="Install the system deps">
+    ```bash
+    brew install ffmpeg                  # or: apt install ffmpeg
+    npx playwright install chromium      # one-time browser download
+    ```
+  </Step>
+  <Step title="Scaffold and render">
+    ```bash
+    npx reframe-video new hello          # scaffold hello.ts in any directory
+    npx reframe-video render hello.ts    # → out/hello.mp4
+    ```
+    A scene is a single self-contained file — it can live in **any directory**, no `package.json` or `node_modules` beside it. `render` bundles it on the fly.
+  </Step>
+  <Step title="Edit non-destructively in the preview">
+    ```bash
+    npx reframe-video preview            # scrub, play, edit any scene with knobs
+    ```
+    Edits accumulate in an **overlay** document (the preview never touches your scene file). Download it, then reapply at render:
+    ```bash
+    npx reframe-video render hello.ts --overlay edits.json
+    ```
+    That overlay keeps working even after the scene is redesigned.
+  </Step>
+</Steps>
+
+## Using Claude Code
+
+Install the skill and just describe the video you want:
+
+```
+/plugin marketplace add kiyeonjeon21/reframe
+/plugin install reframe@kiyeonjeon21
+```
+
+## Assemble from your own media
+
+Hand reframe a few images and clips and get an editable, deterministic montage scene:
+
+```bash
+npx reframe-video assemble photo1.jpg photo2.jpg clip.mp4 \
+  -o my-story --title "Our Year" --bgm uplift
+npx reframe-video render my-story.ts
+```
+
+It probes each clip's real duration (so a short clip never freezes), bakes the numbers in, and scaffolds an editable `.ts` wiring the montage + a kinetic title + a music bed.
+
+## Hacking on reframe itself
+
+```bash
+brew install ffmpeg
+pnpm install
+pnpm exec playwright install chromium
+pnpm reframe render examples/scenes/lower-third.ts   # → out/lower-third.mp4
+```
+
+## Write a scene
+
+```ts
+import { scene, text, seq, to, wait } from "@reframe/core";
+
+export default scene({
+  id: "hello",
+  size: { width: 1920, height: 1080 },
+  fps: 30,
+  background: "#101014",
+  nodes: [
+    text({ id: "title", x: 960, y: 540, anchor: "center",
+      content: "Hello", fontFamily: "Inter", fontSize: 120, fontWeight: 800, fill: "#FFF" }),
+  ],
+  // base props are the finished design; states are sparse overrides
+  states: {
+    hidden: { title: { opacity: 0, y: 580 } },
+    shown:  { title: { opacity: 1, y: 540 } },
+  },
+  initial: "hidden",
+  // labels are stable addresses for overlay timing edits
+  timeline: seq(
+    to("shown", { duration: 0.6, ease: "easeOutCubic", label: "enter" }),
+    wait(2, "hold"),
+  ),
+});
+```
+
+The complete syntax — node types, states, timeline operators, behaviors, the full motion vocabulary — is the [authoring guide](/guides/edsl-guide) (also `npx reframe-video guide`), the same compact guide an LLM reads to write valid scenes on the first try.
+
+## Requirements
+
+- Node ≥ 20, pnpm ≥ 9, **ffmpeg on PATH**.
+- `Executable doesn't exist at …/ms-playwright/…` → `npx playwright install chromium`.
+- Fonts: only Inter 400 / 700 / 800 are bundled; other families silently fall back.

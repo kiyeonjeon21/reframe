@@ -1,0 +1,48 @@
+---
+title: Introduction
+description: "Declarative motion graphics that AI can write, humans can tweak — and the human's edits survive an AI regeneration."
+---
+
+**Declarative motion graphics that AI can write, humans can tweak — and the human's edits survive an AI regeneration.**
+
+At "prompt → mp4", reframe is on par with Hyperframes or a Remotion skill — our own benchmark says exactly that, parity not superiority. **The difference starts on the second turn**: what you get back is not freeform code but an addressable document, so you can keep tweaking, regenerating, and scaling it without your changes being silently lost.
+
+![A human-edited scene (top) and the same edits surviving a full AI redesign of the base scene (bottom)](/assets/edit-survival.png)
+
+*Top: a scene with human overlay edits applied (brand color, retimed reveal, watermark). Bottom: an AI **fully regenerated** the base scene — different layout, different timing — and the same overlay reapplied by stable id. 4 edits survived; the one renamed node was reported as an orphan, never silently dropped.*
+
+![The reframe demo — made with reframe itself](/assets/hero.gif)
+
+*The demo above is a reframe scene (`examples/scenes/reframe-demo.ts`) — render it yourself: `npx reframe-video render examples/scenes/reframe-demo.ts`.*
+
+## What it is
+
+Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks, no randomness without a seed, so scrubbing and distributed rendering come for free, and the same input renders byte-identical frames.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="play" href="/quickstart">
+    Install, render your first scene, open the editor.
+  </Card>
+  <Card title="The loop" icon="arrows-rotate" href="/the-loop">
+    Why AI-write + human-edit + deterministic render is one document.
+  </Card>
+  <Card title="Authoring guide" icon="code" href="/guides/edsl-guide">
+    The complete eDSL syntax — what an LLM reads to write valid scenes.
+  </Card>
+  <Card title="Gallery" icon="film" href="/gallery">
+    A reel of scenes, each a few-line declaration.
+  </Card>
+</CardGroup>
+
+## Why not just Hyperframes / Remotion?
+
+Their output is arbitrary HTML/React — great to generate once, impossible to safely operate on afterwards. reframe's output is data with stable addresses, and everything below falls out of that one difference:
+
+| the second turn | HTML / React output | reframe |
+|---|---|---|
+| "tweak just the color and timing" | edit code by hand, or re-prompt and hope nothing else changes | turn knobs in the preview — no code |
+| "now redesign it" after my tweaks | regeneration overwrites your hand edits — silent loss is the default | edits live in an overlay; they reapply onto the regenerated scene (measured 100% across 23 regenerations/turns), breaks are reported loudly |
+| "make 50 personalized versions" | only what the author pre-parameterized (props) | any address, post-hoc: `nodes.name.content` |
+| "is it wrong before I render?" | semantic failures are invisible until pixels | structure validates pre-render with actionable errors |
+
+If your video is fire-and-forget, use the simpler tool. If it's an asset that will be tweaked, regenerated, and multiplied — that loop is what reframe is for.

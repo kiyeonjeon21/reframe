@@ -1,0 +1,44 @@
+---
+title: The loop
+description: "AI writes the scene, a human tweaks it, the render is deterministic — and the tweaks survive the next regeneration."
+---
+
+```
+scene.ts  ──(written by you, or by an AI given `reframe guide`)──▶  IR (plain JSON data)
+   │                                                                    │
+   ▼                                                                    ▼
+preview: scrub + knobs ──▶ edits recorded as an overlay JSON (non-destructive)
+   │                                                                    │
+   ▼                                                                    ▼
+render: deterministic mp4 (same input → byte-identical frames)   ◀── overlay reapplies
+                                                                   even after an AI
+                                                                   regenerates the base
+```
+
+Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks, no randomness without a seed, so scrubbing and distributed rendering come for free.
+
+## How edits survive regeneration
+
+Overlays address the scene by **node id, state name, and timeline label** — never by position or index. When an AI regenerates a scene it follows one contract ([the regeneration contract](/guides/regen-contract)): keep those names stable for every concept that survives the redesign. When the contract is broken anyway, `composeScene` skips the affected edits and reports them with a diagnosis naming the likely rename. The failure hierarchy:
+
+1. Contract followed (the measured common case) → edits survive.
+2. Contract broken → loud orphan report.
+3. Never: silent edit loss, or a render failure caused by base drift.
+
+![The preview editor: knobs write into a non-destructive overlay](/assets/preview-editor.png)
+
+## Address-keyed everything
+
+The same stable-address namespace powers more than hand edits:
+
+- **Batch**: every data row is an overlay. Row keys are addresses (`nodes.name.content`, `timeline.enter.duration`) — N personalized deterministic videos from one template, in parallel.
+- **Sound**: `audio.cues` anchor to timeline labels, so retime a step (or regenerate the scene) and the sound design moves with it.
+- **Tooling**: `reframe manifest` dumps a scene's editable surface; `reframe verify-overlay` proves an overlay still applies after a regen; `reframe lint` flags motion that has no stable address.
+
+## Address it before you render
+
+Because the scene is data, structure validates **before** any pixels — wrong props, unknown labels, off-frame addresses surface as actionable errors, and motion is computable straight from the IR.
+
+<Card title="See it survive" icon="arrows-rotate" href="/guides/regen-contract">
+  The regeneration contract — the exact rules an AI follows so edits reapply.
+</Card>

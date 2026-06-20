@@ -1,0 +1,78 @@
+---
+title: Gallery
+description: "A reel of reframe scenes — each a few-line declaration, each a deterministic render."
+---
+
+Every clip below is a scene in [`examples/scenes/`](https://github.com/kiyeonjeon21/reframe/tree/main/examples/scenes). Render any of them yourself with `npx reframe-video render examples/scenes/<name>.ts`. The full list — 66 scenes by category — is on the [Examples](/examples) page.
+
+<Note>
+  These gifs are the curated showcase. New renders accumulate here via `pnpm gallery` (the committed home, vs the gitignored `out/` scratch).
+</Note>
+
+## Generative choreography at scale
+
+The kind of scene that is hand-rolled timeline math elsewhere is ~100 lines here, because the host language *generates* the nodes and phase-shifted behaviors — and the output is still data: every dot, glyph, and moon keeps a stable id.
+
+<Frame caption="bloom.ts — 300 dots on a golden-angle spiral: radial bloom, traveling breath wave, chromatic ripple, vortex collapse">
+  <img src="/assets/bloom.gif" alt="Bloom" />
+</Frame>
+
+<Frame caption="wavefield.ts — physical interference: 1,152 phase-shifted oscillators on a 32×18 grid, a second ripple source joins mid-scene">
+  <img src="/assets/wavefield.gif" alt="Wavefield" />
+</Frame>
+
+<Frame caption="orbit.ts — nested transform composition: moons orbit planets orbit a sun, the whole system tilts — three nested groups, three linear tweens">
+  <img src="/assets/orbit.gif" alt="Orbit" />
+</Frame>
+
+## Kinetic typography
+
+<Frame caption="typewave.ts — character-level kinetic type: cascade in, ride a standing wave, shatter with spin, a second phrase assembling from the debris">
+  <img src="/assets/typewave.gif" alt="Typewave" />
+</Frame>
+
+<Frame caption="glyph-reveal.ts — the archival stop-motion format: AI-generated plates as image nodes, ~7fps hard cuts, push-in, camera shake, a tick per cut">
+  <img src="/assets/glyph-reveal.gif" alt="Glyph reveal" />
+</Frame>
+
+## Devices & media
+
+<Frame caption="device-gallery.ts — the parametric device frames: premium glass + neon styles, seeded per-instance variation, one call each">
+  <img src="/assets/gallery/device-gallery.gif" alt="Device gallery" />
+</Frame>
+
+<Frame caption="media-story.ts — images + a video clip assembled into a montage with a kinetic title and a lower-third, deterministic, retime-survivable">
+  <img src="/assets/gallery/media-story.gif" alt="Media story" />
+</Frame>
+
+## Effects & compositing
+
+<Frame caption="group-fx-demo.ts — group blur / shadow / blend applied to a whole subtree as one offscreen composite">
+  <img src="/assets/gallery/group-fx-demo.gif" alt="Group effects" />
+</Frame>
+
+<Frame caption="perspective-cards.ts — projected 2.5D: parallax depth, a card flip, perspective text receding, a dolly that flattens the field">
+  <img src="/assets/gallery/perspective-cards.gif" alt="Perspective cards" />
+</Frame>
+
+<Frame caption="gradient-demo.ts — linear / radial / conic gradients on rects, ellipses, and paths, animated by moving the node">
+  <img src="/assets/gallery/gradient-demo.gif" alt="Gradient demo" />
+</Frame>
+
+<Frame caption="matte-demo.ts — track mattes: an alpha matte fills a headline with video, a luma matte irises a photo in">
+  <img src="/assets/gallery/matte-demo.gif" alt="Matte demo" />
+</Frame>
+
+## Data, character & logos
+
+<Frame caption="annual-report.ts — a dashboard: KPI count-ups, growing bars, a draw-on line, a gradient donut, all label-anchored audio">
+  <img src="/assets/gallery/annual-report.gif" alt="Annual report" />
+</Frame>
+
+<Frame caption="figure-styles.ts — one dressed figure on the humanoid rig, three swappable skins, driven by a character preset">
+  <img src="/assets/gallery/figure-styles.gif" alt="Figure styles" />
+</Frame>
+
+<Frame caption="Six real brand logos (React, Figma, Vercel, GitHub, Notion, Stripe), each a different motion preset — npx reframe-video logo react --motion spin-forge">
+  <img src="/assets/logo-sting.gif" alt="Logo stings" />
+</Frame>
