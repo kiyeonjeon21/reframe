@@ -14,15 +14,19 @@ import type { BgmSynth, NodeIR, SceneIR, SfxName } from "./ir.js";
 /** Nominal cue lengths (s) for duck-window math; file cues use a default. */
 export const SFX_DURATION: Record<SfxName, number> = {
   // transition
-  whoosh: 0.35, swish: 0.32, rise: 0.5, riser: 0.85, warp: 0.5,
+  whoosh: 0.35, swish: 0.32, swoosh: 0.35, rise: 0.5, riser: 0.85, warp: 0.5,
   // ui
   tick: 0.03, click: 0.05, blip: 0.1, pop: 0.12, select: 0.18,
   // impact
-  thud: 0.25, boom: 0.6, knock: 0.14,
+  thud: 0.25, boom: 0.6, knock: 0.14, sub: 0.7,
   // positive
   chime: 0.7, ding: 0.5, coin: 0.3, sparkle: 0.6, shimmer: 0.9, success: 0.6,
   // alert
   zap: 0.22, error: 0.4,
+  // tech
+  glitch: 0.3, static: 0.18, scan: 0.45, powerup: 0.4, powerdown: 0.5,
+  // rhythm / foley
+  snare: 0.18, hat: 0.05, bubble: 0.16, notify: 0.45, camera: 0.18,
 };
 const FILE_CUE_DURATION = 0.4;
 

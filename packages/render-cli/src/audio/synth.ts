@@ -393,12 +393,212 @@ function error(_seed: number, pitch: number): Float32Array {
   return out;
 }
 
+// ── transition (rising) ─────────────────────────────────────────────────────
+
+/** Band-passed noise sweeping UP — the rising counterpart to whoosh/swish. */
+function swoosh(seed: number, pitch: number): Float32Array {
+  const dur = 0.35;
+  const { out, n } = buffer(dur);
+  let lp = 0, lp2 = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE, u = t / dur;
+    const center = 300 * pitch * Math.pow(7.3, u); // 300 → ~2200 Hz
+    const alpha = Math.min(1, (TAU * center) / SAMPLE_RATE);
+    lp += alpha * (noise(i, seed) - lp);
+    lp2 += alpha * 0.5 * (lp - lp2);
+    const env = Math.sin(Math.PI * u) ** 0.9; // swell in and out
+    out[i] = (lp - lp2) * env * 2.4;
+  }
+  return out;
+}
+
+// ── tech / digital ──────────────────────────────────────────────────────────
+
+/** Bitcrush stutter — noise + detuned tone gated into fast random on/off cells. */
+function glitch(seed: number, pitch: number): Float32Array {
+  const dur = 0.3;
+  const { out, n } = buffer(dur);
+  const cell = Math.round(SAMPLE_RATE * 0.012); // ~12 ms cells
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE, u = t / dur;
+    const c = Math.floor(i / cell);
+    const on = hash01(c, seed) > 0.4 ? 1 : 0;       // gate
+    const freq = 400 * pitch * (1 + Math.floor(hash01(c, seed + 1) * 6)); // stepped pitch
+    phase += (TAU * freq) / SAMPLE_RATE;
+    const crush = Math.round(square(phase) * 4) / 4; // quantize (bitcrush)
+    out[i] = (crush * 0.7 + noise(i, seed + c) * 0.3) * on * (1 - u * 0.3) * 0.55;
+  }
+  return out;
+}
+
+/** Flat filtered white-noise burst — TV static / hard cut. */
+function staticHit(seed: number, pitch: number): Float32Array {
+  const dur = 0.18;
+  const { out, n } = buffer(dur);
+  let lp = 0;
+  const alpha = Math.min(0.8, (TAU * 3000 * pitch) / SAMPLE_RATE); // keep < 1 (no cancellation)
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE, u = t / dur;
+    lp += alpha * (noise(i, seed) - lp);
+    const env = Math.min(1, u * 30) * expDecay(t, dur, 5);
+    out[i] = (noise(i, seed) - lp) * env * 1.4; // high-passed hiss
+  }
+  return out;
+}
+
+/** Stepped square beeps sweeping up — a sci-fi scanner. */
+function scan(seed: number, pitch: number): Float32Array {
+  const dur = 0.45;
+  const { out, n } = buffer(dur);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE, u = t / dur;
+    const step = Math.floor(u * 6) / 6;             // 6 discrete steps
+    const freq = 500 * pitch * Math.pow(3, step);   // climbing
+    phase += (TAU * freq) / SAMPLE_RATE;
+    const cell = (u * 6) % 1;
+    const env = Math.min(1, cell * 12) * Math.min(1, (1 - cell) * 4) * 0.7;
+    out[i] = square(phase) * env * 0.5;
+  }
+  return out;
+}
+
+/** Ascending arpeggio + rising sweep — a game power-up. */
+function powerup(seed: number, pitch: number): Float32Array {
+  const dur = 0.4;
+  const { out, n } = buffer(dur);
+  const notes = [392, 523, 659, 784, 1046].map((f) => f * pitch); // G arpeggio up
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE, u = t / dur;
+    const idx = Math.min(notes.length - 1, Math.floor(u * notes.length));
+    phase += (TAU * notes[idx]!) / SAMPLE_RATE;
+    const local = u * notes.length - idx;
+    const env = Math.min(1, local * 14) * Math.min(1, (1 - Math.min(1, local)) * 4 + 0.3);
+    out[i] = (Math.sin(phase) + 0.25 * Math.sin(2 * phase)) * env * 0.45;
+  }
+  return out;
+}
+
+/** Descending tone, deflating — a power-down. */
+function powerdown(seed: number, pitch: number): Float32Array {
+  const dur = 0.5;
+  const { out, n } = buffer(dur);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE, u = t / dur;
+    const freq = 700 * pitch * Math.pow(0.18, u); // falls away
+    phase += (TAU * freq) / SAMPLE_RATE;
+    const env = (1 - u) ** 0.8;
+    out[i] = (square(phase) * 0.7 + Math.sin(phase) * 0.3) * env * 0.5;
+  }
+  return out;
+}
+
+/** Deep pure sub-sine drop with a long smooth tail — the EDM "drop". */
+function sub(seed: number, pitch: number): Float32Array {
+  const dur = 0.7;
+  const { out, n } = buffer(dur);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE;
+    const freq = 80 * pitch * Math.pow(0.45, t / 0.4); // 80 → ~35 Hz
+    phase += (TAU * freq) / SAMPLE_RATE;
+    const click = t < 0.004 ? noise(i, seed) * 0.4 : 0; // tiny attack
+    out[i] = (Math.sin(phase) + click) * expDecay(t, dur, 3) * 0.95;
+  }
+  return out;
+}
+
+// ── rhythm ──────────────────────────────────────────────────────────────────
+
+/** Noise burst + body tone — a snare. */
+function snare(seed: number, pitch: number): Float32Array {
+  const dur = 0.18;
+  const { out, n } = buffer(dur);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE;
+    phase += (TAU * 180 * pitch) / SAMPLE_RATE;
+    const body = Math.sin(phase) * 0.5 * expDecay(t, dur, 16);
+    const rattle = noise(i, seed) * expDecay(t, dur, 7);
+    out[i] = (body + rattle * 0.8) * 0.7;
+  }
+  return out;
+}
+
+/** Very short high-passed noise tick — a hi-hat. */
+function hat(seed: number, pitch: number): Float32Array {
+  const dur = 0.05;
+  const { out, n } = buffer(dur);
+  let lp = 0;
+  // keep alpha < 1 so the one-pole low-pass doesn't snap to the input (which
+  // would make `noise - lp` cancel to silence); ≈2.5 kHz cutoff = a bright hat
+  const alpha = Math.min(0.85, (TAU * 2500 * pitch) / SAMPLE_RATE);
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE;
+    lp += alpha * (noise(i, seed) - lp);
+    out[i] = (noise(i, seed) - lp) * expDecay(t, dur, 14) * 0.9;
+  }
+  return out;
+}
+
+// ── ui / foley ──────────────────────────────────────────────────────────────
+
+/** Quick rising sine "bloop" — a playful pop-up. */
+function bubble(seed: number, pitch: number): Float32Array {
+  const dur = 0.16;
+  const { out, n } = buffer(dur);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE, u = t / dur;
+    const freq = 400 * pitch * Math.pow(3, u); // bloops upward
+    phase += (TAU * freq) / SAMPLE_RATE;
+    const env = Math.sin(Math.PI * u) ** 1.1;
+    out[i] = Math.sin(phase) * env * 0.6;
+  }
+  return out;
+}
+
+/** Soft two-tone ping — a gentle notification. */
+function notify(seed: number, pitch: number): Float32Array {
+  const dur = 0.45;
+  const { out, n } = buffer(dur);
+  const f0 = 880 * pitch;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE;
+    const a = Math.sin(TAU * f0 * t) * expDecay(t, dur, 5);
+    const b = t > 0.09 ? Math.sin(TAU * f0 * 1.5 * t) * expDecay(t - 0.09, dur, 4.5) : 0; // up a fifth
+    out[i] = (a * 0.55 + b * 0.6) * 0.55;
+  }
+  return out;
+}
+
+/** Two fast filtered-noise clicks — a camera shutter. */
+function camera(seed: number, pitch: number): Float32Array {
+  const dur = 0.18;
+  const { out, n } = buffer(dur);
+  let lp = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE;
+    lp += 0.45 * (noise(i, seed) - lp);
+    const k1 = t < 0.02 ? expDecay(t, 0.02, 6) : 0;            // open
+    const k2 = t > 0.08 && t < 0.12 ? expDecay(t - 0.08, 0.04, 6) : 0; // close
+    const sine = Math.sin(TAU * 2200 * pitch * t);
+    out[i] = (lp * 0.7 + sine * 0.3) * (k1 + k2) * 1.3;
+  }
+  return out;
+}
+
 const RECIPES: Record<SfxName, (seed: number, pitch: number) => Float32Array> = {
-  whoosh, swish, rise, riser, warp,
+  whoosh, swish, swoosh, rise, riser, warp,
   tick, click, blip, pop, select,
-  thud, boom, knock,
+  thud, boom, knock, sub,
   chime, ding, coin, sparkle, shimmer, success,
   zap, error,
+  glitch, static: staticHit, scan, powerup, powerdown,
+  snare, hat, bubble, notify, camera,
 };
 
 export function synthSfx(name: SfxName, params: SynthParams = {}): Float32Array {
