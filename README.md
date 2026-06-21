@@ -77,7 +77,7 @@ motionPreset("spin-forge", { target: logo, energy: 0.8, seed: 3 })
 `energy` (clean to springy) and `speed` are universal knobs. The preset emits a
 beat you can retime, and a waypoint you drag on its path becomes an overlay edit
 that survives a knob-driven regeneration: knobs regenerate the base, hand craft
-persists. Two new primitives back it:
+persists. Two primitives back it:
 
 - **`path` node**: a true vector SVG shape with a `progress` draw-on, so the
   outline draws itself, stays crisp at any zoom, and recolors by animating fill.
@@ -256,9 +256,9 @@ export default scene({
 ```
 
 Scaffold one with `pnpm reframe new my-scene`. Full syntax (node types,
-states, timeline operators, behaviors): `pnpm reframe guide` — the same
-~1,700-token guide that lets an LLM write valid scenes on the first try
-(33/33 first-attempt renders in our benchmark).
+states, timeline operators, behaviors): `pnpm reframe guide` — the guide an
+LLM reads to write valid scenes on the first try (33/33 first-attempt renders
+in our benchmark).
 
 A scene is a single self-contained file, not an app: it can live in **any
 directory** — no package.json or node_modules next to it. `render` bundles it
@@ -293,8 +293,8 @@ your scene.
 
 ## How edits survive regeneration
 
-Overlays address the scene by **node id, state name, and timeline label** —
-never by position or index. When an AI regenerates a scene it follows one
+Overlays address the scene by **node id, state name, and timeline label (or
+beat name)** — never by position or index. When an AI regenerates a scene it follows one
 contract (`docs/guides/regen-contract.md`, or `pnpm reframe guide --regen`): keep
 those names stable for every concept that survives the redesign. When the
 contract is broken anyway, `composeScene` skips the affected edits and reports
@@ -355,7 +355,8 @@ same structured shape on the CLI: `{ ok: false, kind, issues: [{ code, path, mes
 
 ## Documentation
 
-The [`docs/`](docs/) folder is a [Mintlify](https://mintlify.com)-ready site (`docs/docs.json`):
+📖 **[docs.reframe-video.com](https://docs.reframe-video.com)** — the full documentation
+site. The [`docs/`](docs/) folder is its [Mintlify](https://mintlify.com) source (`docs/docs.json`):
 
 | page | what |
 |---|---|

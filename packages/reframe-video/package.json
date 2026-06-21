@@ -18,7 +18,7 @@
     "type": "git",
     "url": "git+https://github.com/kiyeonjeon21/reframe.git"
   },
-  "homepage": "https://github.com/kiyeonjeon21/reframe#readme",
+  "homepage": "https://docs.reframe-video.com",
   "type": "module",
   "bin": {
     "reframe": "./dist/bin.js",
