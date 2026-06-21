@@ -11,8 +11,8 @@ Run any command with `npx reframe-video <command>` (no clone needed) or `pnpm re
 |---|---|
 | `render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; composes any `--overlay` first) |
 | `batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (row keys are overlay addresses), in parallel, with a per-row report |
-| `frame <scene.ts\|.json> [--t <sec>] [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop |
-| `player <scene.ts\|.json> [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser |
+| `frame <scene.ts\|.json> [--t <sec>] [--overlay f]... [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop; `--overlay` previews edits |
+| `player <scene.ts\|.json> [--overlay f]... [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser; `--overlay` previews edits |
 | `logo <logo.svg\|brand-slug> [--motion <preset>] [--energy n] [--seed n]` | animate a logo (or a simple-icons brand) into a sting |
 | `assemble <media...> [-o name] [--title "…"] [--bgm <synth>]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` |
 | `narrate <scene.ts\|.json> [--voice <name>] [--max-speed n] [--dry-run]` | scene-fitted Kokoro voiceover — synth each `audio.narration` line and auto-fit its rate to the slot (needs python + `kokoro`; `--dry-run` estimates without synthesis) |
@@ -31,6 +31,7 @@ Run any command with `npx reframe-video <command>` (no clone needed) or `pnpm re
 | command | what it does |
 |---|---|
 | `verify-overlay <base> <overlay>... [--json]` | compose an overlay onto a base and report applied-vs-orphaned, no render. Non-zero exit on orphans — the regen-survival check |
+| `compose <scene.ts\|.json> --overlay <doc>... [-o out.json] [--json]` | compose overlay(s) onto a scene → composed SceneIR on stdout (report on stderr), no render. The IR half of `composeScene`; feed the result to `player`/`frame` for live overlay preview. Non-gating |
 | `preview` | scrub / play / edit UI; edits export as overlay JSON |
 | `demo` | render the edit-survival demo (base, base + overlay, AI-regenerated base + the same overlay) |
 

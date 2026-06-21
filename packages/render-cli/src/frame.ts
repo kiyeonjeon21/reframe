@@ -9,8 +9,10 @@
  */
 import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { formatComposeReport } from "@reframe/core";
 import { renderFrameAt } from "./frameLoop.js";
 import { loadModule } from "./loadScene.js";
+import { applyOverlays } from "./overlay.js";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -21,10 +23,12 @@ async function main(): Promise<void> {
   }
   let t = 0;
   let out = "";
+  const overlays: string[] = [];
   for (let i = 1; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--t") t = Number(argv[++i]);
     else if (a === "-o") out = argv[++i]!;
+    else if (a === "--overlay") overlays.push(resolve(argv[++i]!));
     else {
       console.error(`unknown argument: ${a}`);
       process.exit(2);
@@ -41,7 +45,13 @@ async function main(): Promise<void> {
     console.error("frame needs a single scene (not a composition)");
     process.exit(2);
   }
-  const buf = await renderFrameAt(loaded.ir, t, { sceneDir: dirname(scenePath) });
+  let ir = loaded.ir;
+  if (overlays.length > 0) {
+    const composed = await applyOverlays(ir, overlays);
+    console.error(formatComposeReport(composed.report));
+    ir = composed.ir;
+  }
+  const buf = await renderFrameAt(ir, t, { sceneDir: dirname(scenePath) });
   const outPath = out ? resolve(out) : resolve(`${loaded.ir.id}.png`);
   await writeFile(outPath, buf);
   console.log(outPath);

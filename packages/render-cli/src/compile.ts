@@ -43,6 +43,14 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 async function main() {
+  if (flag("--overlay")) {
+    // compile is source→IR only; composition is a separate IR→IR transform.
+    const msg =
+      "compile turns source into IR; it does not compose overlays. Use `reframe compose <scene> --overlay <doc>` for the composed IR, or `render`/`frame`/`player --overlay` for a preview.";
+    if (jsonMode) process.stdout.write(`${JSON.stringify({ ok: false, error: msg, kind: "usage" })}\n`);
+    else console.error(`error: ${msg}`);
+    process.exit(2);
+  }
   const out = opt("-o");
   const timeoutMs = Number(opt("--timeout") ?? 8000);
   const code = opt("--code");

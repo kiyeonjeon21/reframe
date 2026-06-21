@@ -8,6 +8,27 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.45] - 2026-06-21
+
+### Added
+
+#### `reframe compose` — emit a composed SceneIR (overlay → IR), for live overlay preview
+
+- New verb **`reframe compose <scene.ts|.json> --overlay <doc>... [-o out.json] [--json]`** —
+  composes overlay(s) onto a base and emits the composed **SceneIR** (no render). This is the
+  **IR half** of the core `composeScene` (`verify-overlay` is its report half). stdout stays a
+  bare SceneIR (pipe straight into `player`/`frame`); the applied/orphan report goes to stderr.
+  **Non-gating** — orphans are reported but the partial IR is still emitted. Base may be a `.ts`
+  source or a `.json` IR (composition is a post-compile IR→IR transform). Unblocks a live editor:
+  `manifest --json` → build an `OverlayDoc` → `compose` → `player`, no mp4.
+- **`--overlay` on `frame` and `player`** — compose-then-preview in one step (mirrors
+  `render --overlay`): `player scene.ts --overlay edits.json` builds an instant interactive HTML
+  with the edit applied; `frame scene.ts --overlay edits.json` renders a single PNG.
+- **`compile --overlay`** now **errors with a pointer** instead of silently ignoring the flag
+  (a footgun fix): `compile` is source→IR only; composition is a separate transform.
+- Shared `applyOverlays` helper (`packages/render-cli/src/overlay.ts`) behind
+  `render`/`compose`/`frame`/`player`, so they all compose + report identically. Closes #76.
+
 ## [0.6.44] - 2026-06-21
 
 ### Added

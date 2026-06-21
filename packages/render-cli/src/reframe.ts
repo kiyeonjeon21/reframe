@@ -38,6 +38,9 @@ const LABELS = PACKAGED
 const COMPILE = PACKAGED
   ? join(ROOT, "dist", "compile.js")
   : join(ROOT, "packages", "render-cli", "src", "compile.ts");
+const COMPOSE = PACKAGED
+  ? join(ROOT, "dist", "compose.js")
+  : join(ROOT, "packages", "render-cli", "src", "compose.ts");
 const ASSEMBLE = PACKAGED
   ? join(ROOT, "dist", "assemble.js")
   : join(ROOT, "packages", "render-cli", "src", "assemble.ts");
@@ -96,8 +99,8 @@ usage:
   ${CMD} logo <logo.svg|brand-slug> ["Name"] [--motion <preset>] [--energy 0..1] [--seed N] [-o out.mp4]
                                  animate a logo into a sting (presets: draw-bloom, punch-in,
                                  rise-settle, slide-bank, reveal-orbit, spin-forge)
-  ${CMD} player <scene.ts|.json> [-o out.html]  bundle a scene into one self-contained HTML
-                                 player (plays live in any browser or a Claude.ai artifact; visual only)
+  ${CMD} player <scene.ts|.json> [--overlay <doc.json>]... [-o out.html]  bundle a scene into one self-contained HTML
+                                 player (plays live in any browser or a Claude.ai artifact; visual only; --overlay previews edits)
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]
@@ -108,9 +111,11 @@ usage:
   ${CMD} manifest <scene.ts|.json> [--json]  list the editable surface (node/state/label/beat/behavior addresses + patchable props)
   ${CMD} lint <scene.ts|.json> [--json] [--strict]  flag un-addressable motion (regen-unsafe) + an addressability summary
   ${CMD} verify-overlay <base.ts|.json> <overlay.json>... [--json]  compose an overlay onto a base, report survival (no render; non-zero exit on orphans)
+  ${CMD} compose <scene.ts|.json> --overlay <doc.json>... [-o out.json] [--json]
+                                 compose overlay(s) onto a scene → composed SceneIR (no render; feed to player/frame for live preview)
   ${CMD} compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]
                                  bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium)
-  ${CMD} frame <scene.ts|.json> [--t <sec>] [-o out.png]  render ONE frame at time t to a PNG (no mp4; for a render-and-look loop)
+  ${CMD} frame <scene.ts|.json> [--t <sec>] [--overlay <doc.json>]... [-o out.png]  render ONE frame at time t to a PNG (no mp4; --overlay previews edits)
   ${CMD} skill [--path]          print the authoring skill (SKILL.md) for an agent; --path prints the plugin dir to load
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
@@ -353,6 +358,22 @@ async function main() {
       );
     }
 
+    case "compose": {
+      // base + --overlay(s) → composed SceneIR (no render). Resolve the scene file
+      // and every -o / --overlay path to user-relative; forward the rest.
+      const fileArg = rest.find((a, i) => !a.startsWith("-") && !["-o", "--overlay"].includes(rest[i - 1] ?? ""));
+      if (!fileArg) fail(`compose needs a scene file\n\n${USAGE}`);
+      if (!existsSync(userPath(fileArg))) fail(`no such file: ${userPath(fileArg)}`);
+      const passed = rest.map((a, i) => {
+        if (a === fileArg) return userPath(a);
+        if (rest[i - 1] === "-o" || rest[i - 1] === "--overlay") return userPath(a);
+        return a;
+      });
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [COMPOSE, ...passed]) : run("npx", ["tsx", COMPOSE, ...passed])),
+      );
+    }
+
     case "frame": {
       const input = rest[0];
       if (!input || input.startsWith("-")) fail(`frame needs a scene file\n\n${USAGE}`);
@@ -367,7 +388,9 @@ async function main() {
         await mkdir(outBase, { recursive: true });
         outArgs = [...args, "-o", join(outBase, stem)];
       }
-      outArgs = outArgs.map((a, i) => (outArgs[i - 1] === "-o" ? userPath(a) : a));
+      outArgs = outArgs.map((a, i) =>
+        outArgs[i - 1] === "-o" || outArgs[i - 1] === "--overlay" ? userPath(a) : a,
+      );
       process.exit(
         await (PACKAGED
           ? run(process.execPath, [FRAME, inputPath, ...outArgs])
@@ -380,6 +403,11 @@ async function main() {
       if (!input || input.startsWith("-")) fail(`player needs a scene file\n\n${USAGE}`);
       const inputPath = userPath(input);
       if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
+      // thread --overlay(s) through (resolved); scene + out are positional
+      const overlayArgs: string[] = [];
+      for (let i = 1; i < rest.length; i++) {
+        if (rest[i] === "--overlay" && rest[i + 1]) overlayArgs.push("--overlay", userPath(rest[++i]!));
+      }
       const oIdx = rest.indexOf("-o");
       const outBase = PACKAGED ? join(USER_CWD, "out") : join(ROOT, "out");
       const outPath =
@@ -389,8 +417,8 @@ async function main() {
       await mkdir(dirname(outPath), { recursive: true });
       process.exit(
         await (PACKAGED
-          ? run(process.execPath, [PLAYER, inputPath, outPath])
-          : run("npx", ["tsx", PLAYER, inputPath, outPath])),
+          ? run(process.execPath, [PLAYER, inputPath, ...overlayArgs, outPath])
+          : run("npx", ["tsx", PLAYER, inputPath, ...overlayArgs, outPath])),
       );
     }
 

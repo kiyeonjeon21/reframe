@@ -14,6 +14,9 @@ import { build } from "esbuild";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatComposeReport } from "@reframe/core";
+import { loadModule } from "./loadScene.js";
+import { applyOverlays } from "./overlay.js";
 
 const PACKAGED = process.env.REFRAME_PACKAGED === "1";
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -32,17 +35,39 @@ async function fontFace(weight: number): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  const [scenePath, outPath] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const overlays: string[] = [];
+  const positional: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "--overlay") overlays.push(resolve(argv[++i]!));
+    else positional.push(a);
+  }
+  const [scenePath, outPath] = positional;
   if (!scenePath || !outPath) {
-    console.error("usage: player <scene.ts|.json> <out.html>");
+    console.error("usage: player <scene.ts|.json> [--overlay <doc.json>]... <out.html>");
     process.exit(2);
+  }
+
+  // With overlays, compose to a SceneIR and INLINE it (esbuild can't import a
+  // composed object); without, import the scene file as today (byte-identical).
+  let sceneSource = `import sceneIR from ${JSON.stringify(scenePath)};`;
+  if (overlays.length > 0) {
+    const loaded = await loadModule(scenePath);
+    if (loaded.kind !== "scene") {
+      console.error("player needs a single scene (not a composition)");
+      process.exit(2);
+    }
+    const composed = await applyOverlays(loaded.ir, overlays);
+    console.error(formatComposeReport(composed.report));
+    sceneSource = `const sceneIR = ${JSON.stringify(composed.ir)};`;
   }
 
   // a tiny browser entry: compile once, then draw every frame to a <canvas>
   const entry = `
 import { compileScene } from "@reframe/core";
 import { renderFrame } from "@reframe/renderer-canvas";
-import sceneIR from ${JSON.stringify(scenePath)};
+${sceneSource}
 const compiled = compileScene(sceneIR);
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");

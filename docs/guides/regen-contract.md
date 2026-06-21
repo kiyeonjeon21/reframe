@@ -124,3 +124,8 @@ checkable (no render):
 - `reframe verify-overlay <base> <overlay>...` — compose the overlay onto a base
   and report applied vs orphaned. Run it against the regenerated base to prove
   every edit survived; it exits non-zero if any address broke.
+- `reframe compose <base> --overlay <overlay>... [-o out.json]` — the same
+  composition, but it **emits the composed SceneIR** (verify-overlay only reports).
+  stdout is a bare scene you can pipe straight into `player`/`frame` for an instant
+  overlay preview (no mp4); orphans are reported on stderr, non-gating. `--overlay`
+  also works directly on `frame` and `player` (compose-then-preview in one step).
