@@ -78,6 +78,11 @@ Addressability tooling (read-only, no render — use it when editing):
   surface (every node + its editable/animated props, states, timeline labels
   with patchable params, beats, behaviors, each with its overlay address). Read
   this BEFORE patching so you target real, stable addresses instead of guessing.
+- `npx -y reframe-video geometry <scene> [--t <sec>] [--json]` — the spatial
+  analog of `manifest`: WHERE each node (bounds + corners) and motionPath waypoint
+  sits on screen at time `t`, in scene coords. `manifest` = what to edit; this =
+  where it is / what's under a point (the `hitTest`/`bounds` an editor reads). Pure,
+  no render.
 - `npx -y reframe-video lint <scene> [--strict]` — flag motion with no `label`
   (timing a later overlay can't reach, and a regen can silently drop) plus a
   `motionAddressableRatio`. When authoring motion the user may want to tweak,
@@ -93,6 +98,12 @@ Addressability tooling (read-only, no render — use it when editing):
   preview; orphans report on stderr, non-gating. `--overlay` also works directly on
   `frame` and `player` (compose-then-preview in one step) — the fast way to SHOW the
   user an edit without an mp4. (`compile` does NOT compose — it errors and points here.)
+- `npx -y reframe-video player <scene> --edit [--t <sec>] -o out.html` — an
+  embedded-editor build of the HTML player: no autoplay, seek-driven, exposing
+  `window.__reframe = { seek, hitTest, bounds, waypoints, setOverlay, play, pause }`
+  + a host↔iframe postMessage channel. `setOverlay(doc)` re-composes + re-renders
+  IN-BROWSER (no reload), so a dragged node/waypoint round-trips as a regen-stable
+  overlay patch. Use when a host app needs click-to-select + live overlay preview.
 
 ## Other capabilities
 
