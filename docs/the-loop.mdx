@@ -3,16 +3,12 @@ title: The loop
 description: "AI writes the scene, a human tweaks it, the render is deterministic — and the tweaks survive the next regeneration."
 ---
 
-```
-scene.ts  ──(written by you, or by an AI given `reframe guide`)──▶  IR (plain JSON data)
-   │                                                                    │
-   ▼                                                                    ▼
-preview: scrub + knobs ──▶ edits recorded as an overlay JSON (non-destructive)
-   │                                                                    │
-   ▼                                                                    ▼
-render: deterministic mp4 (same input → byte-identical frames)   ◀── overlay reapplies
-                                                                   even after an AI
-                                                                   regenerates the base
+```mermaid
+flowchart LR
+    S["scene.ts<br/>you · or an AI given 'reframe guide'"] --> IR["IR<br/>plain JSON data"]
+    IR --> P["preview<br/>scrub + knobs"] --> O["overlay JSON<br/>non-destructive edits"]
+    IR --> R["render<br/>deterministic mp4<br/>same input → byte-identical"]
+    O -. reapplies even after an AI<br/>regenerates the base .-> R
 ```
 
 Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks, no randomness without a seed, so scrubbing and distributed rendering come for free. `reframe lint` *enforces* it: the scene is compiled twice and any IR that differs (a `Math.random()` or `Date` baked into a prop) is flagged, so a scene that would render differently each time fails the gate before you ship it.
