@@ -4,21 +4,16 @@
  * reframe-render html <page.html> --duration S [-o out.mp4] [--fps N] [--keep-frames]
  */
 
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import type { OverlayDoc } from "@reframe/core";
-import {
-  compileScene,
-  composeScene,
-  formatComposeReport,
-  resolveAudioPlan,
-} from "@reframe/core";
+import { compileScene, formatComposeReport, resolveAudioPlan } from "@reframe/core";
 import { buildAudioTrack } from "./audio/index.js";
 import { renderComposition } from "./composition.js";
 import { encodeMp4 } from "./encode.js";
 import { captureHtml, captureIr } from "./frameLoop.js";
 import { loadModule } from "./loadScene.js";
+import { applyOverlays } from "./overlay.js";
 
 interface Args {
   mode: "ir" | "html";
@@ -101,10 +96,7 @@ async function main() {
   if (args.mode === "ir") {
     let ir = loaded!.ir;
     if (args.overlays.length > 0) {
-      const docs = await Promise.all(
-        args.overlays.map(async (p) => JSON.parse(await readFile(p, "utf8")) as OverlayDoc),
-      );
-      const composed = composeScene(ir, ...docs);
+      const composed = await applyOverlays(ir, args.overlays);
       console.error(formatComposeReport(composed.report));
       ir = composed.ir;
     }

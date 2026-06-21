@@ -35,6 +35,7 @@ const nodeBundles: [entry: string, out: string][] = [
   ["packages/render-cli/src/cli.ts", "cli.js"],
   ["packages/render-cli/src/labels.ts", "labels.js"],
   ["packages/render-cli/src/compile.ts", "compile.js"],
+  ["packages/render-cli/src/compose.ts", "compose.js"],
   ["packages/render-cli/src/assemble.ts", "assemble.js"],
   ["packages/render-cli/src/narrate.ts", "narrate.js"],
   ["packages/render-cli/src/manifest.ts", "manifest.js"],
