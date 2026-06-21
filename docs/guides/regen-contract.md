@@ -46,7 +46,7 @@ timeline — and those edits survive regen the same way, keyed by stable labels:
   `insertTimeline` splices a step/beat into a named beat (`{ into, after, step }`).
   Together they add a whole new unit. Unlike reorder/remove (which patch existing
   addressable elements), insert *creates* elements, so the overlay carries the full
-  node + beat JSON — a consumer (reframe-studio) or you author it; reframe does not
+  node + beat JSON — a consumer (an embedding app) or you author it; reframe does not
   generate the shot payload. Unknown `into`/`before`/`after` or a step targeting a
   missing node is an orphan.
 

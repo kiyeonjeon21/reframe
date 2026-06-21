@@ -278,7 +278,7 @@ above) — not the npm publish itself.
 Claude Code marketplace users on git push to `main` (it's their plugin source). But the
 copy bundled in the `reframe-video` npm package (`skills/` in `files`) only refreshes when
 `reframe-video` is **published** — so an **Agent-SDK consumer that loads the plugin from
-`node_modules/reframe-video`** (e.g. reframe-studio) stays a skill behind until the next
+`node_modules/reframe-video`** stays a skill behind until the next
 npm release. When a skill change must reach those consumers, cut a `reframe-video` patch in
 addition to the git push, so both channels carry the same skill.
 

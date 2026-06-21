@@ -66,7 +66,7 @@ versions may change them.
   addressable: `insertTimeline { into: "montage", after: "shot-1", step }` splices a shot into
   the sequence. Reorder (`order`) and `removeTimeline` are unaffected.
 - Unlike reorder/remove (which patch existing addressable elements), insert *creates*
-  elements, so the overlay carries the full node + beat JSON — a consumer (reframe-studio) or
+  elements, so the overlay carries the full node + beat JSON — a consumer (an embedding app) or
   the author supplies it; reframe does not generate the montage shot payload. See
   `examples/overlays/montage-insert.json` and `docs/guides/regen-contract.md`.
 
