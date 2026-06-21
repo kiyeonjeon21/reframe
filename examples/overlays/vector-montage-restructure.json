@@ -1,0 +1,13 @@
+{
+  "reframeOverlay": 1,
+  "name": "vector-montage-restructure",
+  "target": "vector-montage",
+  "removeTimeline": ["shot-3"],
+  "timeline": {
+    "shot-1": { "order": 2 },
+    "shot-2": { "order": 1 }
+  },
+  "nodes": {
+    "shot-0-title": { "content": "REORDERED" }
+  }
+}

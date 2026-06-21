@@ -76,6 +76,10 @@ Mind the tiers so you're not full-rendering to check small things: `compile`
 is the cheap visual look (one PNG, ~1s); `motion`/`trace` below need a finished
 render or reference video, so they're end-stage measurement, not the per-edit loop.
 
+- `reframe manifest scene.ts` — every editable address (nodes, states, labels, beats). Read
+  it before patching an overlay so you target real, stable addresses.
+- `reframe lint scene.ts --strict` — flags un-addressable motion and verifies the scene is a
+  pure function of time (no `Math.random()` / `Date`). A clean lint is the studio-readiness gate.
 - `reframe labels scene.ts` — every label → exact seconds. The timing source for audio + a
   sanity check that beats land when you think.
 - `reframe motion out.mp4` — speeds, static fraction, oscillation rhythm, spikes. A vague

@@ -1,6 +1,6 @@
 # Examples
 
-66 curated scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
+67 curated scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
 
 ```bash
 pnpm reframe render examples/scenes/<scene>.ts        # in this repo
@@ -123,6 +123,7 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 | `survive-base` | The edit-survival base (v1) with stable addresses + states. |
 | `survive-cut` | The edit-survival story: human cursor edits surviving an AI redesign. |
 | `survive-regen` | The base v2 — same stable addresses on a completely different layout. |
+| `vector-montage` | Pure-vector montage (no assets): structural overlay edits — reorder, remove, insert a card — render standalone. Overlays: `vector-montage-restructure.json`, `vector-montage-insert.json`. |
 
 ## Other
 

@@ -28,10 +28,26 @@ joint `name`s** for any character/device that survives the redesign — overlay
 edits (a retimed wave, a nudged limb angle) reference those exact ids. Renaming a
 joint orphans the edit, exactly like renaming a hand-authored node id.
 
-## Structural edits (reorder / remove a beat)
+## Structural edits (add / remove / reorder / insert)
 
 Beyond patching props and timing, an overlay can change the **structure** of the
-timeline — and those edits survive regen the same way, keyed by stable labels:
+timeline and the node tree — and those edits survive regen the same way, keyed by
+stable labels. The full vocabulary:
+
+| field | does | orphans when |
+|---|---|---|
+| `addNodes` | append new node(s) at the root, painted on top | unknown `before`/`after` sibling id |
+| `insertNodes` | splice node(s) at a position (`before`/`after` a sibling, or `index`) | unknown `before`/`after` sibling id |
+| `removeNodes` | remove an overlay-*added* node (a base node is refused — hide it with `opacity: 0`) | a base node id, or an unknown id |
+| `addTimeline` | append motion (a `par` with the base) onto existing nodes | the target node is missing |
+| `insertTimeline` | splice a step/beat into a named beat (`{ into, before/after/index, step }`) | unknown `into`, target node, or sibling |
+| `removeTimeline` | splice a beat/step out of its parent by label | unknown label, or base regen dropped it |
+| `order` (on a beat) | re-sort beats within their parent `seq` | — (a normal `timeline.<beat>` patch) |
+
+The patch-existing ops (reorder/remove) and the create ops (add/insert) differ in
+one way: insert/add **create** elements, so the overlay carries the full node + beat
+JSON (a consumer or you author it; reframe does not generate the payload). A single
+overlay can combine them — reorder, remove, retitle, and insert in one document:
 
 - **Reorder** — patch a beat's `order` (the existing `timeline.<beat>.order`
   param): `{ "timeline": { "shot-2": { "order": 0 }, "shot-0": { "order": 2 } } }`
@@ -50,6 +66,24 @@ timeline — and those edits survive regen the same way, keyed by stable labels:
   generate the shot payload. Unknown `into`/`before`/`after` or a step targeting a
   missing node is an orphan.
 
+A combined overlay — reorder + remove + retitle, then insert a new unit:
+
+```jsonc
+{
+  "reframeOverlay": 1,
+  "target": "vector-montage",
+  "removeTimeline": ["shot-3"],
+  "timeline": { "shot-1": { "order": 2 }, "shot-2": { "order": 1 } },
+  "nodes": { "shot-0-title": { "content": "REORDERED" } },
+  "insertNodes": [
+    { "after": "shot-2", "node": { "type": "group", "id": "shot-x", "props": { "opacity": 0 }, "children": [/* … */] } }
+  ],
+  "insertTimeline": [
+    { "into": "montage", "after": "shot-2", "step": { "kind": "beat", "name": "shot-x", "nodes": ["shot-x"], "children": [/* … */] } }
+  ]
+}
+```
+
 These ride the addressable surface a `photoMontage` already exposes — each shot is
 the named beat `shot-${i}`, so `removeTimeline: ["shot-3"]` drops a shot (its layer
 just stays invisible — it never fades in) and an `order` patch reshuffles the cut,
@@ -61,7 +95,17 @@ first slot drops its opening fade-up, since the crossfade offset was baked for t
 original order — a cosmetic detail, not a break.)
 
 See `examples/overlays/montage-restructure.json` (reorder + remove) and
-`examples/overlays/montage-insert.json` (insert a hand-authored shot).
+`examples/overlays/montage-insert.json` (insert a hand-authored shot) for the photo
+montage, or `examples/scenes/vector-montage.ts` with `vector-montage-restructure.json`
+/ `vector-montage-insert.json` for a pure-vector version that renders standalone (no
+image assets):
+
+```bash
+reframe verify-overlay examples/scenes/vector-montage.ts \
+  examples/overlays/vector-montage-restructure.json   # 4 applied, 0 orphaned
+reframe render examples/scenes/vector-montage.ts \
+  --overlay examples/overlays/vector-montage-insert.json
+```
 
 ## Tooling
 

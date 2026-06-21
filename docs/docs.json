@@ -24,7 +24,9 @@
               "guides/edsl-guide",
               "guides/directing-guide",
               "guides/html-guide",
-              "guides/regen-contract"
+              "guides/regen-contract",
+              "cli-reference",
+              "api"
             ]
           },
           {

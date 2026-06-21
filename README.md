@@ -42,7 +42,10 @@ render: deterministic mp4 (same input → byte-identical frames)   ◀── ove
 ```
 
 Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks,
-no randomness without a seed, scrubbing and distributed rendering for free.
+no randomness without a seed, scrubbing and distributed rendering for free. And
+it's *enforced*: `reframe lint` compiles the scene twice and flags any IR that
+differs (a `Math.random()` or `Date` baked into a prop), so a scene that would
+silently render differently each time fails the gate before you ship it.
 
 ## Generative choreography at scale
 
@@ -270,8 +273,16 @@ your scene.
 |---|---|
 | `pnpm reframe render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; output defaults to `out/`) |
 | `pnpm reframe batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (rows = overlays), parallel, with a per-row report |
-| `pnpm reframe compile <scene.ts\|.json> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium) |
+| `pnpm reframe compile <scene.ts\|.json> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium); `--json` returns `{ok, kind, issues}` |
 | `pnpm reframe frame <scene.ts\|.json> [--t <sec>] [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop |
+| `pnpm reframe manifest <scene.ts\|.json> [--json]` | dump the addressable surface: every node, state, timeline label, and beat with the overlay address that reaches it |
+| `pnpm reframe lint <scene.ts\|.json> [--json] [--strict]` | the studio-readiness gate: flag un-addressable motion + verify the scene is a pure function of time; `--strict` exits non-zero |
+| `pnpm reframe verify-overlay <base> <overlay>... [--json]` | compose an overlay onto a base and report applied-vs-orphaned, no render — the regen-survival check (non-zero exit on orphans) |
+| `pnpm reframe labels <scene.ts\|.json>` | print the compiled event clock (every timeline label → exact seconds) — the timing source for audio cues |
+| `pnpm reframe assemble <media...> [-o name]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` wired with `photoMontage` |
+| `pnpm reframe player <scene.ts\|.json> [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser |
+| `pnpm reframe logo <logo.svg\|brand-slug> [--motion <preset>]` | animate a logo (or a simple-icons brand) into a sting |
+| `pnpm reframe diff <ref-image> [scene.ts] [--t <sec>] [--mode side\|blend\|diff\|grid]` | compare a render against a reference image |
 | `pnpm reframe preview` | scrub/play/edit UI; edits export as overlay JSON |
 | `pnpm reframe new <name>` | scaffold a documented starter scene |
 | `pnpm reframe motion <mp4\|framesDir>` | calibrated motion profile (speeds, easing, discontinuities) |
@@ -293,7 +304,54 @@ them with a diagnosis naming the likely rename. The failure hierarchy:
 2. Contract broken → loud orphan report.
 3. Never: silent edit loss, or a render failure caused by base drift.
 
+### Restructure, don't just re-skin
+
+An overlay isn't limited to patching props and timing — it can change the
+**structure** of the cut, keyed by the same stable addresses, and those edits
+survive regeneration too: **reorder** a beat (`timeline.<beat>.order`),
+**remove** one (`removeTimeline: ["shot-3"]`), or **insert** a whole new unit
+(`insertNodes` + `insertTimeline { into: "montage", after: "shot-2" }`). A
+montage is built so each shot is the self-contained beat `shot-${i}`, so an
+overlay can drop, reorder, or splice in a card without touching the base:
+
+```jsonc
+// reorder two cards, drop one, retitle another — all survive an AI regen
+{ "removeTimeline": ["shot-3"],
+  "timeline": { "shot-1": { "order": 2 }, "shot-2": { "order": 1 } },
+  "nodes": { "shot-0-title": { "content": "REORDERED" } } }
+```
+
+Reproduce it with the pure-vector demo (no assets) — the same overlay reorders,
+removes, and inserts a card, and every edit is reported applied with zero
+orphans:
+
+```bash
+pnpm reframe verify-overlay examples/scenes/vector-montage.ts \
+  examples/overlays/vector-montage-restructure.json   # 4 applied, 0 orphaned
+pnpm reframe render examples/scenes/vector-montage.ts \
+  --overlay examples/overlays/vector-montage-insert.json   # a new card spliced into the cut
+```
+
 ![The preview editor: knobs write into a non-destructive overlay](docs/assets/preview-editor.png)
+
+## Embedding reframe (in-process API)
+
+The CLI is a thin shell over an importable, server-side API — load, validate,
+and check a scene without spawning a process. From `reframe-video/compile`:
+
+```ts
+import { loadScene, loadSceneFromCode, checkDeterminism } from "reframe-video/compile";
+
+const compiled = await loadScene("scene.ts");        // bundle + validate → CompiledScene
+// On failure a SceneLoadError carries .kind ("bundle" | "eval" | "validation")
+// and .issues: { code, path, message }[] — structured, not prose to parse.
+const { deterministic, findings } = await checkDeterminism("scene.ts");
+```
+
+`reframe-video/renderer` exposes `renderFrame` / `drawDisplayList` (DisplayList →
+Canvas 2D) for live browser playback, and `reframe compile --json` returns the
+same structured shape on the CLI: `{ ok: false, kind, issues: [{ code, path, message }] }`
+— the feedback loop an agent or a UI reads to point at the exact broken node.
 
 ## Documentation
 
@@ -303,7 +361,7 @@ The [`docs/`](docs/) folder is a [Mintlify](https://mintlify.com)-ready site (`d
 |---|---|
 | [Introduction](docs/introduction.mdx) · [Quickstart](docs/quickstart.mdx) · [The loop](docs/the-loop.mdx) | the pitch, install, and the AI-write / human-edit / deterministic-render model |
 | [Gallery](docs/gallery.mdx) | a curated visual reel of scenes |
-| [Examples](examples/README.md) | all 66 example scenes, by category |
+| [Examples](examples/README.md) | all 67 example scenes, by category |
 | [Guides](docs/guides/) | the eDSL, directing, HTML/GSAP, and regeneration-contract guides (also `pnpm reframe guide`) |
 
 Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumulate via `pnpm gallery` (the committed home; `out/` stays scratch).
@@ -316,7 +374,7 @@ Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumu
 | `packages/renderer-canvas` | DisplayList → Canvas 2D (browser + capture shared) |
 | `packages/render-cli` | Playwright capture + ffmpeg encode; also renders arbitrary HTML/GSAP deterministically via a virtual clock |
 | `packages/preview` | the Vite editor |
-| `examples/` | 66 example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
+| `examples/` | 67 example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
 | `labs/` | experiments and product probes (live-data → baked scene → render), kept out of `examples/` so it stays purely demonstrative |
 | `docs/` | the [Mintlify](https://mintlify.com)-ready docs site + the authoring guides (also `pnpm reframe guide`) |
 | `benchmark/` | **measurement artifacts, not product code**: LLM generation benchmark (RESULTS/ANALYSIS.md), regeneration-contract experiment (regen/), calibrated motion profiler (harness/motion/, MOTION.md) |
@@ -342,5 +400,5 @@ edit survival across AI regeneration, and a five-turn natural-language
 iteration loop with zero silent edit loss. Receipts: `benchmark/ANALYSIS.md`,
 `benchmark/MOTION.md`, `benchmark/regen/REGEN-ANALYSIS.md`,
 `benchmark/nl-loop/NL-LOOP.md`. What "alpha" means honestly: it has not met
-strangers yet — surface area is intentionally small (6 node types, one font,
+strangers yet — surface area is intentionally small (8 node types, one font,
 Canvas 2D) and the IR/overlay schema has no compatibility promise before 1.0.

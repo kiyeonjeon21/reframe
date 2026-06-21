@@ -1,0 +1,51 @@
+---
+title: CLI reference
+description: "Every reframe command — render, inspect, validate, and edit a scene from the terminal."
+---
+
+Run any command with `npx reframe-video <command>` (no clone needed) or `pnpm reframe <command>` in a checkout. Scene paths resolve against the directory you invoke from; outputs default to `out/`.
+
+## Render & output
+
+| command | what it does |
+|---|---|
+| `render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; composes any `--overlay` first) |
+| `batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (row keys are overlay addresses), in parallel, with a per-row report |
+| `frame <scene.ts\|.json> [--t <sec>] [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop |
+| `player <scene.ts\|.json> [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser |
+| `logo <logo.svg\|brand-slug> [--motion <preset>] [--energy n] [--seed n]` | animate a logo (or a simple-icons brand) into a sting |
+| `assemble <media...> [-o name] [--title "…"] [--bgm <synth>]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` |
+
+## Inspect & validate
+
+| command | what it does |
+|---|---|
+| `compile <scene.ts\|.json> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium). `--json` returns `{ ok, kind, issues }` |
+| `manifest <scene.ts\|.json> [--json]` | dump the addressable surface — every node, state, timeline label, and beat with the overlay address that reaches it |
+| `lint <scene.ts\|.json> [--json] [--strict]` | the studio-readiness gate — flag un-addressable motion + verify the scene is a pure function of time. `--strict` exits non-zero on findings |
+| `labels <scene.ts\|.json>` | print the compiled event clock (every timeline label → exact seconds) — the timing source for `audio.cues` |
+
+## Edit & verify
+
+| command | what it does |
+|---|---|
+| `verify-overlay <base> <overlay>... [--json]` | compose an overlay onto a base and report applied-vs-orphaned, no render. Non-zero exit on orphans — the regen-survival check |
+| `preview` | scrub / play / edit UI; edits export as overlay JSON |
+| `demo` | render the edit-survival demo (base, base + overlay, AI-regenerated base + the same overlay) |
+
+## Author & measure
+
+| command | what it does |
+|---|---|
+| `new <name>` | scaffold a documented starter scene `.ts` |
+| `diff <ref-image> [scene.ts] [--t <sec>] [--mode side\|blend\|diff\|grid]` | compare a render against a reference image |
+| `motion <mp4\|framesDir>` | calibrated motion profile of a clip (speeds, easing, discontinuities) |
+| `trace <ref.mp4> [--apply scene.ts]` | extract a video's motion structure; `--apply` re-tells it on your own nodes |
+| `guide [--directing\|--regen\|--html]` | print a guide: eDSL syntax (default), the directing workflow, the regeneration contract, or HTML/GSAP scenes |
+| `skill [--path]` | print the authoring skill for an agent; `--path` prints the plugin dir to load |
+
+<Tip>
+Before patching a scene, run `manifest` to see the real addresses; after a regen, run `verify-overlay` against the new base to prove every edit still applies; gate CI with `lint --strict`.
+</Tip>
+
+The same load / validate / determinism surface is importable in-process — see the [programmatic API](/api).

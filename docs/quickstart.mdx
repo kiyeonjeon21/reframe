@@ -29,6 +29,13 @@ No clone needed — [`reframe-video` is on npm](https://www.npmjs.com/package/re
     ```
     That overlay keeps working even after the scene is redesigned.
   </Step>
+  <Step title="Check before you render">
+    ```bash
+    npx reframe-video manifest hello.ts   # every editable address (nodes, labels, beats)
+    npx reframe-video lint hello.ts --strict   # un-addressable motion + determinism gate
+    ```
+    `manifest` lists the real addresses to patch; `lint` verifies every motion is addressable and the scene is a pure function of time (no `Math.random()` / `Date`). See the [CLI reference](/cli-reference) for the full surface.
+  </Step>
 </Steps>
 
 ## Using Claude Code
