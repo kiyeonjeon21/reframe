@@ -115,7 +115,8 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
     ? autoFoley(compiled, audio.autoFoley === true ? {} : audio.autoFoley)
     : [];
   const manualCues = [...(audio?.cues ?? []), ...autoCues];
-  if (!audio || (!audio.bgm && manualCues.length === 0)) {
+  const narrationLines = audio?.narration ?? [];
+  if (!audio || (!audio.bgm && manualCues.length === 0 && narrationLines.length === 0)) {
     // a scene with only video-clip audio still gets a plan
     return clipAudio.length === 0
       ? null
@@ -160,6 +161,46 @@ export function resolveAudioPlan(compiled: CompiledScene): AudioPlan | null {
         : { kind: "file", path: cue.file! },
     });
   }
+
+  // Narration lines render as label-anchored file cues (after `reframe narrate`
+  // bakes their wav). Each carries a real `duration`, so the bed ducks under the
+  // whole utterance. An un-synthesized line (no `file`) warns and is skipped.
+  for (const [index, line] of narrationLines.entries()) {
+    let anchor: number;
+    if (typeof line.at === "number") {
+      anchor = line.at;
+    } else {
+      const span = compiled.labelTimes.get(line.at);
+      if (!span) {
+        warnings.push(`narration[${index}]: unknown label "${line.at}" — dropped`);
+        continue;
+      }
+      anchor = span.t0;
+    }
+    if (!line.file) {
+      warnings.push(`narration "${line.at}" not synthesized — run reframe narrate`);
+      continue;
+    }
+    const t = Math.max(0, anchor + (line.offset ?? 0));
+    if (t >= duration) {
+      warnings.push(`narration "${line.at}" at ${t.toFixed(2)}s starts past the scene end (${duration.toFixed(2)}s) — dropped`);
+      continue;
+    }
+    const lineDuration = line.duration ?? FILE_CUE_DURATION;
+    if (t + lineDuration > duration) {
+      warnings.push(`narration "${line.at}" at ${t.toFixed(2)}s extends past the scene end — it will be truncated`);
+    }
+    cues.push({
+      t,
+      gain: line.gain ?? 1.15,
+      duration: lineDuration,
+      fadeIn: 0,
+      fadeOut: 0,
+      pan: 0,
+      source: { kind: "file", path: line.file },
+    });
+  }
+
   cues.sort((a, b) => a.t - b.t);
 
   return {

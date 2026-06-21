@@ -280,6 +280,7 @@ your scene.
 | `pnpm reframe verify-overlay <base> <overlay>... [--json]` | compose an overlay onto a base and report applied-vs-orphaned, no render — the regen-survival check (non-zero exit on orphans) |
 | `pnpm reframe labels <scene.ts\|.json>` | print the compiled event clock (every timeline label → exact seconds) — the timing source for audio cues |
 | `pnpm reframe assemble <media...> [-o name]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` wired with `photoMontage` |
+| `pnpm reframe narrate <scene.ts\|.json> [--voice <name>] [--max-speed n] [--dry-run]` | scene-fitted Kokoro voiceover: synth each `audio.narration` line and auto-fit its rate to the slot (needs python + `kokoro`) |
 | `pnpm reframe player <scene.ts\|.json> [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser |
 | `pnpm reframe logo <logo.svg\|brand-slug> [--motion <preset>]` | animate a logo (or a simple-icons brand) into a sting |
 | `pnpm reframe diff <ref-image> [scene.ts] [--t <sec>] [--mode side\|blend\|diff\|grid]` | compare a render against a reference image |
@@ -362,7 +363,7 @@ site. The [`docs/`](docs/) folder is its [Mintlify](https://mintlify.com) source
 |---|---|
 | [Introduction](docs/introduction.mdx) · [Quickstart](docs/quickstart.mdx) · [The loop](docs/the-loop.mdx) | the pitch, install, and the AI-write / human-edit / deterministic-render model |
 | [Gallery](docs/gallery.mdx) | a curated visual reel of scenes |
-| [Examples](examples/README.md) | all 67 example scenes, by category |
+| [Examples](examples/README.md) | all 68 example scenes, by category |
 | [Guides](docs/guides/) | the eDSL, directing, HTML/GSAP, and regeneration-contract guides (also `pnpm reframe guide`) |
 
 Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumulate via `pnpm gallery` (the committed home; `out/` stays scratch).
@@ -375,7 +376,7 @@ Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumu
 | `packages/renderer-canvas` | DisplayList → Canvas 2D (browser + capture shared) |
 | `packages/render-cli` | Playwright capture + ffmpeg encode; also renders arbitrary HTML/GSAP deterministically via a virtual clock |
 | `packages/preview` | the Vite editor |
-| `examples/` | 67 example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
+| `examples/` | 68 example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
 | `labs/` | experiments and product probes (live-data → baked scene → render), kept out of `examples/` so it stays purely demonstrative |
 | `docs/` | the [Mintlify](https://mintlify.com)-ready docs site + the authoring guides (also `pnpm reframe guide`) |
 | `benchmark/` | **measurement artifacts, not product code**: LLM generation benchmark (RESULTS/ANALYSIS.md), regeneration-contract experiment (regen/), calibrated motion profiler (harness/motion/, MOTION.md) |

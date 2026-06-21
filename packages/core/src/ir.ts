@@ -468,6 +468,33 @@ export interface AudioCueIR {
   params?: Record<string, number>;
 }
 
+/**
+ * A narration line — a spoken voiceover anchored to the timeline, fitted to the
+ * scene. The author writes `at` + `text` (+ optional `voice`/`gain`); the
+ * `reframe narrate` generator reads the label clock, synthesizes the line with a
+ * Kokoro TTS sidecar, fits its speech rate to the slot, and bakes `file`/`speed`/
+ * `duration` back. At render it behaves as a label-anchored `file` cue (so it
+ * survives retiming/regen), with `duration` sizing the bed's duck window.
+ */
+export interface NarrationLineIR {
+  /** Anchor: a timeline label (the step's start) or absolute seconds. */
+  at: string | number;
+  /** The line to speak. */
+  text: string;
+  /** Kokoro voice (e.g. "af_heart", "am_michael"); default chosen by `narrate`. */
+  voice?: string;
+  /** Linear gain, default ~1.15 (voiceover sits above the bed). */
+  gain?: number;
+  /** Seconds relative to the anchor (default 0). */
+  offset?: number;
+  /** BAKED by `reframe narrate`: scene-relative wav path (e.g. "demo-vo/intro.wav"). */
+  file?: string;
+  /** BAKED by `reframe narrate`: the fitted speech rate (default 1). */
+  speed?: number;
+  /** BAKED by `reframe narrate`: measured wav length (s) — sizes the duck window. */
+  duration?: number;
+}
+
 export interface AudioIR {
   bgm?: {
     file?: string;
@@ -480,6 +507,12 @@ export interface AudioIR {
     duck?: { depth?: number; attack?: number; release?: number } | false;
   };
   cues?: AudioCueIR[];
+  /**
+   * Spoken voiceover lines, each anchored to the timeline and fitted to the scene
+   * by `reframe narrate`. Render-equivalent to label-anchored `file` cues (after
+   * synthesis), so they survive retiming/regen. See {@link NarrationLineIR}.
+   */
+  narration?: NarrationLineIR[];
   /**
    * Auto-generate sound cues from node motion (move→whoosh, settle→impact,
    * scale-in→pop, panned by position). Deterministic + retime-safe (re-derived

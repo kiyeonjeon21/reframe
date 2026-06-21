@@ -41,6 +41,9 @@ const COMPILE = PACKAGED
 const ASSEMBLE = PACKAGED
   ? join(ROOT, "dist", "assemble.js")
   : join(ROOT, "packages", "render-cli", "src", "assemble.ts");
+const NARRATE = PACKAGED
+  ? join(ROOT, "dist", "narrate.js")
+  : join(ROOT, "packages", "render-cli", "src", "narrate.ts");
 const MANIFEST = PACKAGED
   ? join(ROOT, "dist", "manifest.js")
   : join(ROOT, "packages", "render-cli", "src", "manifest.ts");
@@ -99,6 +102,8 @@ usage:
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]
                                  probe images/videos → scaffold a clip-aware montage scene .ts (then render it)
+  ${CMD} narrate <scene.ts|.json> [--voice <name>] [--max-speed n] [--dry-run]
+                                 scene-fitted Kokoro voiceover: synth each line, fit its rate to the slot (needs python+kokoro)
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
   ${CMD} manifest <scene.ts|.json> [--json]  list the editable surface (node/state/label/beat/behavior addresses + patchable props)
   ${CMD} lint <scene.ts|.json> [--json] [--strict]  flag un-addressable motion (regen-unsafe) + an addressability summary
@@ -124,6 +129,15 @@ function fail(message: string): never {
 function preflightFfmpeg() {
   if (spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).error) {
     fail("ffmpeg not found on PATH — install it first (macOS: brew install ffmpeg, debian: apt install ffmpeg)");
+  }
+}
+
+function preflightKokoro() {
+  if (spawnSync("python3", ["-c", "import kokoro"], { stdio: "ignore" }).error) {
+    fail(
+      "Kokoro TTS not available — narrate needs Python 3 with the `kokoro` package.\n" +
+        "  pip install kokoro    (then, for phonemes: macOS `brew install espeak-ng`, debian `apt install espeak-ng`)",
+    );
   }
 }
 
@@ -277,6 +291,19 @@ async function main() {
       if (rest.length === 0) fail(`assemble needs at least one media file\n\n${USAGE}`);
       process.exit(
         await (PACKAGED ? run(process.execPath, [ASSEMBLE, ...rest]) : run("npx", ["tsx", ASSEMBLE, ...rest])),
+      );
+    }
+
+    case "narrate": {
+      // scene-fitted Kokoro voiceover. Path resolution happens in the entry
+      // (relative to INIT_CWD) — forward the args. Synthesis needs python+kokoro;
+      // skip the preflight for --dry-run (estimate only, no synthesis).
+      const input = rest.find((a) => !a.startsWith("-"));
+      if (!input) fail(`narrate needs a scene file\n\n${USAGE}`);
+      if (!existsSync(userPath(input))) fail(`no such file: ${userPath(input)}`);
+      if (!rest.includes("--dry-run")) preflightKokoro();
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [NARRATE, ...rest]) : run("npx", ["tsx", NARRATE, ...rest])),
       );
     }
 

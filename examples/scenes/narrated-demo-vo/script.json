@@ -1,0 +1,23 @@
+[
+  {
+    "at": "intro",
+    "text": "This is reframe.",
+    "file": "narrated-demo-vo/intro.wav",
+    "voice": "af_heart",
+    "duration": 1.775
+  },
+  {
+    "at": "point",
+    "text": "Anchored to the timeline, it survives.",
+    "file": "narrated-demo-vo/point.wav",
+    "voice": "af_heart",
+    "duration": 2.775
+  },
+  {
+    "at": "close",
+    "text": "Open source.",
+    "file": "narrated-demo-vo/close.wav",
+    "voice": "af_heart",
+    "duration": 1.65
+  }
+]
