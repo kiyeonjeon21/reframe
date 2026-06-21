@@ -277,12 +277,13 @@ your scene.
 | `pnpm reframe frame <scene.ts\|.json> [--t <sec>] [--overlay f]... [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop; `--overlay` previews edits |
 | `pnpm reframe compose <scene.ts\|.json> --overlay f... [-o out.json] [--json]` | compose overlay(s) onto a scene → composed SceneIR, no render (feed to `player`/`frame` for live overlay preview) |
 | `pnpm reframe manifest <scene.ts\|.json> [--json]` | dump the addressable surface: every node, state, timeline label, and beat with the overlay address that reaches it |
+| `pnpm reframe geometry <scene.ts\|.json> [--t <sec>] [--json]` | where each node + motionPath waypoint is on screen at time `t` (the spatial analog of `manifest`; pure, no chromium) |
 | `pnpm reframe lint <scene.ts\|.json> [--json] [--strict]` | the studio-readiness gate: flag un-addressable motion + verify the scene is a pure function of time; `--strict` exits non-zero |
 | `pnpm reframe verify-overlay <base> <overlay>... [--json]` | compose an overlay onto a base and report applied-vs-orphaned, no render — the regen-survival check (non-zero exit on orphans) |
 | `pnpm reframe labels <scene.ts\|.json>` | print the compiled event clock (every timeline label → exact seconds) — the timing source for audio cues |
 | `pnpm reframe assemble <media...> [-o name]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` wired with `photoMontage` |
 | `pnpm reframe narrate <scene.ts\|.json> [--voice <name>] [--max-speed n] [--dry-run]` | scene-fitted Kokoro voiceover: synth each `audio.narration` line and auto-fit its rate to the slot (needs python + `kokoro`) |
-| `pnpm reframe player <scene.ts\|.json> [--overlay f]... [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser; `--overlay` previews edits |
+| `pnpm reframe player <scene.ts\|.json> [--overlay f]... [--edit] [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser; `--overlay` previews edits; `--edit` builds an embedded-editor variant (`window.__reframe` + postMessage) |
 | `pnpm reframe logo <logo.svg\|brand-slug> [--motion <preset>]` | animate a logo (or a simple-icons brand) into a sting |
 | `pnpm reframe diff <ref-image> [scene.ts] [--t <sec>] [--mode side\|blend\|diff\|grid]` | compare a render against a reference image |
 | `pnpm reframe preview` | scrub/play/edit UI; edits export as overlay JSON |
