@@ -664,7 +664,9 @@ with `examples/scenes/sfx-showcase.ts` and the samples with `sample-showcase.ts`
 ## Rules
 
 - Everything must be a pure function of time: no `Math.random()` (use `wiggle`
-  with a seed), no `Date`, no async.
+  with a seed), no `Date`, no async. `reframe lint --strict` enforces this (and
+  flags un-addressable motion); for structural overlays (add/remove/reorder/insert)
+  see the [regeneration contract](/guides/regen-contract).
 - Node ids must be unique; states/tweens may only reference existing ids and
   real props of that node type.
 - Overshoot pops are two steps: tween scale past 1 (`1.15`), then settle to 1.

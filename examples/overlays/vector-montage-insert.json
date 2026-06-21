@@ -1,0 +1,61 @@
+{
+  "reframeOverlay": 1,
+  "name": "vector-montage-insert",
+  "target": "vector-montage",
+  "insertNodes": [
+    {
+      "after": "shot-2",
+      "node": {
+        "type": "group",
+        "id": "shot-x",
+        "props": { "x": 960, "y": 540, "opacity": 0, "scale": 1 },
+        "children": [
+          {
+            "type": "rect",
+            "id": "shot-x-rect",
+            "props": {
+              "x": 0, "y": 0, "width": 1920, "height": 1080, "anchor": "center",
+              "fill": { "kind": "linear", "angle": 60, "stops": [
+                { "offset": 0, "color": "#46E5A0" },
+                { "offset": 1, "color": "#1E7F5C" }
+              ] }
+            }
+          },
+          {
+            "type": "text",
+            "id": "shot-x-title",
+            "props": {
+              "x": 0, "y": 0, "anchor": "center", "content": "INSERTED",
+              "fontFamily": "Inter", "fontSize": 200, "fontWeight": 800,
+              "fill": "#FFFFFF", "letterSpacing": 6
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "insertTimeline": [
+    {
+      "into": "montage",
+      "after": "shot-2",
+      "step": {
+        "kind": "beat",
+        "name": "shot-x",
+        "parallel": true,
+        "gap": -0.6,
+        "nodes": ["shot-x"],
+        "children": [
+          { "kind": "tween", "target": "shot-x", "props": { "opacity": 1 }, "duration": 0.6, "ease": "linear", "label": "shot-x-in" },
+          { "kind": "tween", "target": "shot-x", "props": { "scale": 1.06 }, "duration": 2.6, "ease": "easeInOutQuad", "label": "shot-x-kb" },
+          {
+            "kind": "seq",
+            "children": [
+              { "kind": "wait", "duration": 2.0 },
+              { "kind": "tween", "target": "shot-x", "props": { "opacity": 0 }, "duration": 0.6, "ease": "linear", "label": "cross-x" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

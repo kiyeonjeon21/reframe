@@ -1,0 +1,68 @@
+---
+title: Programmatic API
+description: "Load, validate, and check a scene in-process — the importable surface under the CLI."
+---
+
+The CLI is a thin shell over a server-side, importable API. A backend can do NL → eDSL → IR → (preview + diff) without shelling out or re-implementing the evaluator. Three subpath exports of the `reframe-video` npm package:
+
+| import | what |
+|---|---|
+| `reframe-video` | the core eDSL + IR — `scene`, `compileScene`, `composeScene`, `evaluate`, `sceneManifest`, `lintScene`, `validateScene` |
+| `reframe-video/compile` | load + validate + determinism — `loadScene`, `loadSceneFromCode`, `loadModule`, `checkDeterminism`, `SceneLoadError`, `ValidationIssue` |
+| `reframe-video/renderer` | `DisplayList` → Canvas 2D — `renderFrame`, `drawDisplayList`, `ImageRegistry`, `VideoRegistry`, `coverRect` |
+
+<Note>
+`reframe-video/compile` executes the scene module in-process. Treat untrusted or model-authored source as code: bound it with a timeout and run it where a misbehaving module can't do harm. True sandboxing is a separate concern.
+</Note>
+
+## Load & validate a scene
+
+```ts
+import { loadScene, loadSceneFromCode, SceneLoadError } from "reframe-video/compile";
+
+try {
+  const compiled = await loadScene("scene.ts");        // bundle + validate → CompiledScene
+  // or: await loadSceneFromCode(sourceString)          // no file on disk
+} catch (err) {
+  if (err instanceof SceneLoadError) {
+    err.kind;     // "bundle" | "eval" | "validation" — which stage failed
+    err.issues;   // ValidationIssue[] on a validation failure
+  }
+}
+```
+
+A `ValidationIssue` is structured, not prose — so a UI can point at the exact broken node:
+
+```ts
+interface ValidationIssue {
+  code: string;     // stable category, e.g. "unknown-blend", "duplicate-node-id"
+  path: string;     // locator, e.g. "nodes.box", "timeline.beat(intro)[0]", "camera.zoom"
+  message: string;  // the human-readable line
+}
+```
+
+The CLI mirrors this: `reframe compile --json` returns `{ ok: false, error, kind, issues }` on failure.
+
+## Check determinism
+
+```ts
+import { checkDeterminism } from "reframe-video/compile";
+
+const { deterministic, findings } = await checkDeterminism("scene.ts");
+// compiles the source twice and diffs the IR; `findings` pins the first
+// differing address when a Math.random() / Date leaked into a prop.
+```
+
+This is what `reframe lint` runs for the source-purity half of its gate.
+
+## Render a frame
+
+```ts
+import { renderFrame } from "reframe-video/renderer";
+import { compileScene, evaluate } from "reframe-video";
+
+const ctx = canvas.getContext("2d")!;        // any Canvas 2D context
+renderFrame(ctx, compiled, t);                // draw the scene at time t
+```
+
+`renderFrame` evaluates the compiled scene at `t` and paints the resulting `DisplayList`; pass an `ImageRegistry` / `VideoRegistry` to supply raster sources for `image` / `video` nodes. This is the same path the live browser preview uses.

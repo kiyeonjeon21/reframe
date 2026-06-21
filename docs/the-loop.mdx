@@ -15,7 +15,7 @@ render: deterministic mp4 (same input → byte-identical frames)   ◀── ove
                                                                    regenerates the base
 ```
 
-Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks, no randomness without a seed, so scrubbing and distributed rendering come for free.
+Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks, no randomness without a seed, so scrubbing and distributed rendering come for free. `reframe lint` *enforces* it: the scene is compiled twice and any IR that differs (a `Math.random()` or `Date` baked into a prop) is flagged, so a scene that would render differently each time fails the gate before you ship it.
 
 ## How edits survive regeneration
 
@@ -25,6 +25,25 @@ Overlays address the scene by **node id, state name, and timeline label** — ne
 2. Contract broken → loud orphan report.
 3. Never: silent edit loss, or a render failure caused by base drift.
 
+## Restructure, not just re-skin
+
+An overlay isn't limited to patching props and timing — it can change the **structure** of the cut, keyed by the same stable addresses, and those edits survive regeneration too:
+
+- **Reorder** a beat — patch `timeline.<beat>.order`; beats move as whole units, so child labels and any edits on them ride along.
+- **Remove** a beat — `removeTimeline: ["shot-3"]` splices it out by label; later steps ripple up.
+- **Insert** a whole new unit — `insertNodes` adds the node tree and `insertTimeline: { into: "montage", after: "shot-2", step }` splices its beat into a named parent.
+
+A montage is built so each shot is the self-contained beat `shot-${i}`, so an overlay can drop, reorder, or splice in a card without touching the base. Try it on the pure-vector demo (no assets needed):
+
+```bash
+reframe verify-overlay examples/scenes/vector-montage.ts \
+  examples/overlays/vector-montage-restructure.json   # 4 applied, 0 orphaned
+reframe render examples/scenes/vector-montage.ts \
+  --overlay examples/overlays/vector-montage-insert.json   # a new card spliced into the cut
+```
+
+See the [regeneration contract](/guides/regen-contract) for the full structural-edit vocabulary and overlay JSON schema.
+
 ![The preview editor: knobs write into a non-destructive overlay](/assets/preview-editor.png)
 
 ## Address-keyed everything
@@ -33,11 +52,11 @@ The same stable-address namespace powers more than hand edits:
 
 - **Batch**: every data row is an overlay. Row keys are addresses (`nodes.name.content`, `timeline.enter.duration`) — N personalized deterministic videos from one template, in parallel.
 - **Sound**: `audio.cues` anchor to timeline labels, so retime a step (or regenerate the scene) and the sound design moves with it.
-- **Tooling**: `reframe manifest` dumps a scene's editable surface; `reframe verify-overlay` proves an overlay still applies after a regen; `reframe lint` flags motion that has no stable address.
+- **Tooling**: `reframe manifest` dumps a scene's editable surface; `reframe verify-overlay` proves an overlay still applies after a regen; `reframe lint` flags motion that has no stable address *and* verifies the scene is deterministic. See the [CLI reference](/cli-reference) for the full command surface and the [programmatic API](/api) to embed it.
 
 ## Address it before you render
 
-Because the scene is data, structure validates **before** any pixels — wrong props, unknown labels, off-frame addresses surface as actionable errors, and motion is computable straight from the IR.
+Because the scene is data, structure validates **before** any pixels — wrong props, unknown labels, off-frame addresses surface as actionable errors, and motion is computable straight from the IR. The errors are structured, not prose: `reframe compile --json` returns `{ ok: false, kind, issues: [{ code, path, message }] }`, so an agent or a UI can point at the exact broken node.
 
 <Card title="See it survive" icon="arrows-rotate" href="/guides/regen-contract">
   The regeneration contract — the exact rules an AI follows so edits reapply.
