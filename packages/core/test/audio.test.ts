@@ -103,6 +103,42 @@ describe("resolveAudioPlan", () => {
   });
 });
 
+describe("narration", () => {
+  it("resolves a synthesized line to a label-anchored file cue with a real duck window", () => {
+    const plan = resolveAudioPlan(
+      base({
+        narration: [{ at: "move", text: "hello", file: "t-vo/move.wav", duration: 0.8 }],
+      }),
+    )!;
+    expect(plan.cues).toHaveLength(1);
+    expect(plan.cues[0]).toMatchObject({
+      t: 0.5,
+      gain: 1.15,
+      duration: 0.8,
+      source: { kind: "file", path: "t-vo/move.wav" },
+    });
+    // the bed ducks under the whole utterance, not the 0.4s file default
+    expect(plan.duckWindows).toEqual([{ t0: 0.5, t1: 1.3 }]);
+  });
+
+  it("warns and drops an un-synthesized line (no file yet)", () => {
+    const plan = resolveAudioPlan(base({ narration: [{ at: "fade", text: "not yet" }] }))!;
+    expect(plan).not.toBeNull();
+    expect(plan.cues).toEqual([]);
+    expect(plan.warnings.some((w) => w.includes('narration "fade" not synthesized'))).toBe(true);
+  });
+
+  it("coexists with cues and sorts by time", () => {
+    const plan = resolveAudioPlan(
+      base({
+        cues: [{ at: "tail", sfx: "pop" }],
+        narration: [{ at: "lead", text: "intro", file: "t-vo/lead.wav", duration: 0.4 }],
+      }),
+    )!;
+    expect(plan.cues.map((c) => c.t)).toEqual([0, 2.0]);
+  });
+});
+
 describe("clip audio (video nodes)", () => {
   const vscene = (props: Record<string, unknown>, audio?: AudioIR) =>
     compileScene(
@@ -164,5 +200,17 @@ describe("audio validation", () => {
     expect(() => make({ cues: [{ at: "w" }] })).toThrowError(/exactly one of "sfx" or "file"/);
     expect(() => make({ cues: [{ at: "w", sfx: "pop", file: "x.wav" }] })).toThrowError(/exactly one/);
     expect(() => make({ cues: [{ at: "w", sfx: "kaboom" as never }] })).toThrowError(/unknown sfx "kaboom"/);
+  });
+
+  it("validates narration: known label, non-empty text, positive speed", () => {
+    expect(() => make({ narration: [{ at: "nope", text: "hi" }] })).toThrowError(
+      /unknown timeline label "nope"/,
+    );
+    expect(() => make({ narration: [{ at: "w", text: "  " }] })).toThrowError(
+      /"text" is required and must be non-empty/,
+    );
+    expect(() => make({ narration: [{ at: "w", text: "hi", speed: 0 }] })).toThrowError(
+      /speed must be > 0/,
+    );
   });
 });

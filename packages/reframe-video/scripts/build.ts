@@ -36,6 +36,7 @@ const nodeBundles: [entry: string, out: string][] = [
   ["packages/render-cli/src/labels.ts", "labels.js"],
   ["packages/render-cli/src/compile.ts", "compile.js"],
   ["packages/render-cli/src/assemble.ts", "assemble.js"],
+  ["packages/render-cli/src/narrate.ts", "narrate.js"],
   ["packages/render-cli/src/manifest.ts", "manifest.js"],
   ["packages/render-cli/src/lint.ts", "lint.js"],
   ["packages/render-cli/src/verifyOverlay.ts", "verifyOverlay.js"],
@@ -175,6 +176,9 @@ if (!/from\s*["']reframe-video["']/.test(rcJs)) throw new Error("renderer-canvas
 // --- assets & guides -------------------------------------------------------
 await cp(join(REPO, "assets", "fonts"), join(PKG, "assets", "fonts"), { recursive: true });
 await cp(join(REPO, "assets", "sfx"), join(PKG, "assets", "sfx"), { recursive: true });
+// the Kokoro TTS sidecar ships beside dist/narrate.js (narrate.ts resolves it via
+// `new URL("./narrate.py", import.meta.url)`).
+await cp(join(REPO, "packages/render-cli/src/narrate.py"), join(PKG, "dist", "narrate.py"));
 await mkdir(join(PKG, "guides"), { recursive: true });
 // Guides ship flat under guides/; sources are the authoring docs under docs/.
 // Keep this set in sync with the GUIDE map in render-cli/src/reframe.ts.

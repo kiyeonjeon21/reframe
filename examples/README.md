@@ -1,6 +1,6 @@
 # Examples
 
-67 curated scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
+68 curated scenes, one per `.ts` file in [`scenes/`](scenes). Each is a single, self-contained, dependency-free document — render any of them:
 
 ```bash
 pnpm reframe render examples/scenes/<scene>.ts        # in this repo
@@ -90,6 +90,7 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 |---|---|
 | `audio-visualizer` | "THE DROP": radial spectrum bars, a pulsing core, a particle burst. |
 | `auto-foley-demo` | `autoFoley` scoring motion — whoosh / thud / pop following the tweens. |
+| `narrated-demo` | Scene-fitted Kokoro voiceover: `audio.narration` from a sibling `script.json`, each line auto-fitted to its slot by `reframe narrate`, bed ducking under it. |
 | `sample-showcase` | The CC0 sample library: keypress / footstep / click / confirm / UI sounds. |
 | `sfx-compare` | Synth vs sample A/B for the six original names. |
 | `sfx-showcase` | The procedural SFX palette, per-cue seeded variation as a little melody. |

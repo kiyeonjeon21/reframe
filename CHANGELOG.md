@@ -8,6 +8,27 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.44] - 2026-06-21
+
+### Added
+
+#### Scene-fitted Kokoro narration (`reframe narrate` + `audio.narration`)
+
+- New IR field **`AudioIR.narration`** — spoken voiceover lines (`{ at, text, voice? }`)
+  authored as a sibling `<scene>-vo/script.json` the scene imports. Each line resolves to a
+  **label-anchored `file` cue** (so VO survives retiming/regen), with a baked `duration`
+  sizing the bed's duck window. Additive + golden-safe (no narration → byte-identical plan).
+- New command **`reframe narrate <scene> [--voice] [--max-speed] [--dry-run]`** — reads the
+  compiled **label clock**, synthesizes each line with a Kokoro python sidecar (`narrate.py`),
+  and **auto-fits** its speech rate to the slot between its anchor and the next line (bounded;
+  warns if even max speed overruns). Bakes `file`/`voice`/`speed`/`duration` back into
+  `script.json` (like `assemble` bakes ffprobe numbers). `--dry-run` prints the fit table from
+  a length estimate with no synthesis.
+- Kokoro is an **optional dependency** (`pip install kokoro` + espeak-ng), preflighted like
+  ffmpeg/chromium. The `.wav` are external assets (same-machine, not golden) — the determinism
+  contract still covers the AudioPlan, not the synthesized audio bytes.
+- Example `examples/scenes/narrated-demo.ts` (+ `narrated-demo-vo/script.json`).
+
 ## [0.6.43] - 2026-06-21
 
 ### Added

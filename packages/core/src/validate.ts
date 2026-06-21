@@ -332,6 +332,25 @@ export function validateScene(ir: SceneIR): void {
       add("audio-range", cp, `${cp}: pan must be in [-1, 1] (-1 left … +1 right)`);
     }
   }
+  for (const [i, line] of (ir.audio?.narration ?? []).entries()) {
+    const np = `audio.narration[${i}]`;
+    if (typeof line.at === "string" && !labels.has(line.at)) {
+      add("unknown-timeline-label", np, `${np}: unknown timeline label "${line.at}" — known labels: ${[...labels].join(", ") || "(none)"}`);
+    }
+    if (typeof line.at === "number" && line.at < 0) {
+      add("bad-duration", np, `${np}: "at" must be >= 0`);
+    }
+    if (typeof line.text !== "string" || line.text.trim() === "") {
+      add("narration-text", np, `${np}: "text" is required and must be non-empty`);
+    }
+    if (line.gain !== undefined && line.gain < 0) {
+      add("audio-range", np, `${np}: gain must be >= 0`);
+    }
+    if (line.speed !== undefined && line.speed <= 0) {
+      add("narration-speed", np, `${np}: speed must be > 0`);
+    }
+  }
+
   const duck = ir.audio?.bgm?.duck;
   if (typeof duck === "object" && duck !== null && duck.depth !== undefined && (duck.depth < 0 || duck.depth > 1)) {
     add("audio-range", "audio.bgm.duck.depth", "audio.bgm.duck.depth must be in [0, 1]");

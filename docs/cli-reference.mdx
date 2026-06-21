@@ -15,6 +15,7 @@ Run any command with `npx reframe-video <command>` (no clone needed) or `pnpm re
 | `player <scene.ts\|.json> [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser |
 | `logo <logo.svg\|brand-slug> [--motion <preset>] [--energy n] [--seed n]` | animate a logo (or a simple-icons brand) into a sting |
 | `assemble <media...> [-o name] [--title "…"] [--bgm <synth>]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` |
+| `narrate <scene.ts\|.json> [--voice <name>] [--max-speed n] [--dry-run]` | scene-fitted Kokoro voiceover — synth each `audio.narration` line and auto-fit its rate to the slot (needs python + `kokoro`; `--dry-run` estimates without synthesis) |
 
 ## Inspect & validate
 
