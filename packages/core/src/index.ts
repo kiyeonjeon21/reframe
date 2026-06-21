@@ -25,6 +25,16 @@ export {
   type ManifestSummary,
   type LintFinding,
 } from "./manifest.js";
+export {
+  sceneGeometry,
+  hitTest,
+  textWidth,
+  type SceneGeometry,
+  type NodeGeometry,
+  type GroupGeometry,
+  type Waypoint,
+  type Bounds,
+} from "./hitTest.js";
 export { compileScene, type CompiledScene, type PropertySegment, type LabelSpan, type MotionDriver } from "./compile.js";
 export { pathPoint, pathTangentAngle, type Pt } from "./path.js";
 export { cameraTo, cameraFit, cameraMatrix, CAMERA_ID, CAMERA_PROPS } from "./camera.js";

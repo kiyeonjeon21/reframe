@@ -66,3 +66,38 @@ renderFrame(ctx, compiled, t);                // draw the scene at time t
 ```
 
 `renderFrame` evaluates the compiled scene at `t` and paints the resulting `DisplayList`; pass an `ImageRegistry` / `VideoRegistry` to supply raster sources for `image` / `video` nodes. This is the same path the live browser preview uses.
+
+## Spatial query — where things are on screen
+
+`sceneManifest` answers *what* you can edit (addresses); the spatial query answers *where* it is and *what's under a point* at time `t` — the other half an editor needs. Pure functions over the DisplayList (each op carries its source `id` + final scene-space transform), with canvas-free Inter metrics, so no canvas is required:
+
+```ts
+import { compileScene, sceneGeometry, hitTest } from "reframe-video";
+
+const g = sceneGeometry(compiled, 1.5);
+// g.nodes:   { id, corners: [x,y][], bounds: {x,y,w,h} }[]   (rotated quad + AABB, scene coords)
+// g.groups:  { id, bounds }[]                                 (union of descendants)
+// g.waypoints: { label, target, index, x, y }[]               (motionPath control points → timeline.<label>.points)
+const id = hitTest(g, 960, 540); // topmost node under the point, or null
+```
+
+On the CLI: `reframe geometry <scene> --t <sec> --json`.
+
+## Embedded editor — `player --edit`
+
+`reframe player <scene> --edit -o editor.html` builds an embedded-editor variant: no autoplay, seek-driven, exposing a live API + a host↔iframe `postMessage` channel, so a host (e.g. a desktop or web editor) can click-to-select, draw aligned handles, and preview overlay edits **without rebuilding the HTML**:
+
+```js
+// inside the player iframe:
+window.__reframe = {
+  seek(t), play(), pause(),
+  hitTest(x, y),     // → nodeId | null   (scene coords)
+  bounds(),          // → { nodes, groups, waypoints }
+  waypoints(),       // → motionPath handles
+  setOverlay(doc),   // re-compose + re-render IN-BROWSER, no reload
+};
+// host → player:  { type: "seek", t } | { type: "setOverlay", doc } | { type: "hitTest", x, y } | { type: "bounds" }
+// player → host:  { type: "ready", size } | { type: "pick", nodeId, sceneXY } | { type: "bounds", … }
+```
+
+`setOverlay(doc)` runs `composeScene(baseIR, doc)` → `compileScene` → redraw, so a dragged node or motionPath waypoint round-trips as a regen-stable overlay patch (`nodes.<id>.x`, `timeline.<label>.points`). `--edit-origin <origin>` restricts `event.origin` (default `*`).

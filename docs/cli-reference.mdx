@@ -12,7 +12,7 @@ Run any command with `npx reframe-video <command>` (no clone needed) or `pnpm re
 | `render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; composes any `--overlay` first) |
 | `batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (row keys are overlay addresses), in parallel, with a per-row report |
 | `frame <scene.ts\|.json> [--t <sec>] [--overlay f]... [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop; `--overlay` previews edits |
-| `player <scene.ts\|.json> [--overlay f]... [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser; `--overlay` previews edits |
+| `player <scene.ts\|.json> [--overlay f]... [--edit [--t <sec>]] [-o out.html]` | bundle a scene into one self-contained HTML player; `--overlay` previews edits; `--edit` builds an embedded-editor variant (`window.__reframe` + postMessage, live `setOverlay`) |
 | `logo <logo.svg\|brand-slug> [--motion <preset>] [--energy n] [--seed n]` | animate a logo (or a simple-icons brand) into a sting |
 | `assemble <media...> [-o name] [--title "…"] [--bgm <synth>]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` |
 | `narrate <scene.ts\|.json> [--voice <name>] [--max-speed n] [--dry-run]` | scene-fitted Kokoro voiceover — synth each `audio.narration` line and auto-fit its rate to the slot (needs python + `kokoro`; `--dry-run` estimates without synthesis) |
@@ -23,6 +23,7 @@ Run any command with `npx reframe-video <command>` (no clone needed) or `pnpm re
 |---|---|
 | `compile <scene.ts\|.json> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium). `--json` returns `{ ok, kind, issues }` |
 | `manifest <scene.ts\|.json> [--json]` | dump the addressable surface — every node, state, timeline label, and beat with the overlay address that reaches it |
+| `geometry <scene.ts\|.json> [--t <sec>] [--json]` | where each node + motionPath waypoint is on screen at time `t` (the spatial analog of `manifest`; pure, no chromium) — for an editor's selection outlines + handles |
 | `lint <scene.ts\|.json> [--json] [--strict]` | the studio-readiness gate — flag un-addressable motion + verify the scene is a pure function of time. `--strict` exits non-zero on findings |
 | `labels <scene.ts\|.json>` | print the compiled event clock (every timeline label → exact seconds) — the timing source for `audio.cues` |
 

@@ -50,6 +50,9 @@ const NARRATE = PACKAGED
 const MANIFEST = PACKAGED
   ? join(ROOT, "dist", "manifest.js")
   : join(ROOT, "packages", "render-cli", "src", "manifest.ts");
+const GEOMETRY = PACKAGED
+  ? join(ROOT, "dist", "geometry.js")
+  : join(ROOT, "packages", "render-cli", "src", "geometry.ts");
 const LINT = PACKAGED
   ? join(ROOT, "dist", "lint.js")
   : join(ROOT, "packages", "render-cli", "src", "lint.ts");
@@ -99,8 +102,9 @@ usage:
   ${CMD} logo <logo.svg|brand-slug> ["Name"] [--motion <preset>] [--energy 0..1] [--seed N] [-o out.mp4]
                                  animate a logo into a sting (presets: draw-bloom, punch-in,
                                  rise-settle, slide-bank, reveal-orbit, spin-forge)
-  ${CMD} player <scene.ts|.json> [--overlay <doc.json>]... [-o out.html]  bundle a scene into one self-contained HTML
-                                 player (plays live in any browser or a Claude.ai artifact; visual only; --overlay previews edits)
+  ${CMD} player <scene.ts|.json> [--overlay <doc.json>]... [--edit [--t <sec>]] [-o out.html]  bundle a scene into one
+                                 self-contained HTML player (visual only; --overlay previews edits; --edit = embedded-editor
+                                 build with window.__reframe { seek, hitTest, bounds, waypoints, setOverlay } + postMessage)
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
   ${CMD} new <scene-name>        scaffold <scene-name>.ts in your directory
   ${CMD} assemble <media...> [-o name] [--title "…"] [--bgm <synth>] [--hold s] [--seed N]
@@ -109,6 +113,7 @@ usage:
                                  scene-fitted Kokoro voiceover: synth each line, fit its rate to the slot (needs python+kokoro)
   ${CMD} labels <scene.ts|.json>  print the event clock (label → exact seconds; for sound design / timing)
   ${CMD} manifest <scene.ts|.json> [--json]  list the editable surface (node/state/label/beat/behavior addresses + patchable props)
+  ${CMD} geometry <scene.ts|.json> [--t <sec>] [--json]  where each node/waypoint is on screen at time t (the spatial analog of manifest)
   ${CMD} lint <scene.ts|.json> [--json] [--strict]  flag un-addressable motion (regen-unsafe) + an addressability summary
   ${CMD} verify-overlay <base.ts|.json> <overlay.json>... [--json]  compose an overlay onto a base, report survival (no render; non-zero exit on orphans)
   ${CMD} compose <scene.ts|.json> --overlay <doc.json>... [-o out.json] [--json]
@@ -312,6 +317,18 @@ async function main() {
       );
     }
 
+    case "geometry": {
+      // read-only spatial query (no chromium/ffmpeg). Scene + --t <sec> + --json.
+      const input = rest.find((a, i) => !a.startsWith("-") && rest[i - 1] !== "--t");
+      if (!input) fail(`geometry needs a scene file\n\n${USAGE}`);
+      const inputPath = userPath(input);
+      if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
+      const passed = rest.map((a) => (a === input ? inputPath : a));
+      process.exit(
+        await (PACKAGED ? run(process.execPath, [GEOMETRY, ...passed]) : run("npx", ["tsx", GEOMETRY, ...passed])),
+      );
+    }
+
     case "manifest":
     case "lint": {
       // read-only introspection — no ffmpeg/chromium. Scene file + pass-through flags.
@@ -403,10 +420,14 @@ async function main() {
       if (!input || input.startsWith("-")) fail(`player needs a scene file\n\n${USAGE}`);
       const inputPath = userPath(input);
       if (!existsSync(inputPath)) fail(`no such file: ${inputPath}`);
-      // thread --overlay(s) through (resolved); scene + out are positional
+      // thread --overlay(s) (resolved) + edit-mode flags through; scene + out are positional
       const overlayArgs: string[] = [];
       for (let i = 1; i < rest.length; i++) {
-        if (rest[i] === "--overlay" && rest[i + 1]) overlayArgs.push("--overlay", userPath(rest[++i]!));
+        const a = rest[i]!;
+        if (a === "--overlay" && rest[i + 1]) overlayArgs.push("--overlay", userPath(rest[++i]!));
+        else if (a === "--edit") overlayArgs.push("--edit");
+        else if (a === "--t" && rest[i + 1]) overlayArgs.push("--t", rest[++i]!);
+        else if (a === "--edit-origin" && rest[i + 1]) overlayArgs.push("--edit-origin", rest[++i]!);
       }
       const oIdx = rest.indexOf("-o");
       const outBase = PACKAGED ? join(USER_CWD, "out") : join(ROOT, "out");

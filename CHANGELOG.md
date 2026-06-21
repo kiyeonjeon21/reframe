@@ -8,6 +8,27 @@ versions may change them.
 
 ## [Unreleased]
 
+## [0.6.46] - 2026-06-21
+
+### Added
+
+#### Spatial query (`sceneGeometry`/`hitTest`) + embedded-editor `player --edit`
+
+- New core **spatial query** — the spatial analog of `sceneManifest`: where `manifest` answers
+  "what can I edit?" (addresses), `sceneGeometry(compiled, t)` answers "where is it on screen,
+  and what's under a point?". Returns each node's rotated `corners` + AABB `bounds`, group
+  bounds (union of descendants), and motionPath `waypoints` (→ `timeline.<label>.points`).
+  `hitTest(geometry, x, y)` → the topmost node at a point. Pure functions over the DisplayList
+  (each op already carries its source `id` + final scene-space `transform`) + canvas-free Inter
+  advances (`textWidth`) — **no `evaluate`/DisplayOp change, goldens byte-identical**. Exported
+  from `@reframe/core`; CLI `reframe geometry <scene> [--t <sec>] [--json]`.
+- **`player --edit`** — an embedded-editor build of the HTML player: no autoplay, seek-driven,
+  exposing `window.__reframe = { seek, hitTest, bounds, waypoints, setOverlay, play, pause }` +
+  a host↔iframe **postMessage** channel. `setOverlay(doc)` re-runs `composeScene`+`compileScene`
+  +redraw **in-browser, no reload** — the live overlay-preview loop, so a dragged node/waypoint
+  round-trips as a regen-stable overlay patch. `--edit-origin` gates `event.origin`. The default
+  (no `--edit`) build is byte-identical. Closes #81.
+
 ## [0.6.45] - 2026-06-21
 
 ### Added
