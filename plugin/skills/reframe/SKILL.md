@@ -86,6 +86,13 @@ Addressability tooling (read-only, no render — use it when editing):
   a base that has overlays, run this to confirm every edit still applies (it
   reports orphans and exits non-zero if any address broke). The regen-survival
   check, without a full render.
+- `npx -y reframe-video compose <scene> --overlay <doc>... [-o out.json]` — emit
+  the **composed SceneIR** (base + overlay applied), no render. The IR half of
+  composition (verify-overlay is its report half); base may be `.ts` or `.json`.
+  stdout is a bare scene you can pipe into `player`/`frame` for an instant overlay
+  preview; orphans report on stderr, non-gating. `--overlay` also works directly on
+  `frame` and `player` (compose-then-preview in one step) — the fast way to SHOW the
+  user an edit without an mp4. (`compile` does NOT compose — it errors and points here.)
 
 ## Other capabilities
 
