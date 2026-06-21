@@ -113,6 +113,17 @@ Addressability tooling (read-only, no render — use it when editing):
   retiming and regeneration. Procedural sfx (whoosh/pop/tick/rise/shimmer/
   thud) plus bundled CC0 samples (mechanical keypresses, clicks). The guide's
   Audio section has the schema.
+- **Voiceover (scene-fitted)**: author narration as a sibling
+  `<scene>-vo/script.json` of `{ "at": "<label>", "text": "…" }` lines, import it
+  and spread into `audio.narration`. Then `npx -y reframe-video narrate scene.ts`
+  reads the label clock, synthesizes each line with Kokoro TTS, and **auto-fits**
+  its speech rate to the slot before the next line (warns if a line is too long —
+  shorten it or retime the beat); `--dry-run` prints the fit table with no
+  synthesis. It bakes `file`/`speed`/`duration` back into the JSON, so each line
+  plays as a label-anchored cue that survives retiming/regen, the bed ducking
+  under it. Needs python + `kokoro` (optional, preflighted); the `.wav` are
+  external assets — commit `script.json` + wavs together. See
+  `examples/scenes/narrated-demo.ts`.
 - **Motion check**: `npx -y reframe-video motion out/<name>.mp4` prints a
   calibrated motion profile (speeds, static fraction, discontinuities) —
   useful to verify a vague request like "make it more dynamic" objectively.
