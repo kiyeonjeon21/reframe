@@ -12,6 +12,7 @@
 import { compileScene } from "./compile.js";
 import type { BehaviorIR, Ease, NodeIR, PropValue, SceneIR, TimelineIR } from "./ir.js";
 import { PROPS_BY_TYPE, validateScene } from "./validate.js";
+import { brand, getDeepPath, setDeepPath } from "./theme.js";
 
 export interface OverlayDoc {
   reframeOverlay: 1;
@@ -20,6 +21,13 @@ export interface OverlayDoc {
   /** Scene id this overlay was authored against — mismatch is a warning. */
   target?: string;
   scene?: { background?: string; duration?: number; fps?: number };
+  /**
+   * Design-token patch: dotted token path -> value (e.g. `{ "color.accent": "#1E90FF" }`).
+   * Re-skins the scene's `design` so every `token()` ref resolves to the new value on
+   * recompile. Addressed by token NAME, so it survives an AI regen of the base; an
+   * unknown token path is reported as an orphan.
+   */
+  design?: Record<string, PropValue>;
   /** nodeId -> prop -> value; null deletes the prop key (USD "block"). */
   nodes?: Record<string, Record<string, PropValue | null>>;
   /** stateName -> nodeId -> prop -> value/null. */
@@ -225,6 +233,18 @@ function applyOverlay(
         (ir as unknown as Record<string, unknown>)[key] = value;
         applied(`scene.${key}`, "set");
       }
+    }
+  }
+
+  // --- design tokens (validated against the brand shape) ---
+  if (overlay.design) {
+    for (const [path, value] of Object.entries(overlay.design)) {
+      if (getDeepPath(brand, path) === undefined) {
+        orphan(`design.${path}`, `"${path}" is not a known design token`);
+        continue;
+      }
+      setDeepPath((ir.design ??= {}) as Record<string, unknown>, path, value);
+      applied(`design.${path}`, "set");
     }
   }
 

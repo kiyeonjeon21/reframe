@@ -13,6 +13,7 @@ import type { CompiledScene } from "./compile.js";
 import type { NodeIR, Size, TimelineIR } from "./ir.js";
 import { TIMELINE_PATCHABLE } from "./compose.js";
 import { PROPS_BY_TYPE } from "./validate.js";
+import { brand, theme, type Theme } from "./theme.js";
 
 export interface NodeAddress {
   id: string;
@@ -71,6 +72,13 @@ export interface ManifestSummary {
   motionAddressableRatio: number;
 }
 
+/** A patchable design token: its dotted path, current effective value, and overlay address. */
+export interface DesignTokenAddress {
+  path: string; // e.g. "color.accent"
+  value: string | number;
+  address: string; // `design.<path>`
+}
+
 export interface SceneManifest {
   scene: { id: string; duration: number; fps: number; size: Size; background?: string };
   nodes: NodeAddress[];
@@ -78,7 +86,26 @@ export interface SceneManifest {
   timeline: TimelineAddress[];
   beats: BeatAddress[];
   behaviors: BehaviorAddress[];
+  /** Patchable design tokens (the scene's `design` merged onto the house brand). */
+  design: DesignTokenAddress[];
   summary: ManifestSummary;
+}
+
+/** Dotted paths to every scalar (string/number) leaf in a theme — the patchable token set. */
+function designTokenAddresses(effective: Theme): DesignTokenAddress[] {
+  const out: DesignTokenAddress[] = [];
+  const walk = (obj: Record<string, unknown>, prefix: string) => {
+    for (const [k, v] of Object.entries(obj)) {
+      const path = prefix ? `${prefix}.${k}` : k;
+      if (typeof v === "string" || typeof v === "number") {
+        out.push({ path, value: v, address: `design.${path}` });
+      } else if (v && typeof v === "object" && !Array.isArray(v)) {
+        walk(v as Record<string, unknown>, path);
+      }
+    }
+  };
+  walk(effective as unknown as Record<string, unknown>, "");
+  return out;
 }
 
 export interface LintFinding {
@@ -209,6 +236,7 @@ export function sceneManifest(compiled: CompiledScene): SceneManifest {
     timeline,
     beats,
     behaviors,
+    design: designTokenAddresses(ir.design ? theme(ir.design) : brand),
     summary: {
       nodeCount: nodes.length,
       labeledSteps: timeline.length + beats.length,
