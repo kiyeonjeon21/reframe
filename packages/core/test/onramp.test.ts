@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { compileScene } from "../src/compile.js";
-import { scene, text, tween, seq } from "../src/dsl.js";
+import { scene, text, tween } from "../src/dsl.js";
 import { evaluate } from "../src/evaluate.js";
 import { row, column, grid } from "../src/layout.js";
 

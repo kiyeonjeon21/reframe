@@ -538,7 +538,10 @@ function updateTkPlayhead() {
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string>, ...kids: (HTMLElement | string)[]): HTMLElementTagNameMap[K] {
   const n = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) k === "class" ? (n.className = v) : n.setAttribute(k, v);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else n.setAttribute(k, v);
+  }
   n.append(...kids);
   return n;
 }

@@ -9,7 +9,7 @@
 // for the literal render round-trip). Pure / deterministic. Plays live in player too.
 
 import {
-  scene, group, ellipse, rect, text, path, cursor, cursorTo, cursorClick,
+  scene, group, ellipse, rect, text, cursor, cursorTo, cursorClick,
   seq, par, tween, wait, oscillate, glow,
   type NodeIR,
 } from "@reframe/core";

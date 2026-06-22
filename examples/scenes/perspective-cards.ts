@@ -7,7 +7,7 @@
 // and a DOLLY (animate camera.perspective to flatten the field). mp4 + live in player.
 
 import {
-  scene, group, rect, text,
+  scene, rect, text,
   seq, par, stagger, tween, wait, cameraTo, splitText, textIn,
   linearGradient,
   type NodeIR,

@@ -7,7 +7,7 @@
 
 import {
   scene, rect, text, group,
-  seq, par, tween, wait,
+  seq, tween, wait,
   type NodeIR,
 } from "@reframe/core";
 

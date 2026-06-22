@@ -1,0 +1,8 @@
+node_modules
+**/dist
+out
+**/*.d.ts
+packages/core/src/textMetrics.ts
+packages/reframe-video/preview
+benchmark
+pnpm-lock.yaml

@@ -43,7 +43,7 @@ function locate(segCount: number, u: number): { i: number; t: number } {
   return { i, t: scaled - i };
 }
 
-/** The four control points for the segment starting at index i (clamped/​wrapped ends). */
+/** The four control points for the segment starting at index i (clamped/wrapped ends). */
 function controls(points: Pt[], closed: boolean, i: number): [Pt, Pt, Pt, Pt] {
   const n = points.length;
   const at = (k: number): Pt => {

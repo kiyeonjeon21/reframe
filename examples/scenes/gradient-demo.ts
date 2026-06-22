@@ -11,7 +11,7 @@ import {
 } from "@reframe/core";
 
 const W = 1920, H = 1080;
-const BG = "#0A0C14", CARD = "#11141E", FG = "#EDEFF5", DIM = "#7C859B";
+const BG = "#0A0C14", FG = "#EDEFF5", DIM = "#7C859B";
 
 const STAR = "M0 -150 L35 -49 L143 -46 L57 19 L88 121 L0 60 L-88 121 L-57 19 L-143 -46 L-35 -49 Z";
 

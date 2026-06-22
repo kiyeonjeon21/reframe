@@ -16,7 +16,7 @@
   "dependencies": {
     "@reframe/core": "workspace:*",
     "@reframe/renderer-canvas": "workspace:*",
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.28.1",
     "playwright": "^1.60.0",
     "tsx": "^4.19.0"
   },

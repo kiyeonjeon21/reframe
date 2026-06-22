@@ -1,6 +1,5 @@
 import {
   scene,
-  group,
   rect,
   text,
   seq,

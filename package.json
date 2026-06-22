@@ -5,6 +5,9 @@
   "scripts": {
     "reframe": "tsx packages/render-cli/src/reframe.ts",
     "typecheck": "pnpm -r --no-bail exec tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "preview": "pnpm --filter @reframe/preview dev",
     "demo:overlay": "npx tsx examples/scripts/demo-edit-survival.ts",
@@ -12,8 +15,14 @@
     "clean": "mkdir -p out/_keep && find out -mindepth 1 -maxdepth 1 ! -name _keep -exec rm -rf {} +"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0",
+    "typescript-eslint": "^8.61.1",
     "vitest": "^3.0.0"
   }
 }

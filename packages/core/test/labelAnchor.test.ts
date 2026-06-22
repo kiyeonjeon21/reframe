@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { scene, rect, seq, par, beat, tween, wait } from "../src/dsl.js";
 import { compileScene } from "../src/compile.js";
-import { validateScene, SceneValidationError } from "../src/validate.js";
+import { SceneValidationError } from "../src/validate.js";
 
 // A montage-like base: a sequential "track" with labeled steps, plus an overlay
 // layer (a title beat) anchored to one of those labels via `at: "<label>"`.

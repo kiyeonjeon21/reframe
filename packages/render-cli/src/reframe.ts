@@ -243,6 +243,9 @@ export default scene({
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
 
+  // Every case ends by calling process.exit()/fail() (both never-return), so there
+  // is no real fall-through — but no-fallthrough is syntactic and can't see that.
+  /* eslint-disable no-fallthrough */
   switch (command) {
     case "render": {
       const input = rest[0];

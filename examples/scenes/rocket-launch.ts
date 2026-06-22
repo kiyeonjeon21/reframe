@@ -1,6 +1,6 @@
 import {
   scene, group, rect, ellipse, path, text,
-  seq, par, stagger, beat, tween, wait, oscillate, wiggle, cameraTo, motionPath,
+  seq, par, beat, tween, wait, oscillate, wiggle, cameraTo, motionPath,
   linearGradient, radialGradient,
   type NodeIR, type BehaviorIR,
 } from "@reframe/core";
