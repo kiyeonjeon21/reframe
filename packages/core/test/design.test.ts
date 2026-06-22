@@ -126,7 +126,7 @@ describe("gradient-stop tokens", () => {
       scene(base([gbox(linearGradient([token("color.accent"), "#ffffff"]))], { color: { accent: "#1E90FF" } })),
     );
     const op = evaluate(c, 0).find((o) => o.id === "g");
-    const fill = op?.fill;
+    const fill = op && "fill" in op ? op.fill : undefined;
     expect(isGradient(fill) ? fill.stops[0]?.color : undefined).toBe("#1E90FF");
   });
 
@@ -134,7 +134,10 @@ describe("gradient-stop tokens", () => {
     const grad = linearGradient(["#aaaaaa", "#bbbbbb"]);
     const c = compileScene(scene(base([gbox(grad)])));
     const op = evaluate(c, 0).find((o) => o.id === "g");
-    expect(op?.fill).toBe(c.nodeById.get("g")?.props.fill); // referential equality preserved
+    const evFill = op && "fill" in op ? op.fill : undefined;
+    const node = c.nodeById.get("g");
+    const srcFill = node && "fill" in node.props ? node.props.fill : undefined;
+    expect(evFill).toBe(srcFill); // referential equality preserved
   });
 });
 
