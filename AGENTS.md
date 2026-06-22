@@ -161,15 +161,16 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
 - Design tokens / brand (`packages/core/src/theme.ts`, `DESIGN.md`) — the house brand as code:
   `brand` (the DESIGN.md values) + `theme(overrides)` (deep-merge a reusable brand kit). `brand.color.accent`
   bakes the literal at author time; `token("color.accent")` is a DEFERRED ref the compiler resolves
-  against the scene's `design?: DeepPartial<Theme>` field (falling back to `brand`), scoped to color
-  props (`fill`/`stroke`/`shadowColor`). Golden-safe via `CompiledScene.hasDesign` (no `design`/`$ref`
+  against the scene's `design?: DeepPartial<Theme>` field (falling back to `brand`). Resolves on color
+  props (`fill`/`stroke`/`shadowColor`), the scene `background`, and gradient stops (the last in
+  `evaluate` via `CompiledScene.effectiveTheme`/`.background`). Golden-safe via `CompiledScene.hasDesign` (no `design`/`$ref`
   → byte-identical; resolution only touches `$`-strings on color props, so a text `content:"$5M"` is
   untouched). Overlay-addressable as `design.<token.path>` (`compose.ts`, validated against the brand
   shape, regen-stable by name, orphan-clean); `sceneManifest().design` surfaces them. Re-skin via
   `render/frame/player --theme brand.json` (a nested partial theme, flattened in `render-cli/overlay.ts`
   `loadThemeDoc`) or a `batch` `design.<token.path>` column (one mp4 per brand). Demo
-  `examples/scenes/themed-card.ts` + `examples/data/themed-card-brands.json`. Numeric/type/gradient-stop
-  tokens + scene-`background` tokens are a later phase.
+  `examples/scenes/themed-card.ts` + `examples/data/themed-card-brands.json`. Numeric/type tokens
+  (IR type-widening) are a later phase.
 - Photo/video montage (`packages/core/src/montage.ts`) — `photoMontage(shots, opts)` /
   `videoMontage` (same generator) turn a list of shots — images AND video clips, mixed
   (video detected by src extension, plays as a clip for its `hold`, audio muted by default

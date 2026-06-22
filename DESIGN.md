@@ -89,8 +89,8 @@ rect({ id: "bar", fill: token("color.accent") });
 Then re-skin with no edit to the scene: `reframe frame scene.ts --theme brand.json` (a brand kit
 is a nested partial theme), or a `batch` data file with a `design.<token.path>` column (one mp4
 per brand). An overlay can patch `design.color.accent` directly, and the re-skin survives an AI
-regen of the base (the address is the token name). Color props resolve tokens today; numeric and
-type tokens are a later phase.
+regen of the base (the address is the token name). Tokens resolve on color props, the scene
+background, and gradient stops; numeric and type tokens are a later phase.
 
 ## Brand
 
