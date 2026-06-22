@@ -5,3 +5,7 @@ packages:
   - benchmark
 allowBuilds:
   esbuild: true
+# Force transitive esbuild (pulled by tsx/vitest dev tooling) up past the
+# dev-server advisory GHSA-g7r4-m6w7-qqqr. Our direct deps already pin ^0.28.1.
+overrides:
+  esbuild@<0.28.1: ">=0.28.1"
