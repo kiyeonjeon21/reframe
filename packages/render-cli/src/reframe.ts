@@ -97,12 +97,12 @@ const PLUGIN_DIR = PACKAGED ? ROOT : join(ROOT, "plugin");
 const USAGE = `reframe — declarative motion graphics
 
 usage:
-  ${CMD} render <scene.ts|.json|.html> [--overlay edits.json]... [-o out.mp4] [--fps N] [--duration S] [--no-audio]
+  ${CMD} render <scene.ts|.json|.html> [--overlay edits.json]... [--theme brand.json] [-o out.mp4] [--fps N] [--duration S] [--no-audio]
   ${CMD} batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
   ${CMD} logo <logo.svg|brand-slug> ["Name"] [--motion <preset>] [--energy 0..1] [--seed N] [-o out.mp4]
                                  animate a logo into a sting (presets: draw-bloom, punch-in,
                                  rise-settle, slide-bank, reveal-orbit, spin-forge)
-  ${CMD} player <scene.ts|.json> [--overlay <doc.json>]... [--edit [--t <sec>]] [-o out.html]  bundle a scene into one
+  ${CMD} player <scene.ts|.json> [--overlay <doc.json>]... [--theme brand.json] [--edit [--t <sec>]] [-o out.html]  bundle a scene into one
                                  self-contained HTML player (visual only; --overlay previews edits; --edit = embedded-editor
                                  build with window.__reframe { seek, hitTest, bounds, waypoints, setOverlay } + postMessage)
   ${CMD} preview                 open the scrub/edit UI (lists scenes in your directory)
@@ -120,7 +120,7 @@ usage:
                                  compose overlay(s) onto a scene → composed SceneIR (no render; feed to player/frame for live preview)
   ${CMD} compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]
                                  bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium)
-  ${CMD} frame <scene.ts|.json> [--t <sec>] [--overlay <doc.json>]... [-o out.png]  render ONE frame at time t to a PNG (no mp4; --overlay previews edits)
+  ${CMD} frame <scene.ts|.json> [--t <sec>] [--overlay <doc.json>]... [--theme brand.json] [-o out.png]  render ONE frame at time t to a PNG (no mp4; --overlay/--theme preview edits)
   ${CMD} skill [--path]          print the authoring skill (SKILL.md) for an agent; --path prints the plugin dir to load
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
@@ -277,9 +277,11 @@ async function main() {
         await mkdir(dir, { recursive: true });
         outArgs = args.map((a, i) => (i === oIdx + 1 ? join(dir, stem) : a));
       }
-      // user-relative paths for overlays and -o (idempotent on the absolute -o we just built)
+      // user-relative paths for overlays, --theme and -o (idempotent on the absolute -o we just built)
       outArgs = outArgs.map((a, i) =>
-        outArgs[i - 1] === "--overlay" || outArgs[i - 1] === "-o" ? userPath(a) : a,
+        outArgs[i - 1] === "--overlay" || outArgs[i - 1] === "--theme" || outArgs[i - 1] === "-o"
+          ? userPath(a)
+          : a,
       );
       process.exit(
         await (PACKAGED

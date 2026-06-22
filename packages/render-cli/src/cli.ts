@@ -24,6 +24,7 @@ interface Args {
   keepFrames: boolean;
   framesDir?: string;
   overlays: string[];
+  theme?: string;
   noAudio: boolean;
   /** Composition: render only this scene id, standalone. */
   scene?: string;
@@ -54,6 +55,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--keep-frames") args.keepFrames = true;
     else if (a === "--frames-dir") args.framesDir = resolve(rest[++i]!);
     else if (a === "--overlay") args.overlays.push(resolve(rest[++i]!));
+    else if (a === "--theme") args.theme = resolve(rest[++i]!);
     else if (a === "--no-audio") args.noAudio = true;
     else if (a === "--scene") args.scene = rest[++i]!;
     else {
@@ -71,8 +73,8 @@ async function main() {
   // concatenates (its own frame/temp handling), so branch before the per-scene path.
   const loaded = args.mode === "ir" ? await loadModule(args.input) : null;
   if (loaded?.kind === "composition") {
-    if (args.overlays.length > 0) {
-      console.error("note: overlays apply per-scene, not to a composition — ignored here");
+    if (args.overlays.length > 0 || args.theme) {
+      console.error("note: overlays / --theme apply per-scene, not to a composition — ignored here");
     }
     const { duration, sceneCount } = await renderComposition(loaded.ir, {
       compositionPath: args.input,
@@ -95,8 +97,8 @@ async function main() {
   let audioJob: { plan: import("@reframe/core").AudioPlan; videoOut: string } | null = null;
   if (args.mode === "ir") {
     let ir = loaded!.ir;
-    if (args.overlays.length > 0) {
-      const composed = await applyOverlays(ir, args.overlays);
+    if (args.overlays.length > 0 || args.theme) {
+      const composed = await applyOverlays(ir, args.overlays, args.theme);
       console.error(formatComposeReport(composed.report));
       ir = composed.ir;
     }

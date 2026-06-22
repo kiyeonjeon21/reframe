@@ -56,9 +56,12 @@ export function overlayFromFlat(row: FlatRow, name: string): OverlayDoc {
         );
       }
       (doc.scene ??= {})[sceneKey as "background" | "duration" | "fps"] = value as never;
+    } else if (head === "design" && parts.length >= 2) {
+      // a design-token re-skin column, e.g. "design.color.accent" -> one mp4 per brand
+      (doc.design ??= {})[parts.slice(1).join(".")] = value;
     } else {
       throw new Error(
-        `row key "${key}" is not a valid overlay address — expected nodes.<id>.<prop>, states.<state>.<id>.<prop>, timeline.<label>.<duration|ease|stagger>, or scene.<background|duration|fps>`,
+        `row key "${key}" is not a valid overlay address — expected nodes.<id>.<prop>, states.<state>.<id>.<prop>, timeline.<label>.<duration|ease|stagger>, scene.<background|duration|fps>, or design.<token.path>`,
       );
     }
   }

@@ -61,6 +61,30 @@ const myBrand = theme({ color: { accent: "#1E90FF" } });
 `brand.motion.*`, and `brand.layout.*` cover the tokens above. Referencing a token is
 byte-identical to writing the literal.
 
+### Re-skinnable scenes (`token()`)
+
+`brand.color.accent` bakes the literal at author time. For a scene you want to RE-SKIN later,
+use `token("color.accent")` on a color prop (`fill` / `stroke` / `shadowColor`) instead. It is a
+deferred reference the compiler resolves against the scene's `design` (or the house brand), so
+the same scene renders in any brand:
+
+```ts
+import { rect, token } from "@reframe/core";
+rect({ id: "bar", fill: token("color.accent") }); // resolves to the active theme
+```
+
+Re-skin without touching the scene:
+
+- one frame/render: `reframe frame scene.ts --theme brand.json` (a brand kit is a nested partial
+  theme, e.g. `{ "color": { "accent": "#1E90FF" } }`).
+- many brands at once: a `batch` data file with a `design.<token.path>` column (plus `_name`)
+  renders one mp4 per brand:
+  `[{ "_name": "ocean", "design.color.accent": "#1E90FF" }, …]` →
+  `reframe batch scene.ts brands.json`.
+
+An overlay can also patch `design.color.accent` directly, and that re-skin survives an AI regen
+of the base (the address is the token name). Only color props resolve tokens today.
+
 ## Nodes
 
 Factories return plain data. Every node needs a unique `id`.

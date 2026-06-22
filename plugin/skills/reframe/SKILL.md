@@ -26,7 +26,10 @@ runtime needs ffmpeg on PATH and a one-time `npx playwright install chromium`
    house style in the guide's **Brand / house style** section: background
    `#0A0C14`, foreground `#FFFFFF`, accent `#FF4D00` (with `#00C2A8` secondary),
    Inter, and a Balanced motion tone (`easeOutCubic`, entrances `easeOutBack`,
-   `energy: 0.5`). A user-supplied brief always overrides it.
+   `energy: 0.5`). A user-supplied brief always overrides it. If the scene needs
+   to be RE-SKINNABLE (multiple brands, or a brand kit applied later), color it
+   with `token("color.accent")` etc. on `fill`/`stroke` instead of literals, then
+   re-skin with `--theme brand.json` or a `batch` `design.<token.path>` column.
 3. Iterate on the cheap commands; full-render once at the end:
    - `npx -y reframe-video compile <name>.ts` — validate eDSL → IR in ~1s, no
      browser, no ffmpeg. Fix the classified error it prints, repeat. Catch every

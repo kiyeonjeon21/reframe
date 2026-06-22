@@ -1,0 +1,5 @@
+[
+  { "_name": "vivid", "nodes.title.content": "Vivid", "design.color.accent": "#FF3D6E", "design.color.bg": "#140A1E", "design.color.surface": "#241433" },
+  { "_name": "mono", "nodes.title.content": "Mono", "design.color.accent": "#E6E6EA", "design.color.bg": "#0C0C0E", "design.color.surface": "#1A1A1E" },
+  { "_name": "ocean", "nodes.title.content": "Ocean", "design.color.accent": "#1E90FF", "design.color.bg": "#0B1020", "design.color.surface": "#141B2E" }
+]

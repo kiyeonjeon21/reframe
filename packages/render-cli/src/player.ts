@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import type { OverlayDoc } from "@reframe/core";
 import { formatComposeReport } from "@reframe/core";
 import { loadModule } from "./loadScene.js";
-import { applyOverlays } from "./overlay.js";
+import { applyOverlays, loadThemeDoc } from "./overlay.js";
 
 const PACKAGED = process.env.REFRAME_PACKAGED === "1";
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -123,9 +123,11 @@ async function main(): Promise<void> {
   let edit = false;
   let editOrigin = "*";
   let initialT = 0;
+  let theme: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--overlay") overlays.push(resolve(argv[++i]!));
+    else if (a === "--theme") theme = resolve(argv[++i]!);
     else if (a === "--edit") edit = true;
     else if (a === "--edit-origin") editOrigin = argv[++i]!;
     else if (a === "--t") initialT = Number(argv[++i]);
@@ -133,7 +135,7 @@ async function main(): Promise<void> {
   }
   const [scenePath, outPath] = positional;
   if (!scenePath || !outPath) {
-    console.error("usage: player <scene.ts|.json> [--overlay <doc.json>]... [--edit [--t <sec>]] <out.html>");
+    console.error("usage: player <scene.ts|.json> [--overlay <doc.json>]... [--theme <brand.json>] [--edit [--t <sec>]] <out.html>");
     process.exit(2);
   }
 
@@ -145,18 +147,20 @@ async function main(): Promise<void> {
       console.error("player --edit needs a single scene (not a composition)");
       process.exit(2);
     }
-    const docs = await Promise.all(overlays.map(async (p) => JSON.parse(await readFile(p, "utf8")) as OverlayDoc));
+    const docs: OverlayDoc[] = [];
+    if (theme) docs.push(await loadThemeDoc(theme));
+    for (const p of overlays) docs.push(JSON.parse(await readFile(p, "utf8")) as OverlayDoc);
     entry = editEntry(JSON.stringify(loaded.ir), JSON.stringify(docs), initialT, JSON.stringify(editOrigin));
   } else {
     // default build: import the scene file, or inline the composed IR when --overlay is given
     let sceneSource = `import sceneIR from ${JSON.stringify(scenePath)};`;
-    if (overlays.length > 0) {
+    if (overlays.length > 0 || theme) {
       const loaded = await loadModule(scenePath);
       if (loaded.kind !== "scene") {
         console.error("player needs a single scene (not a composition)");
         process.exit(2);
       }
-      const composed = await applyOverlays(loaded.ir, overlays);
+      const composed = await applyOverlays(loaded.ir, overlays, theme);
       console.error(formatComposeReport(composed.report));
       sceneSource = `const sceneIR = ${JSON.stringify(composed.ir)};`;
     }

@@ -287,8 +287,8 @@ and `liquid-glass-nav.ts` (nav bar over a photo).
 
 | command | what it does |
 |---|---|
-| `pnpm reframe render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; output defaults to `out/`) |
-| `pnpm reframe batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (rows = overlays), parallel, with a per-row report |
+| `pnpm reframe render <scene.ts\|.json\|.html> [--overlay f]... [--theme brand.json] [-o out]` | deterministic mp4 (mode inferred from extension; output defaults to `out/`); `--theme` re-skins `token()` colors |
+| `pnpm reframe batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (rows = overlays; a `design.<token.path>` column = one mp4 per brand), parallel, with a per-row report |
 | `pnpm reframe compile <scene.ts\|.json> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium); `--json` returns `{ok, kind, issues}` |
 | `pnpm reframe frame <scene.ts\|.json> [--t <sec>] [--overlay f]... [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux); `--overlay` previews edits |
 | `pnpm reframe compose <scene.ts\|.json> --overlay f... [-o out.json] [--json]` | compose overlay(s) onto a scene and emit composed SceneIR, no render (feed to `player`/`frame` for live preview) |
