@@ -24,11 +24,13 @@ async function main(): Promise<void> {
   let t = 0;
   let out = "";
   const overlays: string[] = [];
+  let theme: string | undefined;
   for (let i = 1; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--t") t = Number(argv[++i]);
     else if (a === "-o") out = argv[++i]!;
     else if (a === "--overlay") overlays.push(resolve(argv[++i]!));
+    else if (a === "--theme") theme = resolve(argv[++i]!);
     else {
       console.error(`unknown argument: ${a}`);
       process.exit(2);
@@ -46,8 +48,8 @@ async function main(): Promise<void> {
     process.exit(2);
   }
   let ir = loaded.ir;
-  if (overlays.length > 0) {
-    const composed = await applyOverlays(ir, overlays);
+  if (overlays.length > 0 || theme) {
+    const composed = await applyOverlays(ir, overlays, theme);
     console.error(formatComposeReport(composed.report));
     ir = composed.ir;
   }
