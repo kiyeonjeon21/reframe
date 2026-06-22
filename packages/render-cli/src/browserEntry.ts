@@ -20,7 +20,7 @@ async function decode(dataUrl: string, label = ""): Promise<HTMLImageElement> {
     await img.decode();
     return img;
   } catch (e) {
-    throw new Error(`decode failed for ${label} (len=${dataUrl.length}): ${String(e)}`);
+    throw new Error(`decode failed for ${label} (len=${dataUrl.length}): ${String(e)}`, { cause: e });
   }
 }
 

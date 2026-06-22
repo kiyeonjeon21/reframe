@@ -12,7 +12,11 @@ async function main() {
   await page.goto("http://localhost:5199/");
   await page.waitForSelector("#scene-select option", { state: "attached" });
   await page.selectOption("#scene-select", { label: "logo-reveal" });
-  await page.waitForFunction(() => (window as any).__store?.compiled?.ir?.id === "logo-reveal");
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __store?: { compiled?: { ir?: { id?: string } } } }).__store?.compiled?.ir?.id ===
+      "logo-reveal",
+  );
   await sleep(600);
 
   // live overlay-draft HUD: the actual exportDraft() content, visualized

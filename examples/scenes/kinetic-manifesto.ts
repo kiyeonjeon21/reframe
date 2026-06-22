@@ -1,8 +1,8 @@
 import {
   scene, text,
-  seq, par, beat, tween, wait, cameraTo,
+  seq, par, beat, wait, cameraTo,
   splitText, textIn, textOut, textLoop,
-  type NodeIR, type BehaviorIR,
+  type BehaviorIR,
 } from "@reframe/core";
 
 // "MANIFESTO" — pure kinetic typography. Five lines each enter with a different

@@ -167,7 +167,7 @@ export function ikReach(upper: number, lower: number, dx: number, dy: number, fl
   return [deg(theta1), deg(theta2)];
 }
 
-export interface HumanoidOpts extends Omit<RigOpts, never> {}
+export type HumanoidOpts = Omit<RigOpts, never>;
 
 /** A ready upright humanoid skeleton — the one-call body. Joints:
  * chest, head, armUpper/LowerL, armUpper/LowerR, legUpper/LowerL, legUpper/LowerR.

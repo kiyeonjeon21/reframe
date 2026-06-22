@@ -14,7 +14,6 @@ import {
   oscillate,
   type AudioCueIR,
   type NodeIR,
-  type TimelineIR,
 } from "@reframe/core";
 
 // The reframe demo, made with reframe. Six chapters in one scene:

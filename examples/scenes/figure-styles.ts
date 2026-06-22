@@ -3,7 +3,7 @@
 // characterPreset("wave"). The art is a skin; the rig + motion are the asset.
 
 import {
-  scene, group, ellipse, text,
+  scene, ellipse, text,
   seq, par, tween, wait, oscillate,
   figure, characterPreset,
 } from "@reframe/core";

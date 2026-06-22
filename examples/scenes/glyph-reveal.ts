@@ -17,7 +17,6 @@ const PLATES = 18;
 const CUT = 0.15; // seconds per plate — the recipe's 0.12–0.18 sweet spot
 const CUTS_END = PLATES * CUT;
 const LOGO_HOLD = 1.9;
-const TOTAL = CUTS_END + 0.05 + LOGO_HOLD;
 
 // painter's order: later plates stack on top, so a cut is just a reveal
 const plates = Array.from({ length: PLATES }, (_, i) => ({

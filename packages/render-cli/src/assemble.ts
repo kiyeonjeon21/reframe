@@ -10,7 +10,7 @@
 
 import { writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { basename, dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
 import { probeMedia } from "./media/probe.js";
 
 const BGM_SYNTHS = ["ambient-pad", "lofi", "pulse", "tension", "uplift"];

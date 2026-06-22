@@ -5,8 +5,8 @@
 // synth score. Pure shapes (no image) → also plays live in `reframe player`.
 
 import {
-  scene, group, rect, ellipse, path, text,
-  seq, par, stagger, tween, wait, oscillate, cameraTo,
+  scene, group, rect, ellipse, text,
+  seq, par, stagger, tween, wait, oscillate,
   linearGradient, radialGradient,
   type NodeIR, type TimelineIR,
 } from "@reframe/core";

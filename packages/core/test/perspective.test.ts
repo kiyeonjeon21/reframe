@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { localMatrix, evaluate, type Mat2D } from "../src/evaluate.js";
-import { scene, rect, group, text, seq, tween } from "../src/dsl.js";
+import { scene, rect, group, seq, tween } from "../src/dsl.js";
 import { compileScene } from "../src/compile.js";
 
 const size = { width: 1000, height: 800 };

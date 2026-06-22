@@ -3,7 +3,7 @@
 // The motion is generated, not hand-keyed.
 
 import {
-  scene, group, ellipse, rect, text,
+  scene, group, ellipse, text,
   seq, tween, wait, oscillate,
   humanoid, characterPreset,
 } from "@reframe/core";

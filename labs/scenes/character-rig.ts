@@ -3,7 +3,7 @@
 // the hand meet a target. No hand-authored group tree; the rig compiles to IR.
 
 import {
-  scene, group, ellipse, rect, text,
+  scene, group, ellipse, text,
   seq, par, tween, wait, oscillate,
   humanoid, poseTo, ikReach,
 } from "@reframe/core";

@@ -5,7 +5,7 @@
 import {
   scene, rect, ellipse, text,
   seq, par, tween, wait, oscillate,
-  linearGradient, radialGradient, glow, dropShadow,
+  linearGradient, radialGradient, dropShadow,
   type NodeIR,
 } from "@reframe/core";
 

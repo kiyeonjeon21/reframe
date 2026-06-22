@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { localMatrix, evaluate, type Mat2D } from "../src/evaluate.js";
 import { cameraMatrix } from "../src/camera.js";
-import { scene, rect, group, text, seq, tween, motionPath, oscillate } from "../src/dsl.js";
+import { scene, rect, group, text, tween, motionPath, oscillate } from "../src/dsl.js";
 import { compileScene } from "../src/compile.js";
 import { SceneValidationError } from "../src/validate.js";
 

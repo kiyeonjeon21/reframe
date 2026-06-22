@@ -6,14 +6,14 @@
 // the zoom. Pure primitives, deterministic.
 
 import {
-  scene, group, rect, text, path, ellipse, line,
+  scene, group, rect, text, path, ellipse,
   seq, par, tween, wait, oscillate,
 } from "@reframe/core";
 import { LAND_PATHS } from "./lib/world-earth.js";
 
 const W = 1920, H = 1080, CX = W / 2, CY = 540;
 const OCEAN = "#16447E", LAND = "#3E7A52", LAND2 = "#5C8B4A";
-const ATMO = "#2E6BC0", WHITE = "#FFFFFF", HUD = "#8FB4E8", DIM = "#5C6B86";
+const ATMO = "#2E6BC0", WHITE = "#FFFFFF", HUD = "#8FB4E8";
 
 const EARTH_R = 760;               // stage-local Earth radius
 const EC: [number, number] = [0, 0]; // top-down: Earth centre = city = pivot at screen centre

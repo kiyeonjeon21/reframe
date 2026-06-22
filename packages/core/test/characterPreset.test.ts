@@ -53,7 +53,7 @@ describe("characterPreset", () => {
     expect(JSON.stringify(a)).toBe(JSON.stringify(a2)); // reproducible
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(b)); // seed varies it
     // same family: same beat name + same set of targeted joints
-    expect((a as any).name).toBe((b as any).name);
+    expect((a as { name?: string }).name).toBe((b as { name?: string }).name);
     const ids = (t: TimelineIR) => [...new Set(tweens(t).map((x) => x.target))].sort();
     expect(ids(a)).toEqual(ids(b));
   });

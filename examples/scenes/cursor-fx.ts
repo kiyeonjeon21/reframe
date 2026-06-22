@@ -3,7 +3,7 @@
 
 import {
   scene, group, rect, text,
-  seq, par, tween, wait,
+  seq, tween, wait,
   cursor, cursorTo, cursorClick,
 } from "@reframe/core";
 
