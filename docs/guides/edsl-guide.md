@@ -761,6 +761,11 @@ with `examples/scenes/sfx-showcase.ts` and the samples with `sample-showcase.ts`
 - Overshoot pops are two steps: tween scale past 1 (`1.15`), then settle to 1.
 - When a node enters by scaling from 0, start it at `opacity: 0` too and fade
   in alongside — a scale-0 shape can still rasterize as a 1px dot at frame 0.
+- Moving text under 3D rotation (a perspective card flip, a tilt) can shimmer
+  slightly — the 2.5D projection re-skews glyph edges each frame. Keep a node
+  rotationally still during the beats where text is read, and render with
+  `reframe render --supersample 2` (or `frame --supersample 2`) for crisp
+  anti-aliasing on any remaining motion.
 
 ## Worked example A — countdown (3, 2, 1, GO!)
 

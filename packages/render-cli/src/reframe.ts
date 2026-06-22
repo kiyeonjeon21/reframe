@@ -97,7 +97,7 @@ const PLUGIN_DIR = PACKAGED ? ROOT : join(ROOT, "plugin");
 const USAGE = `reframe — declarative motion graphics
 
 usage:
-  ${CMD} render <scene.ts|.json|.html> [--overlay edits.json]... [--theme brand.json] [-o out.mp4] [--fps N] [--duration S] [--no-audio]
+  ${CMD} render <scene.ts|.json|.html> [--overlay edits.json]... [--theme brand.json] [--supersample 2] [-o out.mp4] [--fps N] [--duration S] [--no-audio]
   ${CMD} batch <scene.ts> <data.json|csv> [-o outDir] [--overlay base.json]... [--concurrency N] [--fps N]
   ${CMD} logo <logo.svg|brand-slug> ["Name"] [--motion <preset>] [--energy 0..1] [--seed N] [-o out.mp4]
                                  animate a logo into a sting (presets: draw-bloom, punch-in,
@@ -120,7 +120,7 @@ usage:
                                  compose overlay(s) onto a scene → composed SceneIR (no render; feed to player/frame for live preview)
   ${CMD} compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]
                                  bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium)
-  ${CMD} frame <scene.ts|.json> [--t <sec>] [--overlay <doc.json>]... [--theme brand.json] [-o out.png]  render ONE frame at time t to a PNG (no mp4; --overlay/--theme preview edits)
+  ${CMD} frame <scene.ts|.json> [--t <sec>] [--overlay <doc.json>]... [--theme brand.json] [--supersample 2] [-o out.png]  render ONE frame at time t to a PNG (no mp4; --supersample N = N× SSAA for crisp text)
   ${CMD} skill [--path]          print the authoring skill (SKILL.md) for an agent; --path prints the plugin dir to load
   ${CMD} motion <mp4|framesDir>  motion-profile a rendered clip
   ${CMD} trace <ref.mp4> [--apply scene.ts]  extract a video's motion structure → MotionSketch / timeline
