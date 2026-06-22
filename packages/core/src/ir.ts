@@ -8,6 +8,7 @@
  * Semantics: a scene is evaluated as a pure function of continuous time
  * `evaluate(scene, tSeconds) -> DisplayList`. `fps` is a render hint only.
  */
+import type { Theme, DeepPartial } from "./theme.js";
 
 export type EaseName =
   | "linear"
@@ -622,6 +623,13 @@ export interface SceneIR {
   behaviors?: BehaviorIR[];
   /** Label-anchored sound design — cues survive retiming and regeneration. */
   audio?: AudioIR;
+  /**
+   * Design tokens (brand overrides) for this scene. `token()` color refs resolve
+   * against these at compile time, falling back to the house `brand` for any token
+   * not set here. Overlay-addressable as `design.<path>` (e.g. `design.color.accent`),
+   * so a re-skin survives an AI regeneration of the base.
+   */
+  design?: DeepPartial<Theme>;
   /** Reserved for v2 (Madeus-style temporal constraints). */
   constraints?: unknown[];
   /** Editor-only data (Theatre.js state.json pattern). */

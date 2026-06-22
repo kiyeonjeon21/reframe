@@ -27,6 +27,7 @@ import type {
 } from "./ir.js";
 import { compileScene } from "./compile.js";
 import { validateComposition, validateScene } from "./validate.js";
+import type { DeepPartial, Theme } from "./theme.js";
 
 export interface SceneInput {
   id: string;
@@ -41,6 +42,8 @@ export interface SceneInput {
   timeline?: TimelineIR;
   behaviors?: BehaviorIR[];
   audio?: AudioIR;
+  /** Design tokens (brand overrides); `token()` color refs resolve against these. */
+  design?: DeepPartial<Theme>;
   meta?: Record<string, unknown>;
 }
 

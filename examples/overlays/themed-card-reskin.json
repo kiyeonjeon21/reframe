@@ -1,0 +1,10 @@
+{
+  "reframeOverlay": 1,
+  "name": "themed-card-reskin",
+  "target": "themed-card",
+  "design": {
+    "color.accent": "#1E90FF",
+    "color.bg": "#0B1020",
+    "color.surface": "#141B2E"
+  }
+}

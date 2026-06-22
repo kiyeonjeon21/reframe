@@ -17,6 +17,7 @@ import {
   DEFAULT_TWEEN_DURATION,
 } from "./ir.js";
 import { pathPoint, pathTangentAngle } from "./path.js";
+import { brand, theme, getDeepPath, type Theme } from "./theme.js";
 
 export interface PropertySegment {
   target: string;
@@ -67,9 +68,14 @@ export interface CompiledScene {
   hasPerspective: boolean;
   /** True iff `camera.zSort` is on (gates depth-ordered paint; needs perspective). */
   zSort: boolean;
+  /** True iff the scene sets `design` or any color prop resolves a `token()` ref. */
+  hasDesign: boolean;
 }
 
 const key = (target: string, prop: string) => `${target}.${prop}`;
+
+/** Props on which a `$token` ref resolves to a design-token value (color props only). */
+const COLOR_PROPS = new Set(["fill", "stroke", "shadowColor"]);
 
 /** Deep time-stretch: multiply every duration/interval/offset by k. Used to
  * realise a beat's `scale`/`duration` without threading scale through the walk. */
@@ -121,11 +127,28 @@ export function compileScene(ir: SceneIR): CompiledScene {
   };
   collect(ir.nodes);
 
+  // Design tokens: a `token("color.accent")` ref is the string "$color.accent" on a
+  // color prop. Resolve it against the scene's `design` (merged onto the house brand)
+  // at compile time, so evaluate/interpolate only ever see resolved hex. Scoped to
+  // color props so a text `content: "$5M"` is never touched. A no-op (byte-identical)
+  // when no token refs exist; `usedDesign` records whether any actually resolved.
+  const effectiveTheme: Theme = ir.design ? theme(ir.design) : brand;
+  let usedDesign = false;
+  const resolveToken = (value: PropValue, prop: string): PropValue => {
+    if (typeof value !== "string" || !value.startsWith("$") || !COLOR_PROPS.has(prop)) return value;
+    const resolved = getDeepPath(effectiveTheme, value.slice(1));
+    if (typeof resolved === "string") {
+      usedDesign = true;
+      return resolved;
+    }
+    return value; // unknown token: render the literal, never crash
+  };
+
   const initialValues = new Map<string, PropValue>();
   for (const [id, node] of nodeById) {
     for (const [prop, value] of Object.entries(node.props)) {
       if (typeof value === "number" || typeof value === "string") {
-        initialValues.set(key(id, prop), value);
+        initialValues.set(key(id, prop), resolveToken(value, prop));
       }
     }
   }
@@ -133,7 +156,7 @@ export function compileScene(ir: SceneIR): CompiledScene {
     const override = ir.states?.[ir.initial] ?? {};
     for (const [id, props] of Object.entries(override)) {
       for (const [prop, value] of Object.entries(props)) {
-        initialValues.set(key(id, prop), value);
+        initialValues.set(key(id, prop), resolveToken(value, prop));
       }
     }
   }
@@ -164,6 +187,8 @@ export function compileScene(ir: SceneIR): CompiledScene {
   const current = new Map(initialValues);
 
   const pushSegment = (seg: PropertySegment) => {
+    seg.from = resolveToken(seg.from, seg.prop);
+    seg.to = resolveToken(seg.to, seg.prop);
     const k = key(seg.target, seg.prop);
     let list = segments.get(k);
     if (!list) segments.set(k, (list = []));
@@ -421,5 +446,6 @@ export function compileScene(ir: SceneIR): CompiledScene {
     hasCamera,
     hasPerspective,
     zSort,
+    hasDesign: ir.design !== undefined || usedDesign,
   };
 }
