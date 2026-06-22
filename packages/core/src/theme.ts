@@ -114,3 +114,47 @@ function mergeInto<T>(base: T, over: unknown): T {
 export function theme(overrides: DeepPartial<Theme> = {}): Theme {
   return mergeInto(brand, overrides);
 }
+
+/** The token paths `token()` can defer (scalar color leaves; resolved at compile time). */
+export type ThemeTokenPath =
+  | "color.bg"
+  | "color.surface"
+  | "color.surface2"
+  | "color.fg"
+  | "color.muted"
+  | "color.mutedNeutral"
+  | "color.accent"
+  | "color.accent2";
+
+/**
+ * A DEFERRED reference to a design token, for use on a color prop:
+ * `fill: token("color.accent")`. Unlike `brand.color.accent` (which bakes the
+ * literal at author time), this stays unresolved in the IR and the compiler
+ * resolves it against the scene's `design` (falling back to the house `brand`),
+ * so the scene can be re-skinned later via a `design.*` overlay.
+ */
+export function token(path: ThemeTokenPath): string {
+  return `$${path}`;
+}
+
+/** Read a dotted path (e.g. "color.accent") from a nested object; `undefined` if any segment is absent. */
+export function getDeepPath(obj: unknown, path: string): unknown {
+  let cur: unknown = obj;
+  for (const k of path.split(".")) {
+    if (typeof cur !== "object" || cur === null) return undefined;
+    cur = (cur as Record<string, unknown>)[k];
+  }
+  return cur;
+}
+
+/** Set a dotted path on a nested object, creating intermediate objects. Mutates `obj`. */
+export function setDeepPath(obj: Record<string, unknown>, path: string, value: unknown): void {
+  const keys = path.split(".");
+  let cur = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const k = keys[i]!;
+    if (typeof cur[k] !== "object" || cur[k] === null) cur[k] = {};
+    cur = cur[k] as Record<string, unknown>;
+  }
+  cur[keys[keys.length - 1]!] = value;
+}

@@ -1,6 +1,16 @@
 export * from "./ir.js";
 export * from "./dsl.js";
-export { theme, brand, type Theme, type TypeStyle, type DeepPartial } from "./theme.js";
+export {
+  theme,
+  brand,
+  token,
+  getDeepPath,
+  setDeepPath,
+  type Theme,
+  type TypeStyle,
+  type DeepPartial,
+  type ThemeTokenPath,
+} from "./theme.js";
 export { validateScene, validateComposition, SceneValidationError, PROPS_BY_TYPE, type ValidationIssue } from "./validate.js";
 export {
   compileComposition,
@@ -23,6 +33,7 @@ export {
   type TimelineAddress,
   type BeatAddress,
   type BehaviorAddress,
+  type DesignTokenAddress,
   type ManifestSummary,
   type LintFinding,
 } from "./manifest.js";
