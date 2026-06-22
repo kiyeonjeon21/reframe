@@ -150,6 +150,24 @@ export type Gradient =
   | { kind: "conic"; angle?: number; cx?: number; cy?: number; stops: ColorStop[] };
 export type Paint = string | Gradient;
 
+/**
+ * Backdrop — live "liquid glass" on a rect/ellipse. Instead of being transparent,
+ * the shape SAMPLES whatever is already drawn behind it and redraws it blurred /
+ * graded inside the shape (a real backdrop-filter, like CSS `backdrop-filter`). The
+ * node's own translucent `fill` then reads as the glass TINT and `stroke` as the rim.
+ * The shape updates every frame, so the panel can move/resize and the backdrop tracks
+ * what's underneath it live — no pre-blurred asset, works the same in `player` and mp4.
+ *
+ * Renderer-side (needs a real canvas): the blur is sampled in screen pixels. Absent ⇒
+ * no op field ⇒ byte-identical goldens. Static knobs (not keyframed) — animate the
+ * NODE (x/width/height/opacity) and the backdrop follows.
+ */
+export interface BackdropIR {
+  blur?: number; // gaussian blur radius of the sampled backdrop, px
+  saturate?: number; // saturation multiplier (1 = unchanged; >1 punchier, like real glass)
+  brightness?: number; // brightness multiplier (1 = unchanged)
+}
+
 export interface RectProps extends BaseProps {
   width: number;
   height: number;
@@ -157,6 +175,7 @@ export interface RectProps extends BaseProps {
   stroke?: Paint;
   strokeWidth?: number;
   radius?: number; // corner radius
+  backdrop?: BackdropIR; // live frosted-glass backdrop (samples what's behind)
 }
 
 export interface EllipseProps extends BaseProps {
@@ -165,6 +184,7 @@ export interface EllipseProps extends BaseProps {
   fill?: Paint;
   stroke?: Paint;
   strokeWidth?: number;
+  backdrop?: BackdropIR; // live frosted-glass backdrop (samples what's behind)
 }
 
 export interface LineProps {

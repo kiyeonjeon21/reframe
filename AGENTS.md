@@ -74,6 +74,19 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   it to `ctx.globalCompositeOperation` after `setTransform` (`add`→`lighter`), isolated by
   the per-op `save/restore`. Additive/golden-safe (absent/`normal` → no op field). No-op on
   `group` (whole-subtree blend is a later add). See `examples/scenes/blend-demo.ts`.
+- Backdrop / live "liquid glass" — `backdrop?: BackdropIR` (`{ blur, saturate, brightness }`)
+  on a **rect/ellipse** (`ir.ts`): the shape samples what's already drawn behind it and
+  redraws it blurred/graded inside its outline — a real backdrop-filter (CSS
+  `backdrop-filter`), not a pre-blurred copy. The node's translucent `fill` reads as the
+  glass tint, `stroke` as the rim. The renderer (`renderer-canvas` `drawBackdrop`) snapshots
+  `ctx.canvas`, blurs it on a CLEAN offscreen (no active clip → dodges the Canvas
+  `filter`+`clip`/matte black-out we hit otherwise), then draws it back clipped to the shape.
+  Static knobs (not keyframed) — **animate the NODE** (`x`/`width`/`height`/`opacity`) and the
+  backdrop re-samples each frame, so a panel can glide/resize and the frosted backdrop tracks
+  the content beneath it LIVE. Deterministic same-machine; works in `render`/`frame` AND live in
+  `player` (no image). `evaluate` emits the field only when authored → goldens byte-identical.
+  **Tint needs a gradient fill** (solid `#rrggbbaa` drops its alpha byte). See
+  `examples/scenes/liquid-glass.ts` (player-able) + `liquid-glass-nav.ts` (nav over a photo).
 - Track mattes — `GroupProps.matte?: MatteMode` (`"alpha"|"luma"`): a matte group's FIRST
   child masks the rest (alpha = where opaque, luma = where bright). The first feature using
   **offscreen subtree compositing**: `evaluate` emits `matte-push`/`matte-sep`/`matte-pop`

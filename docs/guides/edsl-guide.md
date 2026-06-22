@@ -305,6 +305,35 @@ rect({ id: "card", /* … */, blur: 18 }); tween("card", { blur: 0 }, { duration
 - On a `group` these apply to the whole subtree as one composite (focus pull / one
   silhouette shadow) — see "Group effects" below. `examples/scenes/shadow-demo.ts`.
 
+### Backdrop — live "liquid glass"
+
+`backdrop` on a **rect / ellipse** turns it into glass: instead of being transparent,
+the shape SAMPLES whatever is already drawn behind it and redraws it blurred / graded
+inside the shape — a real backdrop-filter (like CSS `backdrop-filter`), not a copy you
+pre-blur. The node's own translucent `fill` then reads as the glass TINT and `stroke`
+as the rim.
+
+```ts
+rect({ id: "glass", x: 960, y: 500, width: 880, height: 300, radius: 56, anchor: "center",
+  backdrop: { blur: 26, saturate: 1.5 },                         // the frosted backdrop
+  fill: linearGradient(["#FFFFFF1F", "#FFFFFF08"], { angle: 90 }), // tint (use a gradient — solid-hex alpha is dropped)
+  ...dropShadow("#02040A", 72, 0, 40) })                          // contact shadow
+// add a stroke (rim) + a sheen rect on top; the panel can move/resize and the
+// backdrop tracks what's underneath it LIVE, every frame.
+```
+
+- Knobs: `blur` (px), `saturate` (1 = unchanged; >1 = punchier, like real glass),
+  `brightness`. Static (not keyframed) — **animate the NODE** (`x`/`width`/`height`/
+  `opacity`) and the backdrop re-samples each frame, so a glass panel can glide and
+  resize over the content beneath it. `opacity` fades the backdrop in with the node.
+- Sampled in screen pixels by the renderer (the offscreen compositing path, same as
+  mattes/group-fx); deterministic same-machine, works in `render`/`frame` AND live in
+  `player` (no image needed). Absent ⇒ byte-identical goldens.
+- **Tint must carry its own alpha**: a solid `"#rrggbbaa"` fill drops its alpha byte,
+  so use a `linearGradient` (gradient stops keep alpha) for a translucent tint.
+- See `examples/scenes/liquid-glass.ts` (live, player-able) and
+  `examples/scenes/liquid-glass-nav.ts` (a nav dropdown gliding over a photo).
+
 ### Blend modes (compositing)
 
 `blend` selects how a shape composites with what's already drawn beneath it — the

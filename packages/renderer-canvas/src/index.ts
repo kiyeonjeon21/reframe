@@ -186,6 +186,63 @@ export function drawDisplayList(
   while (stack.length) composite(stack.pop()!);
 }
 
+/**
+ * Live "liquid glass" backdrop: sample whatever is already drawn behind the shape,
+ * blur / grade it on a CLEAN offscreen (no active clip → avoids the Canvas
+ * `filter`+`clip` black-out), and draw it back clipped to the shape. `ctx` already
+ * has `op.transform` applied, so the shape path is built in node-local space. Screen-
+ * space sample (like shadow/blur), 1:1 device pixels — the offscreen buffers match
+ * `ctx.canvas`, the same assumption the matte/fx compositing already relies on.
+ */
+function drawBackdrop(ctx: CanvasRenderingContext2D, op: DisplayList[number]): void {
+  const bd = (op as { backdrop?: { blur?: number; saturate?: number; brightness?: number } }).backdrop;
+  if (!bd || (op.type !== "rect" && op.type !== "ellipse")) return;
+  const cw = ctx.canvas.width;
+  const ch = ctx.canvas.height;
+  if (cw === 0 || ch === 0) return;
+  const make = (): CanvasRenderingContext2D => {
+    const c = document.createElement("canvas");
+    c.width = cw;
+    c.height = ch;
+    return c.getContext("2d")!;
+  };
+  // snapshot everything drawn so far (the content behind the glass)
+  const snap = make();
+  snap.drawImage(ctx.canvas, 0, 0);
+  // blur + grade it on a clean buffer (no clip active here → renders, not black)
+  const parts: string[] = [];
+  if (bd.blur && bd.blur > 0) parts.push(`blur(${bd.blur}px)`);
+  if (bd.saturate !== undefined && bd.saturate !== 1) parts.push(`saturate(${Math.max(0, bd.saturate)})`);
+  if (bd.brightness !== undefined && bd.brightness !== 1) parts.push(`brightness(${Math.max(0, bd.brightness)})`);
+  const blurred = make();
+  blurred.filter = parts.length ? parts.join(" ") : "none";
+  blurred.drawImage(snap.canvas, 0, 0);
+  blurred.filter = "none";
+  // draw the graded backdrop back, clipped to the shape (op.transform is set on ctx)
+  ctx.save();
+  ctx.beginPath();
+  if (op.type === "ellipse") {
+    ctx.ellipse(op.offsetX + op.width / 2, op.offsetY + op.height / 2, Math.abs(op.width / 2), Math.abs(op.height / 2), 0, 0, Math.PI * 2);
+  } else if (op.radius && op.radius > 0) {
+    ctx.roundRect(op.offsetX, op.offsetY, op.width, op.height, op.radius);
+  } else {
+    ctx.rect(op.offsetX, op.offsetY, op.width, op.height);
+  }
+  ctx.clip();
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // device space; clip stays in device space
+  ctx.filter = "none";
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = Math.max(0, Math.min(1, op.opacity)); // fades with the node
+  // the node's own shadow must NOT apply to the backdrop draw — drawing a full opaque
+  // buffer with a large shadow active darkens/blacks the fill
+  ctx.shadowColor = "rgba(0,0,0,0)";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.drawImage(blurred.canvas, 0, 0);
+  ctx.restore();
+}
+
 /** Set each pixel's alpha to its luminance (× existing alpha) — for a luma matte. */
 function lumaToAlpha(ctx: CanvasRenderingContext2D): void {
   const { width, height } = ctx.canvas;
@@ -238,6 +295,7 @@ function drawOp(
 
     switch (op.type) {
       case "rect": {
+        if (op.backdrop) drawBackdrop(ctx, op);
         const box = { x: op.offsetX, y: op.offsetY, w: op.width, h: op.height };
         ctx.beginPath();
         if (op.radius && op.radius > 0) {
@@ -245,11 +303,11 @@ function drawOp(
         } else {
           ctx.rect(op.offsetX, op.offsetY, op.width, op.height);
         }
-        if (op.fill) {
+        if (op.fill && op.fill !== "none") {
           ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill();
         }
-        if (op.stroke) {
+        if (op.stroke && op.stroke !== "none") {
           ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.stroke();
@@ -257,6 +315,7 @@ function drawOp(
         break;
       }
       case "ellipse": {
+        if (op.backdrop) drawBackdrop(ctx, op);
         const box = { x: op.offsetX, y: op.offsetY, w: op.width, h: op.height };
         ctx.beginPath();
         ctx.ellipse(
@@ -268,11 +327,11 @@ function drawOp(
           0,
           Math.PI * 2,
         );
-        if (op.fill) {
+        if (op.fill && op.fill !== "none") {
           ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill();
         }
-        if (op.stroke) {
+        if (op.stroke && op.stroke !== "none") {
           ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.stroke();
@@ -302,11 +361,11 @@ function drawOp(
         const box = op.bbox
           ? { x: op.bbox[0], y: op.bbox[1], w: op.bbox[2], h: op.bbox[3] }
           : { x: 0, y: 0, w: 1, h: 1 };
-        if (op.fill) {
+        if (op.fill && op.fill !== "none") {
           ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill(p);
         }
-        if (op.stroke && (op.strokeWidth ?? 1) > 0) {
+        if (op.stroke && op.stroke !== "none" && (op.strokeWidth ?? 1) > 0) {
           ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.lineJoin = "round";
