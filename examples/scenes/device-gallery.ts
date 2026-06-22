@@ -1,6 +1,7 @@
 import {
   scene, group, rect, text, seq, par, stagger, tween, wait,
   devicePreset, deviceScreen, deviceBounds, row,
+  brand,
   type NodeIR, type DevicePresetName, type DeviceStyle,
 } from "@reframe/core";
 
@@ -12,9 +13,9 @@ import {
 //   · bottom row — one device per kind, glass vs neon, premium lighting.
 
 const W = 1920, H = 1080;
-const BG = "#070811";
-const FG = "#FFFFFF";
-const MUTED = "#8A91A6";
+const BG = brand.color.bg;
+const FG = brand.color.fg;
+const MUTED = brand.color.muted;
 
 const tx = (id: string, x: number, y: number, s: string, size: number, weight: number, fill: string): NodeIR =>
   text({ id, x, y, anchor: "center", content: s, fontFamily: "Inter", fontSize: size, fontWeight: weight, fill });
@@ -43,7 +44,7 @@ const miniApp = (id: string, name: DevicePresetName, accent: string): NodeIR[] =
   ];
 };
 
-const ACC = ["#FF4D00", "#00C2A8", "#7C5CFF", "#3B82F6", "#F59E0B"];
+const ACC = [brand.color.accent, brand.color.accent2, brand.color.dataViz[1]!, "#3B82F6", "#F59E0B"];
 
 // ── top row: four glass phones, identical opts but distinct ids → auto-varied ──
 const TOP_Y = 360;

@@ -1,12 +1,12 @@
-import { scene, group, rect, text, seq, par, beat, tween, wait, devicePreset, deviceScreen, type NodeIR } from "@reframe/core";
+import { scene, group, rect, text, seq, par, beat, tween, wait, devicePreset, deviceScreen, brand, type NodeIR } from "@reframe/core";
 
 // Three devices from devicePreset(), side by side, each with content clipped to
 // its screen. devicePreset is a STATIC node generator — the motion (entrance +
 // in-screen scroll) is plain tweens on the device group ids and the content
 // handle the caller nests inside `content`.
 
-const BG = "#06070A";
-const MUTED = "#7A8194";
+const BG = brand.color.bg;
+const MUTED = brand.color.muted;
 
 // --- phone: a scrollable feed (authored in the phone's screen-local coords) ---
 const PS = deviceScreen("phone"); // { width: 352, height: 736 }

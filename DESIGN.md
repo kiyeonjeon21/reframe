@@ -59,9 +59,24 @@ When a scene's brief does not specify colors, fonts, or tone, use the tokens abo
 the default. When the brief does specify them, that brief wins; this file is the
 fallback and the reference, not a hard constraint.
 
-These are documentation tokens. There is no engine field that reads this file yet (that
-is a later phase). For now scenes restate the values; this doc is the single place that
-says what the values should be.
+These tokens also exist in code. `@reframe/core` (and the `reframe-video` package) export a
+`brand` object with the same values, so a scene can reference a token instead of restating a
+literal:
+
+```ts
+import { scene, text, rect, brand, theme } from "reframe-video";
+
+text({ id: "title", ...brand.type.headline, content: "Q4", fill: brand.color.fg });
+rect({ id: "bar", fill: brand.color.accent });
+
+// a different brand kit, reusable across scenes: overrides deep-merge onto the house brand
+const myBrand = theme({ color: { accent: "#1E90FF" } });
+```
+
+`packages/core/src/theme.ts` is the source of truth for the values; this document mirrors and
+explains them. (`brand` is pure data, so referencing a token renders byte-identical to writing
+the literal. An engine-level `theme` field that the compiler resolves and an overlay can re-skin
+is a later phase.)
 
 ## Brand
 

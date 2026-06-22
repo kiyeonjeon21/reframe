@@ -44,6 +44,23 @@ like one system. The full reference (with rationale) is `DESIGN.md` in the repo 
   (entrances), `thud` (impact), `click`/`confirm` (UI). Anchor cues to labels.
 - Layout: 1920x1080 at 30fps, ~96px safe margin, radius 6 (bars) / 24 (cards) / 56 (panels).
 
+These tokens are also in code. Import `brand` and reference a token instead of restating a
+literal, so the palette lives in one place:
+
+```ts
+import { scene, text, rect, brand, theme } from "@reframe/core";
+
+text({ id: "title", ...brand.type.headline, content: "Q4", fill: brand.color.fg });
+rect({ id: "bar", fill: brand.color.accent });
+
+// a reusable custom kit: overrides deep-merge onto the house brand
+const myBrand = theme({ color: { accent: "#1E90FF" } });
+```
+
+`brand.color.*`, `brand.type.{display,headline,body,label}` (spreadable into `text()`),
+`brand.motion.*`, and `brand.layout.*` cover the tokens above. Referencing a token is
+byte-identical to writing the literal.
+
 ## Nodes
 
 Factories return plain data. Every node needs a unique `id`.
