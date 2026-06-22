@@ -9,6 +9,9 @@ import {
   compileScene,
   composeScene,
   sceneManifest,
+  evaluate,
+  linearGradient,
+  isGradient,
   type SceneInput,
 } from "../src/index.js";
 
@@ -98,6 +101,40 @@ describe("overlay re-skin (design.* address)", () => {
     const { ir, report } = composeScene(v2, { reframeOverlay: 1, design: { "color.accent": "#22C55E" } });
     expect(report.orphans).toHaveLength(0);
     expect(compileScene(ir).initialValues.get("newshape.fill")).toBe("#22C55E");
+  });
+});
+
+describe("scene background tokens", () => {
+  it("resolves a background token onto CompiledScene.background", () => {
+    const c = compileScene(scene({ ...base([box("#fff")]), background: token("color.bg") }));
+    expect(c.background).toBe(brand.color.bg);
+  });
+
+  it("leaves a literal background untouched (golden-safe)", () => {
+    const c = compileScene(scene({ ...base([box("#fff")]), background: "#123456" }));
+    expect(c.background).toBe("#123456");
+    expect(c.hasDesign).toBe(false);
+  });
+});
+
+describe("gradient-stop tokens", () => {
+  const gbox = (fill: ReturnType<typeof linearGradient>) =>
+    rect({ id: "g", x: 0, y: 0, width: 10, height: 10, anchor: "center", fill });
+
+  it("resolves a token in a gradient stop at evaluate time", () => {
+    const c = compileScene(
+      scene(base([gbox(linearGradient([token("color.accent"), "#ffffff"]))], { color: { accent: "#1E90FF" } })),
+    );
+    const op = evaluate(c, 0).find((o) => o.id === "g");
+    const fill = op?.fill;
+    expect(isGradient(fill) ? fill.stops[0]?.color : undefined).toBe("#1E90FF");
+  });
+
+  it("returns the same gradient object when no stop is a token (byte-identical)", () => {
+    const grad = linearGradient(["#aaaaaa", "#bbbbbb"]);
+    const c = compileScene(scene(base([gbox(grad)])));
+    const op = evaluate(c, 0).find((o) => o.id === "g");
+    expect(op?.fill).toBe(c.nodeById.get("g")?.props.fill); // referential equality preserved
   });
 });
 

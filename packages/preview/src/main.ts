@@ -1166,7 +1166,7 @@ function drawSceneAt(compiled: import("@reframe/core").CompiledScene, localT: nu
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = compiled.ir.background ?? "#000";
+  ctx.fillStyle = compiled.background ?? compiled.ir.background ?? "#000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   drawDisplayList(ctx, evaluate(compiled, localT), images);
   ctx.restore();

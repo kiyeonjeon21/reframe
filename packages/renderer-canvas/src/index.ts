@@ -66,7 +66,8 @@ export function renderFrame(
   images?: ImageRegistry,
   videos?: VideoRegistry,
 ): void {
-  const { size, background } = compiled.ir;
+  const { size } = compiled.ir;
+  const background = compiled.background ?? compiled.ir.background; // resolved token() bg, else literal
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, size.width, size.height);
   if (background) {
