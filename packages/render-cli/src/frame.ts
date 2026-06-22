@@ -10,7 +10,7 @@
 import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { formatComposeReport } from "@reframe/core";
-import { renderFrameAt } from "./frameLoop.js";
+import { renderFrameAt, downscalePng } from "./frameLoop.js";
 import { loadModule } from "./loadScene.js";
 import { applyOverlays } from "./overlay.js";
 
@@ -25,12 +25,14 @@ async function main(): Promise<void> {
   let out = "";
   const overlays: string[] = [];
   let theme: string | undefined;
+  let supersample = 1;
   for (let i = 1; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--t") t = Number(argv[++i]);
     else if (a === "-o") out = argv[++i]!;
     else if (a === "--overlay") overlays.push(resolve(argv[++i]!));
     else if (a === "--theme") theme = resolve(argv[++i]!);
+    else if (a === "--supersample" || a === "--ss") supersample = Math.max(1, Math.min(4, Math.floor(Number(argv[++i])) || 1));
     else {
       console.error(`unknown argument: ${a}`);
       process.exit(2);
@@ -53,9 +55,10 @@ async function main(): Promise<void> {
     console.error(formatComposeReport(composed.report));
     ir = composed.ir;
   }
-  const buf = await renderFrameAt(ir, t, { sceneDir: dirname(scenePath) });
+  const buf = await renderFrameAt(ir, t, { sceneDir: dirname(scenePath), supersample });
+  const finalBuf = supersample > 1 ? downscalePng(buf, ir.size.width, ir.size.height) : buf;
   const outPath = out ? resolve(out) : resolve(`${loaded.ir.id}.png`);
-  await writeFile(outPath, buf);
+  await writeFile(outPath, finalBuf);
   console.log(outPath);
 }
 

@@ -25,6 +25,8 @@ interface Args {
   framesDir?: string;
   overlays: string[];
   theme?: string;
+  /** Render at N× and downscale (SSAA) for crisp anti-aliasing; 1 = off (default). */
+  supersample?: number;
   noAudio: boolean;
   /** Composition: render only this scene id, standalone. */
   scene?: string;
@@ -56,6 +58,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--frames-dir") args.framesDir = resolve(rest[++i]!);
     else if (a === "--overlay") args.overlays.push(resolve(rest[++i]!));
     else if (a === "--theme") args.theme = resolve(rest[++i]!);
+    else if (a === "--supersample" || a === "--ss") args.supersample = Math.max(1, Math.min(4, Math.floor(Number(rest[++i])) || 1));
     else if (a === "--no-audio") args.noAudio = true;
     else if (a === "--scene") args.scene = rest[++i]!;
     else {
@@ -82,6 +85,7 @@ async function main() {
       noAudio: args.noAudio,
       ...(args.fps !== undefined && { fps: args.fps }),
       ...(args.scene !== undefined && { onlyScene: args.scene }),
+      ...(args.supersample !== undefined && { supersample: args.supersample }),
     });
     console.log(
       args.scene !== undefined
@@ -94,6 +98,7 @@ async function main() {
   const framesDir = args.framesDir ?? (await mkdtemp(join(tmpdir(), "reframe-frames-")));
 
   let result;
+  let outSize = { width: 1920, height: 1080 };
   let audioJob: { plan: import("@reframe/core").AudioPlan; videoOut: string } | null = null;
   if (args.mode === "ir") {
     let ir = loaded!.ir;
@@ -102,6 +107,7 @@ async function main() {
       console.error(formatComposeReport(composed.report));
       ir = composed.ir;
     }
+    outSize = ir.size;
     if (!args.noAudio) {
       const plan = resolveAudioPlan(compileScene(ir));
       if (plan) {
@@ -114,6 +120,7 @@ async function main() {
       sceneDir: dirname(args.input),
       ...(args.fps !== undefined && { fps: args.fps }),
       ...(args.duration !== undefined && { duration: args.duration }),
+      ...(args.supersample !== undefined && { supersample: args.supersample }),
     });
   } else {
     if (args.duration === undefined || Number.isNaN(args.duration)) {
@@ -123,10 +130,13 @@ async function main() {
       framesDir,
       fps: args.fps ?? 30,
       duration: args.duration,
+      ...(args.supersample !== undefined && { supersample: args.supersample }),
     });
   }
 
-  await encodeMp4(result.framesDir, result.fps, audioJob ? audioJob.videoOut : args.out);
+  // supersampled frames are N×-sized → Lanczos-downscale to the scene size at encode
+  const downscale = args.supersample !== undefined && args.supersample > 1 ? outSize : undefined;
+  await encodeMp4(result.framesDir, result.fps, audioJob ? audioJob.videoOut : args.out, downscale ? { downscale } : {});
   if (audioJob) {
     await buildAudioTrack(audioJob.plan, args.input, audioJob.videoOut, args.out);
     await rm(audioJob.videoOut, { force: true });

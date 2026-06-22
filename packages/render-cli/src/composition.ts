@@ -41,11 +41,18 @@ async function renderSceneVideo(
   sceneDir: string,
   fps: number | undefined,
   out: string,
+  supersample?: number,
 ): Promise<{ fps: number; frameCount: number }> {
   const framesDir = await mkdtemp(join(tmpdir(), "reframe-frames-"));
   try {
-    const result = await captureIr(scene, { framesDir, sceneDir, ...(fps !== undefined && { fps }) });
-    await encodeMp4(result.framesDir, result.fps, out);
+    const result = await captureIr(scene, {
+      framesDir,
+      sceneDir,
+      ...(fps !== undefined && { fps }),
+      ...(supersample !== undefined && { supersample }),
+    });
+    const downscale = supersample !== undefined && supersample > 1 ? scene.size : undefined;
+    await encodeMp4(result.framesDir, result.fps, out, downscale ? { downscale } : {});
     return { fps: result.fps, frameCount: result.frameCount };
   } finally {
     await rm(framesDir, { recursive: true, force: true });
@@ -59,15 +66,16 @@ async function renderStandaloneScene(
   fps: number | undefined,
   noAudio: boolean,
   out: string,
+  supersample?: number,
 ): Promise<void> {
   const plan = noAudio ? null : resolveAudioPlan(compileScene(scene));
   if (plan) {
     const videoOut = `${out}.video.mp4`;
-    await renderSceneVideo(scene, sceneDir, fps, videoOut);
+    await renderSceneVideo(scene, sceneDir, fps, videoOut, supersample);
     await buildAudioTrack(plan, join(sceneDir, "scene"), videoOut, out);
     await rm(videoOut, { force: true });
   } else {
-    await renderSceneVideo(scene, sceneDir, fps, out);
+    await renderSceneVideo(scene, sceneDir, fps, out, supersample);
   }
 }
 
@@ -122,7 +130,7 @@ async function combineWithTransitions(
 
 export async function renderComposition(
   comp: CompositionIR,
-  opts: { compositionPath: string; out: string; fps?: number; noAudio: boolean; onlyScene?: string },
+  opts: { compositionPath: string; out: string; fps?: number; noAudio: boolean; onlyScene?: string; supersample?: number },
 ): Promise<{ duration: number; sceneCount: number }> {
   const cc = compileComposition(comp);
   const sceneDir = dirname(opts.compositionPath);
@@ -130,7 +138,7 @@ export async function renderComposition(
   if (opts.onlyScene) {
     const p = cc.scenes.find((s) => s.id === opts.onlyScene);
     if (!p) throw new Error(`--scene "${opts.onlyScene}" not in composition; scenes: ${cc.scenes.map((s) => s.id).join(", ")}`);
-    await renderStandaloneScene(p.scene, sceneDir, opts.fps, opts.noAudio, opts.out);
+    await renderStandaloneScene(p.scene, sceneDir, opts.fps, opts.noAudio, opts.out, opts.supersample);
     return { duration: p.duration, sceneCount: 1 };
   }
 
@@ -139,7 +147,7 @@ export async function renderComposition(
     const videos: { id: string; file: string; placement: ScenePlacement; fps: number }[] = [];
     for (const p of cc.scenes) {
       const file = join(tmp, `${sanitize(p.id)}.mp4`);
-      const { fps } = await renderSceneVideo(p.scene, sceneDir, opts.fps, file);
+      const { fps } = await renderSceneVideo(p.scene, sceneDir, opts.fps, file, opts.supersample);
       videos.push({ id: p.id, file, placement: p, fps });
     }
     const combined = join(tmp, "combined.mp4");

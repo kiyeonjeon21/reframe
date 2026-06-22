@@ -11,7 +11,7 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 
 ## Commands
 
-- `pnpm reframe render <scene.ts|.html> [--overlay f] [--theme brand.json] [-o out]` — mp4 into `out/`; `--theme` re-skins `token()` colors (a brand kit is a nested partial theme; also on `frame`/`player`)
+- `pnpm reframe render <scene.ts|.html> [--overlay f] [--theme brand.json] [--supersample N] [-o out]` — mp4 into `out/`; `--theme` re-skins `token()` colors (a brand kit is a nested partial theme; also on `frame`/`player`); `--supersample 2` (alias `--ss`, clamp 1-4, default 1=off) renders N× via `deviceScaleFactor` and Lanczos-downscales to the scene size at encode — SSAA that smooths moving-text anti-alias shimmer (the affine 2.5D perspective re-skews text each frame). Opt-in → goldens byte-identical. Also on `frame`. `render-cli/frameLoop.ts` (`withPage` deviceScaleFactor + `downscalePng`), `encode.ts` (`-vf scale`)
 - `pnpm reframe batch <scene.ts> <data.json|csv>` — one mp4 per row (row keys are overlay addresses like `nodes.<id>.<prop>` or `design.<token.path>` for a per-brand re-skin)
 - `pnpm reframe logo <logo.svg | brand-slug> [--motion <preset>] [--energy n] [--seed n]` — animate a logo into a sting (published CLI command; `packages/render-cli/src/logoSting.ts`)
 - `pnpm reframe labels <scene.ts>` — print the compiled event clock (every timeline label → exact seconds; the timing source for `audio.cues` and beat debugging)

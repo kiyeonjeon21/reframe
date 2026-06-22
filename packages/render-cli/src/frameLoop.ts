@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -29,16 +30,33 @@ const framePath = (dir: string, i: number) => join(dir, `${String(i).padStart(5,
 async function withPage<T>(
   size: { width: number; height: number },
   fn: (page: Page) => Promise<T>,
+  opts: { deviceScaleFactor?: number } = {},
 ): Promise<T> {
   const browser = await chromium.launch({
     args: ["--force-color-profile=srgb", "--font-render-hinting=none"],
   });
   try {
-    const page = await browser.newPage({ viewport: size, deviceScaleFactor: 1 });
+    // deviceScaleFactor N renders the page at N× physical pixels (supersampling);
+    // the captured PNG comes out N×-sized and is downscaled to `size` at encode/write.
+    const page = await browser.newPage({ viewport: size, deviceScaleFactor: opts.deviceScaleFactor ?? 1 });
     return await fn(page);
   } finally {
     await browser.close();
   }
+}
+
+/** Lanczos-downscale a PNG buffer to `width`×`height` via ffmpeg (for supersampled single frames). */
+export function downscalePng(png: Buffer, width: number, height: number): Buffer {
+  const res = spawnSync(
+    "ffmpeg",
+    ["-hide_banner", "-loglevel", "error", "-i", "pipe:0",
+      "-vf", `scale=${width}:${height}:flags=lanczos`, "-f", "image2pipe", "-c:v", "png", "pipe:1"],
+    { input: png, maxBuffer: 512 * 1024 * 1024 },
+  );
+  if (res.status !== 0) {
+    throw new Error(`ffmpeg downscale failed: ${res.stderr?.toString() ?? res.error?.message ?? "unknown"}`);
+  }
+  return res.stdout;
 }
 
 let bundleCache: string | null = null;
@@ -68,7 +86,7 @@ async function browserBundle(): Promise<string> {
 /** Render a reframe IR scene: evaluate(t) per frame inside the page, pull PNGs out. */
 export async function captureIr(
   ir: SceneIR,
-  opts: { fps?: number; duration?: number; framesDir: string; sceneDir?: string },
+  opts: { fps?: number; duration?: number; framesDir: string; sceneDir?: string; supersample?: number },
 ): Promise<CaptureResult> {
   await mkdir(opts.framesDir, { recursive: true });
   const sceneDir = opts.sceneDir ?? process.cwd();
@@ -97,11 +115,11 @@ export async function captureIr(
       await writeFile(framePath(opts.framesDir, f), Buffer.from(dataUrl.slice(22), "base64"));
     }
     return { framesDir: opts.framesDir, frameCount, fps };
-  });
+  }, opts.supersample !== undefined ? { deviceScaleFactor: opts.supersample } : {});
 }
 
 /** Render ONE frame of an IR scene at scene-time `t` → PNG buffer (for the `diff` tool). */
-export async function renderFrameAt(ir: SceneIR, t: number, opts: { sceneDir?: string } = {}): Promise<Buffer> {
+export async function renderFrameAt(ir: SceneIR, t: number, opts: { sceneDir?: string; supersample?: number } = {}): Promise<Buffer> {
   const sceneDir = opts.sceneDir ?? process.cwd();
   const assets = await buildImageAssets(ir, sceneDir);
   const { fps, duration } = resolveTiming(ir, {});
@@ -118,7 +136,7 @@ export async function renderFrameAt(ir: SceneIR, t: number, opts: { sceneDir?: s
     );
     const dataUrl = await page.evaluate((tt) => window.__reframe.renderFrame(tt), t);
     return Buffer.from(dataUrl.slice(22), "base64");
-  });
+  }, opts.supersample !== undefined ? { deviceScaleFactor: opts.supersample } : {});
 }
 
 /**
@@ -134,6 +152,7 @@ export async function captureHtml(
     framesDir: string;
     width?: number;
     height?: number;
+    supersample?: number;
   },
 ): Promise<CaptureResult> {
   await mkdir(opts.framesDir, { recursive: true });
@@ -158,5 +177,5 @@ export async function captureHtml(
       else await page.screenshot({ path, animations: "allow" });
     }
     return { framesDir: opts.framesDir, frameCount, fps: opts.fps };
-  });
+  }, opts.supersample !== undefined ? { deviceScaleFactor: opts.supersample } : {});
 }

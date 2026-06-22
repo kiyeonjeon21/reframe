@@ -1,12 +1,21 @@
 import { spawn } from "node:child_process";
 
-export async function encodeMp4(framesDir: string, fps: number, outFile: string): Promise<void> {
+export async function encodeMp4(
+  framesDir: string,
+  fps: number,
+  outFile: string,
+  opts: { downscale?: { width: number; height: number } } = {},
+): Promise<void> {
+  // When frames were rendered supersampled (N×), Lanczos-downscale them to the scene
+  // size here — the downscale IS the anti-aliasing (smooths moving-text edges).
+  const ds = opts.downscale;
   const args = [
     "-y",
     "-framerate",
     String(fps),
     "-i",
     `${framesDir}/%05d.png`,
+    ...(ds ? ["-vf", `scale=${ds.width}:${ds.height}:flags=lanczos`] : []),
     "-c:v",
     "libx264",
     "-preset",
