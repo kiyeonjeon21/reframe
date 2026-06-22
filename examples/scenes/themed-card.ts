@@ -6,7 +6,7 @@
 //   reframe frame themed-card.ts --t 1 --overlay examples/overlays/themed-card-reskin.json
 // The overlay address `design.color.accent` survives an AI regen of the base.
 
-import { scene, rect, text, token, seq, par, tween, wait } from "@reframe/core";
+import { scene, rect, text, token, linearGradient, seq, par, tween, wait } from "@reframe/core";
 
 const W = 1920, H = 1080, CX = 960, CY = 540;
 
@@ -14,13 +14,13 @@ export default scene({
   id: "themed-card",
   size: { width: W, height: H },
   fps: 30,
-  background: "#000000",
+  background: token("color.bg"), // the scene background re-skins too
   nodes: [
-    // full-bleed themed background (scene `background` tokens are a later phase)
-    rect({ id: "stage", x: 0, y: 0, width: W, height: H, fill: token("color.bg") }),
     rect({ id: "card", x: CX, y: CY, width: 760, height: 380, radius: 24, anchor: "center", opacity: 0, scale: 0.94,
       fill: token("color.surface"), shadowColor: "#04060C", shadowBlur: 60, shadowY: 30 }),
-    rect({ id: "bar", x: CX - 340, y: CY - 150, width: 8, height: 120, anchor: "top-left", opacity: 0, fill: token("color.accent") }),
+    // accent bar: a gradient whose stops are tokens (gradient-stop re-skin)
+    rect({ id: "bar", x: CX - 340, y: CY - 150, width: 8, height: 120, anchor: "top-left", opacity: 0,
+      fill: linearGradient([token("color.accent"), token("color.accent2")], { angle: 90 }) }),
     text({ id: "title", x: CX - 300, y: CY - 110, anchor: "center-left", opacity: 0,
       content: "On brand, by token", fontFamily: "Inter", fontSize: 56, fontWeight: 800, fill: token("color.fg") }),
     text({ id: "sub", x: CX - 300, y: CY - 36, anchor: "center-left", opacity: 0,

@@ -8,7 +8,8 @@ import { sampleBehavior } from "./behaviors.js";
 import { cameraMatrix } from "./camera.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
 import { isGradient } from "./gradient.js";
-import type { Anchor, BackdropIR, BlendMode, ClipShape, ImageFit, MatteMode, NodeIR, Paint, PropValue } from "./ir.js";
+import type { Anchor, BackdropIR, BlendMode, ClipShape, Gradient, ImageFit, MatteMode, NodeIR, Paint, PropValue } from "./ir.js";
+import { getDeepPath } from "./theme.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
 import { pathBBox, pathPoint, pathTangentAngle } from "./path.js";
 
@@ -381,6 +382,21 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
     return v === "" && base === undefined ? undefined : String(v);
   };
 
+  // Resolve any `token()` ref in a gradient's stop colors against the scene's theme.
+  // Gradients are static objects that bypass the value system, so they're resolved here.
+  // Returns the SAME object when no stop is a `$ref`, so non-token gradients stay byte-identical.
+  const resolveGradient = (g: Gradient): Gradient => {
+    if (!g.stops.some((s) => s.color.startsWith("$"))) return g;
+    return {
+      ...g,
+      stops: g.stops.map((s) => {
+        if (!s.color.startsWith("$")) return s;
+        const r = getDeepPath(compiled.effectiveTheme, s.color.slice(1));
+        return typeof r === "string" ? { ...s, color: r } : s;
+      }),
+    };
+  };
+
   // Sample blur + drop-shadow/glow into a partial spread onto the op. Only the
   // authored effects are included → absent ⇒ no op fields ⇒ byte-identical.
   type Fx = { blur?: number; shadowColor?: string; shadowBlur?: number; shadowX?: number; shadowY?: number; blend?: BlendMode };
@@ -539,8 +555,8 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         // a gradient paint passes through as-is; a color string samples (animatable) via opt()
         const fillP = node.props.fill;
         const strokeP = node.props.stroke;
-        const fill = isGradient(fillP) ? fillP : opt(id, "fill", fillP);
-        const stroke = isGradient(strokeP) ? strokeP : opt(id, "stroke", strokeP);
+        const fill = isGradient(fillP) ? resolveGradient(fillP) : opt(id, "fill", fillP);
+        const stroke = isGradient(strokeP) ? resolveGradient(strokeP) : opt(id, "stroke", strokeP);
         ops.push({
           type: node.type,
           id,
@@ -616,8 +632,8 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
         const oy = num(id, "originY", node.props.originY ?? 0);
         const fillP = node.props.fill;
         const strokeP = node.props.stroke;
-        const fill = isGradient(fillP) ? fillP : opt(id, "fill", fillP);
-        const stroke = isGradient(strokeP) ? strokeP : opt(id, "stroke", strokeP);
+        const fill = isGradient(fillP) ? resolveGradient(fillP) : opt(id, "fill", fillP);
+        const stroke = isGradient(strokeP) ? resolveGradient(strokeP) : opt(id, "stroke", strokeP);
         const dStr = str(id, "d", node.props.d);
         const needsBox = isGradient(fill) || isGradient(stroke); // gradient maps to the path's bbox
         ops.push({

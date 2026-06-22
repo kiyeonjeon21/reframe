@@ -70,6 +70,10 @@ export interface CompiledScene {
   zSort: boolean;
   /** True iff the scene sets `design` or any color prop resolves a `token()` ref. */
   hasDesign: boolean;
+  /** The scene's design tokens merged onto the house brand (`brand` when no `design`). Used to resolve gradient-stop tokens in evaluate. */
+  effectiveTheme: Theme;
+  /** The scene background with any `token()` ref resolved (undefined when no background). Prefer over `ir.background`. */
+  background?: string;
 }
 
 const key = (target: string, prop: string) => `${target}.${prop}`;
@@ -134,15 +138,22 @@ export function compileScene(ir: SceneIR): CompiledScene {
   // when no token refs exist; `usedDesign` records whether any actually resolved.
   const effectiveTheme: Theme = ir.design ? theme(ir.design) : brand;
   let usedDesign = false;
-  const resolveToken = (value: PropValue, prop: string): PropValue => {
-    if (typeof value !== "string" || !value.startsWith("$") || !COLOR_PROPS.has(prop)) return value;
+  // Resolve a "$color.bg" string ref to its theme value (no prop gate). Unknown token:
+  // return the literal (never crash). Used for color props, the scene background, and
+  // gradient stop colors (the last resolved in evaluate, which shares effectiveTheme).
+  const resolveColorString = (value: string): string => {
+    if (!value.startsWith("$")) return value;
     const resolved = getDeepPath(effectiveTheme, value.slice(1));
     if (typeof resolved === "string") {
       usedDesign = true;
       return resolved;
     }
-    return value; // unknown token: render the literal, never crash
+    return value;
   };
+  const resolveToken = (value: PropValue, prop: string): PropValue =>
+    typeof value === "string" && COLOR_PROPS.has(prop) ? resolveColorString(value) : value;
+  // the scene background is a color slot too (`background: token("color.bg")`)
+  const background = typeof ir.background === "string" ? resolveColorString(ir.background) : undefined;
 
   const initialValues = new Map<string, PropValue>();
   for (const [id, node] of nodeById) {
@@ -447,5 +458,7 @@ export function compileScene(ir: SceneIR): CompiledScene {
     hasPerspective,
     zSort,
     hasDesign: ir.design !== undefined || usedDesign,
+    effectiveTheme,
+    ...(background !== undefined && { background }),
   };
 }

@@ -83,7 +83,8 @@ Re-skin without touching the scene:
   `reframe batch scene.ts brands.json`.
 
 An overlay can also patch `design.color.accent` directly, and that re-skin survives an AI regen
-of the base (the address is the token name). Only color props resolve tokens today.
+of the base (the address is the token name). Tokens resolve on color props (`fill`/`stroke`/
+`shadowColor`), the scene `background`, and gradient stops; numeric and type tokens are a later phase.
 
 ## Nodes
 
