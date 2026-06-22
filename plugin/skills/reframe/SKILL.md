@@ -22,6 +22,11 @@ runtime needs ffmpeg on PATH and a one-time `npx playwright install chromium`
    Scenes must be pure functions of time: no `Math.random()`/`Date` — use
    `wiggle` with a seed. Give every node a meaningful stable `id` and label
    the key timeline moments — those names are addresses for everything below.
+   When the user has not given brand colors, fonts, or tone, default to the
+   house style in the guide's **Brand / house style** section: background
+   `#0A0C14`, foreground `#FFFFFF`, accent `#FF4D00` (with `#00C2A8` secondary),
+   Inter, and a Balanced motion tone (`easeOutCubic`, entrances `easeOutBack`,
+   `energy: 0.5`). A user-supplied brief always overrides it.
 3. Iterate on the cheap commands; full-render once at the end:
    - `npx -y reframe-video compile <name>.ts` — validate eDSL → IR in ~1s, no
      browser, no ffmpeg. Fix the classified error it prints, repeat. Catch every
