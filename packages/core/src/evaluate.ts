@@ -8,7 +8,7 @@ import { sampleBehavior } from "./behaviors.js";
 import { cameraMatrix } from "./camera.js";
 import type { CompiledScene, MotionDriver, PropertySegment } from "./compile.js";
 import { isGradient } from "./gradient.js";
-import type { Anchor, BlendMode, ClipShape, ImageFit, MatteMode, NodeIR, Paint, PropValue } from "./ir.js";
+import type { Anchor, BackdropIR, BlendMode, ClipShape, ImageFit, MatteMode, NodeIR, Paint, PropValue } from "./ir.js";
 import { lerpValue, resolveEase } from "./interpolate.js";
 import { pathBBox, pathPoint, pathTangentAngle } from "./path.js";
 
@@ -42,6 +42,9 @@ interface OpBase {
   shadowY?: number;
   /** Compositing mode (discrete; present only when authored and not "normal"). */
   blend?: BlendMode;
+  /** Live backdrop ("liquid glass") — sample + blur what's behind the shape. Emitted
+   *  only for rect/ellipse that authored it; absent ⇒ no field ⇒ byte-identical. */
+  backdrop?: BackdropIR;
 }
 
 export type DisplayOp =
@@ -550,6 +553,7 @@ export function evaluate(compiled: CompiledScene, t: number): DisplayList {
           ...(fill !== undefined && { fill }),
           ...(stroke !== undefined && { stroke, strokeWidth }),
           ...(node.type === "rect" && { radius: num(id, "radius", node.props.radius ?? 0) }),
+          ...(node.props.backdrop && { backdrop: node.props.backdrop }),
           ...leafFx,
           ...clipSpread,
         });
