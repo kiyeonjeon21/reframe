@@ -26,6 +26,24 @@ export default scene({
 });
 ```
 
+## Brand / house style
+
+When the brief does not specify colors, fonts, or tone, use the house style so scenes look
+like one system. The full reference (with rationale) is `DESIGN.md` in the repo root.
+
+- Colors: background `#0A0C14` (dark navy), foreground `#FFFFFF`, muted text `#8B93A7`,
+  primary accent `#FF4D00` (the brand mark, active/featured, lower-third bar), secondary accent
+  `#00C2A8` (positive/user). Chart series: `#54D6C0`, `#7C5CFF`, `#FF6FA5`, `#FFC861`.
+  One accent leads per shot; reach for the second only for a genuine second category.
+- Type: Inter only (weights 400 / 700 / 800). Scale: display 88-96 / 800, headline 48 / 700,
+  body 22-26 / 400-600, label 18-20 / 600 with `letterSpacing: 2`.
+- Motion (Balanced tone): default ease `easeOutCubic`, entrances `easeOutBack`, exits
+  `easeInOutQuad`, `energy: 0.5`. Durations: `0.3` micro, `0.5` base, `1.0` slow. For a
+  corporate/data tone drop to `easeOutQuad` + `energy ~0.3`; for promo push `speed > 1`.
+- Audio: bgm `uplift` (promo) / `ambient-pad` / `lofi` / `tension`; sfx `whoosh`/`pop`
+  (entrances), `thud` (impact), `click`/`confirm` (UI). Anchor cues to labels.
+- Layout: 1920x1080 at 30fps, ~96px safe margin, radius 6 (bars) / 24 (cards) / 56 (panels).
+
 ## Nodes
 
 Factories return plain data. Every node needs a unique `id`.
