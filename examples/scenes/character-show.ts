@@ -6,10 +6,11 @@ import {
   scene, group, ellipse, text,
   seq, tween, wait, oscillate,
   humanoid, characterPreset,
+  brand,
 } from "@reframe/core";
 
-const BG = "#0A0E1A";
-const ACC = "#FF5A1F";
+const BG = brand.color.bg;
+const ACC = brand.color.accent;
 const ID = "hero";
 const CX = 960, BASE_Y = 440, SCALE = 1.7;
 const AT = [CX, BASE_Y] as [number, number];

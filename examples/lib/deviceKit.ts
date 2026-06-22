@@ -7,16 +7,17 @@
 
 import {
   group, rect, text, ellipse, path, seq, par, tween, wait, motionPath,
-  devicePreset, deviceScreen, deviceScreenCenter, deviceBounds,
+  devicePreset, deviceScreen, deviceScreenCenter, deviceBounds, brand,
   type NodeIR, type DevicePresetName, type TimelineIR, type GroupProps,
 } from "@reframe/core";
 
-export const BG = "#070809";
-export const FG = "#FFFFFF";
-export const MUTED = "#7C8496";
-export const SUB = ["#FF4D00", "#00C2A8", "#7C5CFF", "#F59E0B", "#3B82F6", "#EC4899", "#10B981"];
-export const CARD = "#161922";
-export const CARD2 = "#1E222D";
+// Sourced from the house brand (DESIGN.md tokens) so device scenes stay on-brand.
+export const BG = brand.color.bg;
+export const FG = brand.color.fg;
+export const MUTED = brand.color.muted;
+export const SUB = [brand.color.accent, brand.color.accent2, brand.color.dataViz[1]!, "#F59E0B", "#3B82F6", "#EC4899", "#10B981"];
+export const CARD = brand.color.surface;
+export const CARD2 = brand.color.surface2;
 
 type Extra = Partial<GroupProps> & Record<string, unknown>;
 export const ri = (id: string, x: number, y: number, w: number, h: number, fill: string, radius = 0, extra: Extra = {}): NodeIR =>

@@ -6,9 +6,10 @@ import {
   scene, ellipse, text,
   seq, par, tween, wait, oscillate,
   figure, characterPreset,
+  brand,
 } from "@reframe/core";
 
-const BG = "#0E1424";
+const BG = brand.color.bg;
 const Y = 470, S = 1.35;
 
 const ce = (id: string, x: number, y: number, d: number, fill: string, opacity = 1) =>

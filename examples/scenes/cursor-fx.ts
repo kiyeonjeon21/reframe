@@ -5,10 +5,11 @@ import {
   scene, group, rect, text,
   seq, tween, wait,
   cursor, cursorTo, cursorClick,
+  brand,
 } from "@reframe/core";
 
-const BG = "#0E1320";
-const ACC = "#FF5A1F";
+const BG = brand.color.bg;
+const ACC = brand.color.accent;
 
 interface Btn { id: string; x: number; y: number; label: string }
 const BTNS: Btn[] = [

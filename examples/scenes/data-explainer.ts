@@ -11,6 +11,7 @@ import {
   cameraTo,
   splitText,
   textIn,
+  brand,
   type NodeIR,
 } from "@reframe/core";
 
@@ -21,7 +22,7 @@ import {
 // depth — does the whole vocabulary compose cleanly in one timeline?
 
 const W = 1920, H = 1080;
-const FG = "#EAF0FF", DIM = "#7E88A8", ACCENT = "#54D6C0";
+const FG = brand.color.fg, DIM = brand.color.muted, ACCENT = brand.color.dataViz[0]!;
 
 const BARS = [
   { id: "q1", label: "Q1", val: 1.2, c: "#3A4D6B" },
