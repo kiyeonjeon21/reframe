@@ -11,8 +11,8 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 
 ## Commands
 
-- `pnpm reframe render <scene.ts|.html> [--overlay f] [-o out]` — mp4 into `out/`
-- `pnpm reframe batch <scene.ts> <data.json|csv>` — one mp4 per row (row keys are overlay addresses like `nodes.<id>.<prop>`)
+- `pnpm reframe render <scene.ts|.html> [--overlay f] [--theme brand.json] [-o out]` — mp4 into `out/`; `--theme` re-skins `token()` colors (a brand kit is a nested partial theme; also on `frame`/`player`)
+- `pnpm reframe batch <scene.ts> <data.json|csv>` — one mp4 per row (row keys are overlay addresses like `nodes.<id>.<prop>` or `design.<token.path>` for a per-brand re-skin)
 - `pnpm reframe logo <logo.svg | brand-slug> [--motion <preset>] [--energy n] [--seed n]` — animate a logo into a sting (published CLI command; `packages/render-cli/src/logoSting.ts`)
 - `pnpm reframe labels <scene.ts>` — print the compiled event clock (every timeline label → exact seconds; the timing source for `audio.cues` and beat debugging)
 - `pnpm reframe compile <scene.ts|.json> [-o out.json] [--stdin] [--code "<src>"] [--json]` — bundle + validate eDSL source into SceneIR JSON, NO render (no ffmpeg/chromium; fast). On failure: a concise classified error (`bundle`/`eval`/`validation`), never the base64 bundle; `--json` makes it `{ok:false,error,kind,issues?}` where `issues` is the structured validation problems (each `{code,path,message}` — e.g. `code:"unknown-blend", path:"nodes.box"`). The in-process equivalent is exported as `reframe-video/compile` (`loadScene`/`loadSceneFromCode`/`checkDeterminism`, server-only); a thrown `SceneValidationError` carries `.issues` (and `.problems` for back-compat), and `SceneLoadError.issues` propagates them across the scene bundle. Entry `packages/render-cli/src/compile.ts`; loader `loadScene.ts`.
@@ -158,6 +158,18 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   spread into node `x`/`y` (a row of cards, a grid of tiles) — pure math, no nodes. Both
   added after a fresh-user reproducibility test flagged hand-positioned affixes + absolute-only
   layout as the main friction.
+- Design tokens / brand (`packages/core/src/theme.ts`, `DESIGN.md`) — the house brand as code:
+  `brand` (the DESIGN.md values) + `theme(overrides)` (deep-merge a reusable brand kit). `brand.color.accent`
+  bakes the literal at author time; `token("color.accent")` is a DEFERRED ref the compiler resolves
+  against the scene's `design?: DeepPartial<Theme>` field (falling back to `brand`), scoped to color
+  props (`fill`/`stroke`/`shadowColor`). Golden-safe via `CompiledScene.hasDesign` (no `design`/`$ref`
+  → byte-identical; resolution only touches `$`-strings on color props, so a text `content:"$5M"` is
+  untouched). Overlay-addressable as `design.<token.path>` (`compose.ts`, validated against the brand
+  shape, regen-stable by name, orphan-clean); `sceneManifest().design` surfaces them. Re-skin via
+  `render/frame/player --theme brand.json` (a nested partial theme, flattened in `render-cli/overlay.ts`
+  `loadThemeDoc`) or a `batch` `design.<token.path>` column (one mp4 per brand). Demo
+  `examples/scenes/themed-card.ts` + `examples/data/themed-card-brands.json`. Numeric/type/gradient-stop
+  tokens + scene-`background` tokens are a later phase.
 - Photo/video montage (`packages/core/src/montage.ts`) — `photoMontage(shots, opts)` /
   `videoMontage` (same generator) turn a list of shots — images AND video clips, mixed
   (video detected by src extension, plays as a clip for its `hold`, audio muted by default

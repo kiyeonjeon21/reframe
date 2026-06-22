@@ -75,8 +75,22 @@ const myBrand = theme({ color: { accent: "#1E90FF" } });
 
 `packages/core/src/theme.ts` is the source of truth for the values; this document mirrors and
 explains them. (`brand` is pure data, so referencing a token renders byte-identical to writing
-the literal. An engine-level `theme` field that the compiler resolves and an overlay can re-skin
-is a later phase.)
+the literal.)
+
+For a scene you want to RE-SKIN later, use `token("color.accent")` on a color prop instead of a
+literal. It is a deferred reference the compiler resolves against the scene's `design` (or the
+house brand), so the same scene renders in any brand:
+
+```ts
+import { rect, token } from "reframe-video";
+rect({ id: "bar", fill: token("color.accent") });
+```
+
+Then re-skin with no edit to the scene: `reframe frame scene.ts --theme brand.json` (a brand kit
+is a nested partial theme), or a `batch` data file with a `design.<token.path>` column (one mp4
+per brand). An overlay can patch `design.color.accent` directly, and the re-skin survives an AI
+regen of the base (the address is the token name). Color props resolve tokens today; numeric and
+type tokens are a later phase.
 
 ## Brand
 

@@ -20,8 +20,8 @@ npx reframe-video render hello.ts    # → out/hello.mp4
 
 | command | what it does |
 |---|---|
-| `reframe render <scene.ts> [--overlay edits.json] [-o out.mp4]` | deterministic mp4 |
-| `reframe batch <scene.ts> <data.json\|csv>` | one mp4 per data row (row keys are overlay addresses) |
+| `reframe render <scene.ts> [--overlay edits.json] [--theme brand.json] [-o out.mp4]` | deterministic mp4; `--theme` re-skins `token()` colors |
+| `reframe batch <scene.ts> <data.json\|csv>` | one mp4 per data row (row keys are overlay addresses; a `design.<token.path>` column = one mp4 per brand) |
 | `reframe compile <scene.ts> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium) |
 | `reframe frame <scene.ts> [--t <sec>] [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) |
 | `reframe compose <scene.ts> --overlay f... [-o out.json]` | compose overlay(s) onto a scene and emit composed SceneIR, no render |
