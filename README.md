@@ -4,28 +4,27 @@
 [![CI](https://github.com/kiyeonjeon21/reframe/actions/workflows/ci.yml/badge.svg)](https://github.com/kiyeonjeon21/reframe/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/npm/l/reframe-video.svg)](LICENSE)
 
-**Declarative motion graphics that AI can write, humans can tweak — and the
+**Declarative motion graphics that AI can write, humans can tweak, and the
 human's edits survive an AI regeneration.**
 
-At "prompt → mp4", reframe is on par with Hyperframes or a Remotion skill —
-our own benchmark says exactly that, parity not superiority. **The difference
-starts on the second turn**: what you get back is not freeform code but an
-addressable document, so you can keep tweaking, regenerating, and scaling it
-without your changes being silently lost.
+One-shot generation ("prompt to mp4") puts reframe roughly on par with other
+LLM-driven video tools. The difference shows on the second turn: what you get
+back is not freeform code but an addressable document, so you can keep tweaking,
+regenerating, and scaling without changes being silently lost.
 
 ![A human-edited scene (top) and the same edits surviving a full AI redesign of the base scene (bottom)](docs/assets/edit-survival.png)
 
 *Top: a scene with human overlay edits applied (brand color, retimed reveal,
-watermark). Bottom: an AI **fully regenerated** the base scene — different
-layout, different timing — and the same overlay reapplied by stable id.
+watermark). Bottom: an AI **fully regenerated** the base scene with a different
+layout and different timing, and the same overlay reapplied by stable id.
 4 edits survived; the one renamed node was reported as an orphan, never
 silently dropped.*
 
-![The reframe demo — made with reframe itself](docs/assets/hero.gif)
+![The reframe demo, made with reframe itself](docs/assets/hero.gif)
 
 *The demo above is a reframe scene
-([`examples/scenes/reframe-demo.ts`](examples/scenes/reframe-demo.ts)) —
-render it yourself: `pnpm reframe render examples/scenes/reframe-demo.ts`.*
+([`examples/scenes/reframe-demo.ts`](examples/scenes/reframe-demo.ts)).
+Render it yourself: `pnpm reframe render examples/scenes/reframe-demo.ts`.*
 
 ## The loop
 
@@ -41,25 +40,25 @@ render: deterministic mp4 (same input → byte-identical frames)   ◀── ove
                                                                      regenerates the base
 ```
 
-Everything is a pure function of time: `evaluate(scene, t)` — no wall clocks,
-no randomness without a seed, scrubbing and distributed rendering for free. And
-it's *enforced*: `reframe lint` compiles the scene twice and flags any IR that
-differs (a `Math.random()` or `Date` baked into a prop), so a scene that would
-silently render differently each time fails the gate before you ship it.
+Everything is a pure function of time: `evaluate(scene, t)` with no wall clocks
+and no unseeded randomness. Scrubbing and distributed rendering work for free,
+and the purity is enforced: `reframe lint` compiles the scene twice and flags any
+IR that differs (a `Math.random()` or `Date` baked into a prop), so a scene that
+would silently render differently each time fails the gate before you ship it.
 
 ## Generative choreography at scale
 
 The kind of scene that is hand-rolled timeline math in GSAP or per-element
 `interpolate()` plumbing in React is ~100 lines here, because the host
-language *generates* the nodes, states, and phase-shifted behaviors — and the
-output is still data: **every dot, glyph, and moon keeps a stable id you can
-tweak in the preview.**
+language *generates* the nodes, states, and phase-shifted behaviors. The output
+is still data: **every dot, glyph, and moon keeps a stable id you can tweak in
+the preview.**
 
 | | |
 |---|---|
-| <img alt="Bloom" src="docs/assets/bloom.gif" width="400" /><br/>[`bloom.ts`](examples/scenes/bloom.ts) — 300 dots on a golden-angle spiral: radial bloom, traveling breath wave, chromatic ripple, vortex collapse | <img alt="Wavefield" src="docs/assets/wavefield.gif" width="400" /><br/>[`wavefield.ts`](examples/scenes/wavefield.ts) — physical interference: 1,152 phase-shifted oscillators on a 32×18 grid, second ripple source joins mid-scene |
-| <img alt="Orbit" src="docs/assets/orbit.gif" width="400" /><br/>[`orbit.ts`](examples/scenes/orbit.ts) — nested transform composition: moons orbit planets orbit a sun, the whole system tilts — three nested groups, three linear tweens | <img alt="Typewave" src="docs/assets/typewave.gif" width="400" /><br/>[`typewave.ts`](examples/scenes/typewave.ts) — character-level kinetic type: cascade, standing wave, shatter with spin, and a second phrase assembling from the debris |
-| <img alt="Glyph reveal" src="docs/assets/glyph-reveal.gif" width="400" /><br/>[`glyph-reveal.ts`](examples/scenes/glyph-reveal.ts) — the archival stop-motion format: AI-generated plates as `image` nodes, ~7fps hard cuts, push-in, camera shake, a tick per cut. Swap any plate from an overlay or batch row: `nodes.frame-3.src` | |
+| <img alt="Bloom" src="docs/assets/bloom.gif" width="400" /><br/>[`bloom.ts`](examples/scenes/bloom.ts): 300 dots on a golden-angle spiral. Radial bloom, traveling breath wave, chromatic ripple, vortex collapse | <img alt="Wavefield" src="docs/assets/wavefield.gif" width="400" /><br/>[`wavefield.ts`](examples/scenes/wavefield.ts): physical interference. 1,152 phase-shifted oscillators on a 32×18 grid, second ripple source joins mid-scene |
+| <img alt="Orbit" src="docs/assets/orbit.gif" width="400" /><br/>[`orbit.ts`](examples/scenes/orbit.ts): nested transform composition. Moons orbit planets orbit a sun, the whole system tilts (three nested groups, three linear tweens) | <img alt="Typewave" src="docs/assets/typewave.gif" width="400" /><br/>[`typewave.ts`](examples/scenes/typewave.ts): character-level kinetic type. Cascade, standing wave, shatter with spin, and a second phrase assembling from the debris |
+| <img alt="Glyph reveal" src="docs/assets/glyph-reveal.gif" width="400" /><br/>[`glyph-reveal.ts`](examples/scenes/glyph-reveal.ts): the archival stop-motion format. AI-generated plates as `image` nodes, ~7fps hard cuts, push-in, camera shake, a tick per cut. Swap any plate from an overlay or batch row: `nodes.frame-3.src` | |
 
 ## Motion vocabulary: name a motion, don't keyframe it
 
@@ -82,7 +81,7 @@ persists. Two primitives back it:
 - **`path` node**: a true vector SVG shape with a `progress` draw-on, so the
   outline draws itself, stays crisp at any zoom, and recolors by animating fill.
 - **`motionPath`**: drives a node's x/y along a Catmull-Rom curve (with tangent
-  `autoRotate`), the curved motion straight tweens cannot do.
+  `autoRotate`), for curved motion that straight tweens cannot do.
 
 Turn any SVG into a share-worthy animated sting in one command, no clone needed
 (a local file, or any of simple-icons' brands):
@@ -98,44 +97,42 @@ preset, one command each. Pulled from simple-icons by slug, or drop in your own 
 
 ## Device mockups: one call, a framed screen
 
-Promo and product shots almost always need the app inside something — a phone, a
-browser, a laptop. The tedious part was never the frame, it was getting the
-screen **clip** right so content sits inside it. `devicePreset` bakes that in:
-ten parametric vector frames, each with a clipped screen "content slot", so a
-mockup is a single call.
+Promo and product shots almost always need the app inside something (a phone, a
+browser, a laptop). `devicePreset` bakes in ten parametric vector frames, each
+with a clipped screen "content slot", so a mockup is a single call:
 
 ```ts
 devicePreset("phone", { id: "hero", content: [ /* ...your UI nodes */ ] })
 ```
 
-Ten frames — **phone, tablet, laptop, browser, watch, monitor, tv, foldable,
-terminal, car** — all pure primitives (no assets), deterministic, and additive
-to the golden contract. `deviceScreen`, `deviceScreenCenter`, and `deviceBounds`
-hand back the screen bounds and the frame footprint, so content scrolls inside
-the clip and many devices tile onto a grid. The motion is yours: drive the
-device group with tweens or a `motionPreset`, and the content scrolls because it
-is clipped. See `examples/scenes/device-presets.ts` (three devices, a scrolling
-feed) and `device-teardown.ts` (all ten, each with its own signature move).
+Ten frames: phone, tablet, laptop, browser, watch, monitor, tv, foldable,
+terminal, car. All pure vector primitives (no assets), deterministic. `deviceScreen`,
+`deviceScreenCenter`, and `deviceBounds` hand back the screen bounds and the
+frame footprint, so content scrolls inside the clip and many devices tile onto a
+grid. Drive the device group with tweens or a `motionPreset`. See
+`examples/scenes/device-presets.ts` (three devices, a scrolling feed) and
+`device-teardown.ts` (all ten, each with its own signature move).
 
-## Why not just Hyperframes / Remotion?
+## Why reframe instead of HTML output?
 
-Because their output is arbitrary HTML/React — great to generate once,
-impossible to safely operate on afterwards. reframe's output is data with
-stable addresses, and everything below falls out of that one difference:
+Tools that generate arbitrary HTML/React code produce output that is great to
+generate once and impossible to safely operate on afterwards. reframe's output
+is data with stable addresses, and everything below falls out of that one
+difference:
 
 | the second turn | HTML / React output | reframe |
 |---|---|---|
-| "tweak just the color and timing" | edit code by hand, or re-prompt and hope nothing else changes (no visual editor is *possible* over arbitrary code) | turn knobs in the preview — no code |
-| "now redesign it" after my tweaks | your hand edits live inside the code; regeneration overwrites them or you merge diffs — silent loss is the default | edits live in an overlay; they reapply onto the regenerated scene (measured 100% across 23 regenerations/turns), breaks are reported loudly |
+| "tweak just the color and timing" | edit code by hand, or re-prompt and hope nothing else changes (no visual editor is possible over arbitrary code) | turn knobs in the preview, no code |
+| "now redesign it" after my tweaks | your hand edits live inside the code; regeneration overwrites them or you merge diffs (silent loss is the default) | edits live in an overlay; they reapply onto the regenerated scene (measured 100% across 23 regenerations/turns), breaks are reported loudly |
 | "make 50 personalized versions" | only what the author pre-parameterized (props) | any address, post-hoc: `nodes.name.content` |
 | "is it wrong before I render?" | semantic failures are invisible until pixels (wrong text, off-frame) | structure validates pre-render with actionable errors; motion is computable from the IR |
 
 If your video is fire-and-forget, use the simpler tool. If it's an asset that
-will be tweaked, regenerated, and multiplied — that loop is what reframe is for.
+will be tweaked, regenerated, and multiplied, that loop is what reframe is for.
 
 ## Quickstart
 
-No clone needed — [`reframe-video` is on npm](https://www.npmjs.com/package/reframe-video):
+No clone needed. [`reframe-video` is on npm](https://www.npmjs.com/package/reframe-video):
 
 ```bash
 brew install ffmpeg                  # system dep (or apt install ffmpeg)
@@ -164,13 +161,13 @@ Then open the editor and render with your edits:
 
 ```bash
 pnpm reframe preview     # scrub, play, and edit any scene with knobs
-# → edits accumulate in an overlay; click "download", save to examples/overlays/
+# edits accumulate in an overlay; click "download", save to examples/overlays/
 pnpm reframe render examples/scenes/logo-reveal.ts \
   --overlay examples/overlays/brand-edits.json
 ```
 
 > **Saving edits**: the preview never modifies your scene file. Edits live in
-> an overlay document — download it from the panel, then pass it to render
+> an overlay document. Download it from the panel, then pass it to render
 > with `--overlay`. That same file keeps working after the scene is redesigned.
 
 ## The edit-survival demo
@@ -183,7 +180,7 @@ Renders the base scene, the base + a human overlay, and then an
 **AI-regenerated base + the same overlay**. Watch the console: surviving edits
 apply, the deliberately renamed node orphans loudly with a diagnosis. This is
 the project's core claim, reproducible in one command. (Measured with real
-agents: 100% id/state/label retention across 8 regenerations —
+agents: 100% id/state/label retention across 8 regenerations;
 `benchmark/regen/REGEN-ANALYSIS.md`.)
 
 ## Sound that follows the motion
@@ -198,7 +195,7 @@ audio: {
 }
 ```
 
-Retime a step with an overlay — or let an AI regenerate the scene — and the
+Retime a step with an overlay (or let an AI regenerate the scene) and the
 sound design moves with it (verified: a +1.8s hold patch shifted the anchored
 cues by exactly +1.8s). SFX are procedurally synthesized (deterministic, zero
 assets) with CC0 samples in `assets/sfx/` for organic sounds like real
@@ -207,7 +204,7 @@ mechanical keypresses; the bed auto-ducks under cues. `--no-audio` to skip.
 ## Batch rendering: data in, videos out
 
 A scene is a template; every data row becomes an overlay. Row keys are
-overlay addresses — no new schema:
+overlay addresses with no new schema:
 
 ```jsonc
 // examples/data/team.json
@@ -224,8 +221,6 @@ pnpm reframe batch examples/scenes/lower-third.ts examples/data/team.json
 
 Rows render in parallel; a row with a bad address renders with a loud orphan
 warning instead of killing the batch. CSV works too (headers = addresses).
-This is N-personalized deterministic videos from one template — the workflow
-real-time runtimes like Rive structurally don't cover.
 
 ## Writing a scene
 
@@ -256,16 +251,37 @@ export default scene({
 ```
 
 Scaffold one with `pnpm reframe new my-scene`. Full syntax (node types,
-states, timeline operators, behaviors): `pnpm reframe guide` — the guide an
-LLM reads to write valid scenes on the first try (33/33 first-attempt renders
-in our benchmark).
+states, timeline operators, behaviors): `pnpm reframe guide`. This is the guide
+an LLM reads to write valid scenes; the benchmark recorded 33/33 first-attempt
+renders across generation models.
 
-A scene is a single self-contained file, not an app: it can live in **any
-directory** — no package.json or node_modules next to it. `render` bundles it
-on the fly (resolving `@reframe/core` and any relative imports beside it), and
-`preview` lists scenes from the directory you launched it in alongside the
-repo's `examples/scenes/`. Keep overlays and batch data files right next to
-your scene.
+A scene is a single self-contained file. It can live in **any directory** with
+no `package.json` or `node_modules` next to it. `render` bundles it on the fly
+(resolving `@reframe/core` and any relative imports beside it), and `preview`
+lists scenes from the directory you launched it in alongside the repo's
+`examples/scenes/`. Keep overlays and batch data files right next to your scene.
+
+## Recently shipped: backdrop (live "liquid glass")
+
+`backdrop: { blur, saturate, brightness }` on a rect or ellipse makes the shape
+sample what is already drawn behind it and redraw it blurred and graded inside
+its outline. The node's translucent fill is the glass tint; the stroke is the
+rim. Animate the node's `x`/`width`/`height`/`opacity` and the frosted area
+re-samples each frame, so a panel can glide or resize and the backdrop tracks
+the content beneath it live. Works in both `render` (to mp4) and `player` (live
+in any browser). Use a gradient for the tint and rim (a solid color string loses
+its alpha):
+
+```ts
+rect({ id: "panel", x: 960, y: 540, width: 480, height: 320, anchor: "center",
+  fill: linearGradient(["#FFFFFF24", "#FFFFFF0A"], { angle: 90 }),   // translucent tint
+  stroke: linearGradient(["#FFFFFFE6", "#FFFFFF33"], { angle: 125 }), strokeWidth: 1.5,
+  backdrop: { blur: 24, saturate: 1.4 },
+})
+```
+
+See `examples/scenes/liquid-glass.ts` (animated glass card over moving blobs)
+and `liquid-glass-nav.ts` (nav bar over a photo).
 
 ## CLI
 
@@ -274,48 +290,48 @@ your scene.
 | `pnpm reframe render <scene.ts\|.json\|.html> [--overlay f]... [-o out]` | deterministic mp4 (mode inferred from extension; output defaults to `out/`) |
 | `pnpm reframe batch <scene.ts> <data.json\|csv> [-o dir] [--overlay f]...` | one mp4 per data row (rows = overlays), parallel, with a per-row report |
 | `pnpm reframe compile <scene.ts\|.json> [-o out.json] [--json]` | bundle + validate a scene to SceneIR JSON, no render (fast; no ffmpeg/chromium); `--json` returns `{ok, kind, issues}` |
-| `pnpm reframe frame <scene.ts\|.json> [--t <sec>] [--overlay f]... [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux) — for a render-and-look loop; `--overlay` previews edits |
-| `pnpm reframe compose <scene.ts\|.json> --overlay f... [-o out.json] [--json]` | compose overlay(s) onto a scene → composed SceneIR, no render (feed to `player`/`frame` for live overlay preview) |
+| `pnpm reframe frame <scene.ts\|.json> [--t <sec>] [--overlay f]... [-o out.png]` | render one frame at time `t` to a PNG (chromium only, no mux); `--overlay` previews edits |
+| `pnpm reframe compose <scene.ts\|.json> --overlay f... [-o out.json] [--json]` | compose overlay(s) onto a scene and emit composed SceneIR, no render (feed to `player`/`frame` for live preview) |
 | `pnpm reframe manifest <scene.ts\|.json> [--json]` | dump the addressable surface: every node, state, timeline label, and beat with the overlay address that reaches it |
 | `pnpm reframe geometry <scene.ts\|.json> [--t <sec>] [--json]` | where each node + motionPath waypoint is on screen at time `t` (the spatial analog of `manifest`; pure, no chromium) |
-| `pnpm reframe lint <scene.ts\|.json> [--json] [--strict]` | the studio-readiness gate: flag un-addressable motion + verify the scene is a pure function of time; `--strict` exits non-zero |
-| `pnpm reframe verify-overlay <base> <overlay>... [--json]` | compose an overlay onto a base and report applied-vs-orphaned, no render — the regen-survival check (non-zero exit on orphans) |
-| `pnpm reframe labels <scene.ts\|.json>` | print the compiled event clock (every timeline label → exact seconds) — the timing source for audio cues |
+| `pnpm reframe lint <scene.ts\|.json> [--json] [--strict]` | flag un-addressable motion + verify the scene is a pure function of time; `--strict` exits non-zero |
+| `pnpm reframe verify-overlay <base> <overlay>... [--json]` | compose an overlay onto a base and report applied-vs-orphaned, no render (non-zero exit on orphans) |
+| `pnpm reframe labels <scene.ts\|.json>` | print the compiled event clock (every timeline label → exact seconds) |
 | `pnpm reframe assemble <media...> [-o name]` | probe images/videos (ffprobe) and scaffold an editable montage scene `.ts` wired with `photoMontage` |
 | `pnpm reframe narrate <scene.ts\|.json> [--voice <name>] [--max-speed n] [--dry-run]` | scene-fitted Kokoro voiceover: synth each `audio.narration` line and auto-fit its rate to the slot (needs python + `kokoro`) |
-| `pnpm reframe player <scene.ts\|.json> [--overlay f]... [--edit] [-o out.html]` | bundle a scene into one self-contained HTML that plays the motion live in any browser; `--overlay` previews edits; `--edit` builds an embedded-editor variant (`window.__reframe` + postMessage) |
+| `pnpm reframe player <scene.ts\|.json> [--overlay f]... [--edit] [-o out.html]` | bundle a scene into one self-contained HTML that plays live in any browser; `--edit` adds `window.__reframe` + postMessage for embedding |
 | `pnpm reframe logo <logo.svg\|brand-slug> [--motion <preset>]` | animate a logo (or a simple-icons brand) into a sting |
 | `pnpm reframe diff <ref-image> [scene.ts] [--t <sec>] [--mode side\|blend\|diff\|grid]` | compare a render against a reference image |
 | `pnpm reframe preview` | scrub/play/edit UI; edits export as overlay JSON |
 | `pnpm reframe new <name>` | scaffold a documented starter scene |
 | `pnpm reframe motion <mp4\|framesDir>` | calibrated motion profile (speeds, easing, discontinuities) |
-| `pnpm reframe trace <ref.mp4> [--apply scene.ts]` | extract a video's motion structure (a `MotionSketch`); `--apply` emits a timeline that re-tells it on your own nodes |
-| `pnpm reframe guide [--directing\|--regen\|--html]` | print a guide: eDSL syntax (default), the high-end directing workflow, the regeneration contract, or HTML/GSAP scenes |
-| `pnpm reframe skill [--path]` | print the authoring skill for an agent; `--path` prints the plugin dir to load |
-| `pnpm reframe demo` | the edit-survival demo above |
+| `pnpm reframe trace <ref.mp4> [--apply scene.ts]` | extract a video's motion structure; `--apply` emits a timeline that re-tells it on your own nodes |
+| `pnpm reframe guide [--directing\|--regen\|--html]` | print a guide: eDSL syntax (default), directing workflow, regeneration contract, or HTML/GSAP scenes |
+| `pnpm reframe skill [--path]` | print the authoring skill for an agent; `--path` prints the plugin dir |
+| `pnpm reframe demo` | the edit-survival demo (three mp4s into `out/`) |
 
 ## How edits survive regeneration
 
 Overlays address the scene by **node id, state name, and timeline label (or
-beat name)** — never by position or index. When an AI regenerates a scene it follows one
-contract (`docs/guides/regen-contract.md`, or `pnpm reframe guide --regen`): keep
-those names stable for every concept that survives the redesign. When the
-contract is broken anyway, `composeScene` skips the affected edits and reports
-them with a diagnosis naming the likely rename. The failure hierarchy:
+beat name)**, never by position or index. When an AI regenerates a scene it
+follows one contract (`docs/guides/regen-contract.md`, or
+`pnpm reframe guide --regen`): keep those names stable for every concept that
+survives the redesign. When the contract is broken anyway, `composeScene` skips
+the affected edits and reports them with a diagnosis naming the likely rename.
+The failure hierarchy:
 
-1. Contract followed (the measured common case) → edits survive.
-2. Contract broken → loud orphan report.
+1. Contract followed (the measured common case): edits survive.
+2. Contract broken: loud orphan report.
 3. Never: silent edit loss, or a render failure caused by base drift.
 
-### Restructure, don't just re-skin
+### Restructure, not just re-skin
 
-An overlay isn't limited to patching props and timing — it can change the
-**structure** of the cut, keyed by the same stable addresses, and those edits
-survive regeneration too: **reorder** a beat (`timeline.<beat>.order`),
+An overlay can also change the **structure** of the cut, keyed by the same
+stable addresses. You can **reorder** a beat (`timeline.<beat>.order`),
 **remove** one (`removeTimeline: ["shot-3"]`), or **insert** a whole new unit
 (`insertNodes` + `insertTimeline { into: "montage", after: "shot-2" }`). A
-montage is built so each shot is the self-contained beat `shot-${i}`, so an
-overlay can drop, reorder, or splice in a card without touching the base:
+montage builds each shot as the self-contained beat `shot-${i}`, so an overlay
+can drop, reorder, or splice in a card without touching the base:
 
 ```jsonc
 // reorder two cards, drop one, retitle another — all survive an AI regen
@@ -324,9 +340,7 @@ overlay can drop, reorder, or splice in a card without touching the base:
   "nodes": { "shot-0-title": { "content": "REORDERED" } } }
 ```
 
-Reproduce it with the pure-vector demo (no assets) — the same overlay reorders,
-removes, and inserts a card, and every edit is reported applied with zero
-orphans:
+Reproduce it with the pure-vector demo (no assets):
 
 ```bash
 pnpm reframe verify-overlay examples/scenes/vector-montage.ts \
@@ -339,7 +353,7 @@ pnpm reframe render examples/scenes/vector-montage.ts \
 
 ## Embedding reframe (in-process API)
 
-The CLI is a thin shell over an importable, server-side API — load, validate,
+The CLI is a thin shell over an importable, server-side API. Load, validate,
 and check a scene without spawning a process. From `reframe-video/compile`:
 
 ```ts
@@ -351,58 +365,60 @@ const compiled = await loadScene("scene.ts");        // bundle + validate → Co
 const { deterministic, findings } = await checkDeterminism("scene.ts");
 ```
 
-`reframe-video/renderer` exposes `renderFrame` / `drawDisplayList` (DisplayList →
-Canvas 2D) for live browser playback, and `reframe compile --json` returns the
-same structured shape on the CLI: `{ ok: false, kind, issues: [{ code, path, message }] }`
-— the feedback loop an agent or a UI reads to point at the exact broken node.
+`reframe-video/renderer` exposes `renderFrame` / `drawDisplayList` (DisplayList
+to Canvas 2D) for live browser playback. `reframe compile --json` returns the
+same structured shape on the CLI: `{ ok: false, kind, issues: [{ code, path, message }] }`,
+the feedback loop an agent or a UI reads to point at the exact broken node.
 
 ## Documentation
 
-📖 **[docs.reframe-video.com](https://docs.reframe-video.com)** — the full documentation
-site. The [`docs/`](docs/) folder is its [Mintlify](https://mintlify.com) source (`docs/docs.json`):
+**[docs.reframe-video.com](https://docs.reframe-video.com)** is the full
+documentation site. The [`docs/`](docs/) folder is its
+[Mintlify](https://mintlify.com) source (`docs/docs.json`):
 
 | page | what |
 |---|---|
 | [Introduction](docs/introduction.mdx) · [Quickstart](docs/quickstart.mdx) · [The loop](docs/the-loop.mdx) | the pitch, install, and the AI-write / human-edit / deterministic-render model |
 | [Gallery](docs/gallery.mdx) | a curated visual reel of scenes |
-| [Examples](examples/README.md) | all 68 example scenes, by category |
+| [Examples](examples/README.md) | example scenes, by category |
 | [Guides](docs/guides/) | the eDSL, directing, HTML/GSAP, and regeneration-contract guides (also `pnpm reframe guide`) |
 
-Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and accumulate via `pnpm gallery` (the committed home; `out/` stays scratch).
+Curated renders live in [`docs/assets/gallery/`](docs/assets/gallery) and
+accumulate via `pnpm gallery` (the committed home; `out/` stays scratch).
 
 ## Repo map
 
 | path | what |
 |---|---|
-| `packages/core` | the eDSL, IR, determinism kernel, overlay composition — zero deps |
-| `packages/renderer-canvas` | DisplayList → Canvas 2D (browser + capture shared) |
+| `packages/core` | the eDSL, IR, determinism kernel, overlay composition (zero deps) |
+| `packages/renderer-canvas` | DisplayList to Canvas 2D (browser + capture shared) |
 | `packages/render-cli` | Playwright capture + ffmpeg encode; also renders arbitrary HTML/GSAP deterministically via a virtual clock |
 | `packages/preview` | the Vite editor |
-| `examples/` | 68 example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
-| `labs/` | experiments and product probes (live-data → baked scene → render), kept out of `examples/` so it stays purely demonstrative |
+| `examples/` | example scenes (see [`examples/README.md`](examples/README.md)), overlays, compositions, the edit-survival demo |
+| `labs/` | experiments and product probes (live-data to baked scene to render), kept out of `examples/` so it stays purely demonstrative |
 | `docs/` | the [Mintlify](https://mintlify.com)-ready docs site + the authoring guides (also `pnpm reframe guide`) |
 | `benchmark/` | **measurement artifacts, not product code**: LLM generation benchmark (RESULTS/ANALYSIS.md), regeneration-contract experiment (regen/), calibrated motion profiler (harness/motion/, MOTION.md) |
 
-## Requirements & troubleshooting
+## Requirements and troubleshooting
 
-- Node ≥ 20, pnpm ≥ 9, **ffmpeg on PATH**.
-- `Executable doesn't exist at …/ms-playwright/…` → run
+- Node >= 20, pnpm >= 9, **ffmpeg on PATH**.
+- `Executable doesn't exist at …/ms-playwright/…`: run
   `pnpm exec playwright install chromium` (the workspace blocks postinstall
   scripts, so the browser is not fetched automatically).
-- `spawn ffmpeg ENOENT` → install ffmpeg (step 0).
+- `spawn ffmpeg ENOENT`: install ffmpeg (step 0).
 - Fonts: only Inter 400/700/800 are bundled; other families silently fall back.
 - A scene importing npm packages beyond `@reframe/core` only bundles if those
-  packages are resolvable from the scene's directory — scenes are meant to be
+  packages are resolvable from the scene's directory. Scenes are meant to be
   dependency-free documents.
 
 ## Status
 
 Early alpha (`reframe-video` on npm, Claude Code skill in this repo). The
-research phase is closed: every design hypothesis is measured, not assumed —
+research phase is closed: every design hypothesis is measured, not assumed.
 LLM generation parity with HTML+GSAP, deterministic byte-identical rendering,
-edit survival across AI regeneration, and a five-turn natural-language
-iteration loop with zero silent edit loss. Receipts: `benchmark/ANALYSIS.md`,
+edit survival across AI regeneration, and a five-turn natural-language iteration
+loop with zero silent edit loss. Receipts: `benchmark/ANALYSIS.md`,
 `benchmark/MOTION.md`, `benchmark/regen/REGEN-ANALYSIS.md`,
 `benchmark/nl-loop/NL-LOOP.md`. What "alpha" means honestly: it has not met
-strangers yet — surface area is intentionally small (8 node types, one font,
+strangers yet. Surface area is intentionally small (8 node types, one font,
 Canvas 2D) and the IR/overlay schema has no compatibility promise before 1.0.
