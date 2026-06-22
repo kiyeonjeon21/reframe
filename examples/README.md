@@ -37,6 +37,9 @@ Also here: [`overlays/`](overlays) (human-edit layers), [`compositions/`](compos
 | `faux-3d-cards` | Four feature cards flip 0→180° `rotateY` (affine perspective approximation). |
 | `gradient-demo` | Linear / radial / conic gradients on rect, ellipse, path, plus animation. |
 | `group-fx-demo` | Group blur, shadow, and blend composited as one offscreen layer. |
+| `liquid-glass` | A floating glass card over animated color blobs: live `backdrop` blur re-samples each frame. |
+| `liquid-glass-nav` | A frosted nav dropdown over a photo: `backdrop` on a rect, gliding and resizing over the image. |
+| `liquid-glass-showcase` | A glass dashboard with multiple panels over a living aurora background. |
 | `matte-demo` | An alpha matte (video-filled headline) and a luma matte (iris photo reveal). |
 | `perspective-cards` | Projected 2.5D: parallax, a card flip, perspective text, a dolly flatten. |
 | `shadow-demo` | A drop-shadowed card and a pulsing glow orb (animatable blur + glow). |
