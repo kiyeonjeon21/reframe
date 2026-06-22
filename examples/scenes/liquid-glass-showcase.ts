@@ -14,10 +14,12 @@ import {
 const W = 1920, H = 1080;
 
 // ── a glass panel: live backdrop + tint + sheen + specular rim (all start hidden) ──
-const glass = (id: string, x: number, y: number, w: number, h: number, r: number, blur = 24, sat = 1.5): NodeIR[] => [
+const glass = (id: string, x: number, y: number, w: number, h: number, r: number, blur = 18, sat = 1.7): NodeIR[] => [
   rect({ id: `${id}-body`, x, y, width: w, height: h, radius: r, anchor: "center", opacity: 0, scale: 0.9,
-    backdrop: { blur, saturate: sat },
-    fill: linearGradient(["#FFFFFF24", "#FFFFFF0A"], { angle: 90 }),
+    // boost saturation/brightness so the frosted colour stays VIVID under the tint;
+    // the tint is a light, colour-preserving dim (not black) just for text legibility
+    backdrop: { blur, saturate: sat, brightness: 1.06 },
+    fill: linearGradient(["#0B14284D", "#0B142826"], { angle: 90 }),
     shadowColor: "#03060E", shadowBlur: 56, shadowX: 0, shadowY: 30 }),
   rect({ id: `${id}-sheen`, x, y: y - h / 4, width: w - 8, height: h / 2, radius: r, anchor: "center", opacity: 0,
     fill: linearGradient(["#FFFFFF5E", "#FFFFFF00"], { angle: 90 }), blend: "screen" }),
@@ -48,14 +50,17 @@ export default scene({
   background: "#06080F",
   camera: { x: W / 2, y: H / 2, zoom: 1 },
   nodes: [
-    // ── living aurora behind everything (drifts → the glass backdrops shimmer) ──
-    rect({ id: "bg", x: 0, y: 0, width: W, height: H, fill: linearGradient(["#0A0F22", "#0E0B26", "#081E2A"], { angle: 125 }) }),
-    orb("o-1", 360, 300, 1120, "#FF6A3D"),
-    orb("o-2", 1560, 280, 1180, "#3D7BFF"),
-    orb("o-3", 1180, 880, 1240, "#B14DFF"),
-    orb("o-4", 560, 880, 980, "#19E3B1"),
-    orb("o-5", 980, 540, 900, "#FF4D8D"),
-    orb("o-6", 1500, 760, 820, "#F4C84B"),
+    // ── living aurora behind everything (bright + dense → the glass backdrops show
+    //    vivid colour, not black; drifts so they shimmer live) ──
+    rect({ id: "bg", x: 0, y: 0, width: W, height: H, fill: linearGradient(["#3A1E6E", "#27429A", "#0F6A6E"], { angle: 125 }) }),
+    orb("o-1", 340, 280, 1280, "#FF7A3D"),
+    orb("o-2", 1580, 260, 1320, "#4DA0FF"),
+    orb("o-3", 1200, 900, 1360, "#C45CFF"),
+    orb("o-4", 520, 900, 1160, "#1FF0BE"),
+    orb("o-5", 960, 520, 1100, "#FF5C9E"),
+    orb("o-6", 1500, 760, 980, "#FFD24B"),
+    orb("o-7", 180, 600, 820, "#5CE0FF"),
+    orb("o-8", 1780, 560, 820, "#A87CFF"),
 
     // ── hero glass bar ──
     ...glass("hero", W / 2, 250, 1200, 168, 42, 26, 1.45),

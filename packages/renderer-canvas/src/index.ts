@@ -233,6 +233,12 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, op: DisplayList[number]): v
   ctx.filter = "none";
   ctx.globalCompositeOperation = "source-over";
   ctx.globalAlpha = Math.max(0, Math.min(1, op.opacity)); // fades with the node
+  // the node's own shadow must NOT apply to the backdrop draw — drawing a full opaque
+  // buffer with a large shadow active darkens/blacks the fill
+  ctx.shadowColor = "rgba(0,0,0,0)";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
   ctx.drawImage(blurred.canvas, 0, 0);
   ctx.restore();
 }
@@ -297,11 +303,11 @@ function drawOp(
         } else {
           ctx.rect(op.offsetX, op.offsetY, op.width, op.height);
         }
-        if (op.fill) {
+        if (op.fill && op.fill !== "none") {
           ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill();
         }
-        if (op.stroke) {
+        if (op.stroke && op.stroke !== "none") {
           ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.stroke();
@@ -321,11 +327,11 @@ function drawOp(
           0,
           Math.PI * 2,
         );
-        if (op.fill) {
+        if (op.fill && op.fill !== "none") {
           ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill();
         }
-        if (op.stroke) {
+        if (op.stroke && op.stroke !== "none") {
           ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.stroke();
@@ -355,11 +361,11 @@ function drawOp(
         const box = op.bbox
           ? { x: op.bbox[0], y: op.bbox[1], w: op.bbox[2], h: op.bbox[3] }
           : { x: 0, y: 0, w: 1, h: 1 };
-        if (op.fill) {
+        if (op.fill && op.fill !== "none") {
           ctx.fillStyle = resolvePaint(ctx, op.fill, box);
           ctx.fill(p);
         }
-        if (op.stroke && (op.strokeWidth ?? 1) > 0) {
+        if (op.stroke && op.stroke !== "none" && (op.strokeWidth ?? 1) > 0) {
           ctx.strokeStyle = resolvePaint(ctx, op.stroke, box);
           ctx.lineWidth = op.strokeWidth ?? 1;
           ctx.lineJoin = "round";
