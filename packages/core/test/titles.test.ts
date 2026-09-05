@@ -16,11 +16,19 @@ const ids = (tl: import("../src/ir.js").TimelineIR): string[] => {
 };
 
 describe("title", () => {
-  it("returns kinetic glyph nodes + an entrance timeline + the block", () => {
+  it("returns a gen-stamped container group wrapping the glyphs + a beat-named timeline", () => {
     const t = title({ text: "HELLO", id: "ttl" });
-    expect(t.nodes.length).toBe(5); // one node per glyph
-    expect(t.nodes.every((n) => n.id.startsWith("ttl-"))).toBe(true);
+    // one container group (the live-generator unit), glyphs are its children
+    expect(t.nodes.length).toBe(1);
+    const grp = t.nodes[0] as Extract<import("../src/ir.js").NodeIR, { type: "group" }>;
+    expect(grp.type).toBe("group");
+    expect(grp.id).toBe("ttl");
+    expect(grp.gen).toEqual({ kind: "title", params: { id: "ttl", text: "HELLO" } });
+    expect(grp.children.map((c) => c.id)).toEqual(["ttl-0", "ttl-1", "ttl-2", "ttl-3", "ttl-4"]);
     expect(t.block.ids).toEqual(["ttl-0", "ttl-1", "ttl-2", "ttl-3", "ttl-4"]);
+    // timeline is one beat named the title id, with the entrance label nested inside
+    expect(t.timeline.kind).toBe("beat");
+    expect(ids(t.timeline)).toContain("ttl");
     expect(ids(t.timeline)).toContain("ttl-in");
   });
 

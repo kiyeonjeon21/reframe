@@ -10,7 +10,7 @@
  */
 
 import { beat, group, par, rect, seq, text, tween, wait } from "./dsl.js";
-import type { NodeIR, TimelineIR } from "./ir.js";
+import type { GenSpec, NodeIR, TimelineIR } from "./ir.js";
 import { splitText, textIn, textOut, type FontWeight, type TextBlock, type TextInName, type TextOutName } from "./textFx.js";
 
 export interface TitleOpts {
@@ -38,13 +38,39 @@ export interface TitleOpts {
 }
 
 export interface TitleResult {
+  /** A single `gen`-stamped container group (id = the title id) wrapping the glyphs. */
   nodes: NodeIR[];
   timeline: TimelineIR;
   /** The laid-out text block — add `textLoop` behaviors or extra tweens off this. */
   block: TextBlock;
 }
 
-/** A kinetic headline. Labels: `${id}-in` (entrance) and `${id}-out` (exit). */
+function titleParams(o: TitleOpts, id: string): GenSpec["params"] {
+  return {
+    id, text: o.text,
+    ...(o.x !== undefined && { x: o.x }),
+    ...(o.y !== undefined && { y: o.y }),
+    ...(o.fontSize !== undefined && { fontSize: o.fontSize }),
+    ...(o.fontWeight !== undefined && { fontWeight: o.fontWeight }),
+    ...(o.fill !== undefined && { fill: o.fill }),
+    ...(o.letterSpacing !== undefined && { letterSpacing: o.letterSpacing }),
+    ...(o.entrance !== undefined && { entrance: o.entrance }),
+    ...(o.exit !== undefined && { exit: o.exit }),
+    ...(o.speed !== undefined && { speed: o.speed }),
+    ...(o.seed !== undefined && { seed: o.seed }),
+    ...(o.hold !== undefined && { hold: o.hold }),
+  };
+}
+
+/**
+ * A kinetic headline — a LIVE generator. The glyphs are wrapped in one
+ * `gen`-stamped container group (id = `id`) and the in/out timeline in one `beat`
+ * named `id`, so an overlay patch `nodes.<id>.text` re-runs the whole title (the
+ * phrase RE-SPLITS — advances reflow and the per-glyph stagger regenerates to the
+ * new glyph count) instead of orphaning or breaking kerning. Inner labels:
+ * `${id}-in` (entrance) and `${id}-out` (exit). The container group adds no
+ * DisplayOps (identity, no fx) so renders are byte-identical to the flat layout.
+ */
 export function title(opts: TitleOpts): TitleResult {
   const id = opts.id ?? "title";
   const block = splitText(opts.text, {
@@ -61,13 +87,11 @@ export function title(opts: TitleOpts): TitleResult {
     ...(opts.seed !== undefined && { seed: opts.seed }),
   };
   const entrance = textIn(opts.entrance ?? "cascade", block, { ...fx, label: `${id}-in` });
-  if (!opts.exit) return { nodes: block.nodes, timeline: entrance, block };
-  const timeline = seq(
-    entrance,
-    wait(Math.max(0, opts.hold ?? 2)),
-    textOut(opts.exit, block, { ...fx, label: `${id}-out` }),
-  );
-  return { nodes: block.nodes, timeline, block };
+  const inner = opts.exit
+    ? seq(entrance, wait(Math.max(0, opts.hold ?? 2)), textOut(opts.exit, block, { ...fx, label: `${id}-out` }))
+    : entrance;
+  const node = group({ id, x: 0, y: 0 }, block.nodes, { kind: "title", params: titleParams(opts, id) });
+  return { nodes: [node], timeline: beat(id, {}, [inner]), block };
 }
 
 export interface LowerThirdOpts {

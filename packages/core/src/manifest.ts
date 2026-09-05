@@ -28,7 +28,14 @@ export interface NodeAddress {
   animatedProps: string[];
   /** State names that override this node (`states.<name>.<id>` addresses). */
   inStates: string[];
+  /** Live generator info if this is a `gen`-stamped container group. Patching
+   *  `nodes.<id>.<contentKey>` re-runs the generator (reflows), instead of editing
+   *  the baked leaf nodes — the regen-survivable way to edit a headline / number. */
+  generator?: { kind: string; contentKey: string; content: string | number };
 }
+
+/** The single editable content key per live-generator kind (`nodes.<id>.<key>`). */
+const GEN_CONTENT_KEY: Record<string, string> = { title: "text", numberRoll: "value", splitText: "text" };
 
 export interface StateAddress {
   name: string;
@@ -174,14 +181,20 @@ export function sceneManifest(compiled: CompiledScene): SceneManifest {
   const nodes: NodeAddress[] = [];
   const walkNodes = (list: NodeIR[], parent: string | undefined) => {
     for (const node of list) {
+      const gen = node.type === "group" ? node.gen : undefined;
+      const contentKey = gen ? (GEN_CONTENT_KEY[gen.kind] ?? "content") : undefined;
       nodes.push({
         id: node.id,
         type: node.type,
         ...(parent !== undefined ? { parent } : {}),
         address: `nodes.${node.id}`,
-        editableProps: [...PROPS_BY_TYPE[node.type]],
+        // a gen group's content key (`text`/`value`) is patchable via re-expansion
+        editableProps: gen && contentKey ? [contentKey, ...PROPS_BY_TYPE[node.type]] : [...PROPS_BY_TYPE[node.type]],
         animatedProps: animatedPropsOf(compiled, node.id),
         inStates: statesByNode.get(node.id) ?? [],
+        ...(gen && contentKey
+          ? { generator: { kind: gen.kind, contentKey, content: gen.params[contentKey] as string | number } }
+          : {}),
       });
       if (node.type === "group") walkNodes(node.children, node.id);
     }

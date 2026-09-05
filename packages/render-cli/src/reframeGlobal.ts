@@ -15,6 +15,12 @@ declare global {
         videoAssets?: Record<string, string[]>,
       ): Promise<{ duration: number; fps: number }>;
       renderFrame(t: number): string;
+      /**
+       * Accumulation motion blur: render `samples` sub-frames across a shutter
+       * window of `windowSec` (centered on `t`) and average them. Returns a PNG
+       * data URL like renderFrame. samples <= 1 is identical to renderFrame(t).
+       */
+      renderFrameBlur(t: number, samples: number, windowSec: number): string;
     };
   }
 }

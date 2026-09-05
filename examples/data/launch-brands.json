@@ -1,0 +1,32 @@
+[
+  {
+    "_name": "drift",
+    "nodes.brandmark.text": "Drift",
+    "nodes.headline.text": "Analytics that fit your stack",
+    "nodes.kpi.value": 2400000,
+    "nodes.kicker.content": "EVENTS TRACKED / MONTH",
+    "nodes.cta.text": "Start free",
+    "design.color.bg": "#08131A",
+    "design.color.accent": "#2EE6C6"
+  },
+  {
+    "_name": "forge",
+    "nodes.brandmark.text": "Forge",
+    "nodes.headline.text": "CI that never makes you wait",
+    "nodes.kpi.value": 184000,
+    "nodes.kicker.content": "BUILDS SHIPPED / WEEK",
+    "nodes.cta.text": "Deploy now",
+    "design.color.bg": "#14100A",
+    "design.color.accent": "#FF6A2C"
+  },
+  {
+    "_name": "lumen",
+    "nodes.brandmark.text": "Lumen",
+    "nodes.headline.text": "Every service, one view",
+    "nodes.kpi.value": 9842,
+    "nodes.kicker.content": "SERVICES MONITORED",
+    "nodes.cta.text": "Get observability",
+    "design.color.bg": "#0D0B16",
+    "design.color.accent": "#8B7CFF"
+  }
+]

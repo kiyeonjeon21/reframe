@@ -18,7 +18,7 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const input = argv[0];
   if (!input || input.startsWith("-")) {
-    console.error("usage: reframe frame <scene.ts|.json> [--t <sec>] [-o out.png]");
+    console.error("usage: reframe frame <scene.ts|.json> [--t <sec>] [--supersample N] [--motion-blur N] [-o out.png]");
     process.exit(2);
   }
   let t = 0;
@@ -26,6 +26,8 @@ async function main(): Promise<void> {
   const overlays: string[] = [];
   let theme: string | undefined;
   let supersample = 1;
+  let motionBlur = 1;
+  let shutter = 0.5;
   for (let i = 1; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--t") t = Number(argv[++i]);
@@ -33,6 +35,8 @@ async function main(): Promise<void> {
     else if (a === "--overlay") overlays.push(resolve(argv[++i]!));
     else if (a === "--theme") theme = resolve(argv[++i]!);
     else if (a === "--supersample" || a === "--ss") supersample = Math.max(1, Math.min(4, Math.floor(Number(argv[++i])) || 1));
+    else if (a === "--motion-blur" || a === "--mb") motionBlur = Math.max(1, Math.min(32, Math.floor(Number(argv[++i])) || 1));
+    else if (a === "--shutter") shutter = Math.max(0.01, Math.min(2, Number(argv[++i]) || 0.5));
     else {
       console.error(`unknown argument: ${a}`);
       process.exit(2);
@@ -55,7 +59,7 @@ async function main(): Promise<void> {
     console.error(formatComposeReport(composed.report));
     ir = composed.ir;
   }
-  const buf = await renderFrameAt(ir, t, { sceneDir: dirname(scenePath), supersample });
+  const buf = await renderFrameAt(ir, t, { sceneDir: dirname(scenePath), supersample, motionBlur, shutter });
   const finalBuf = supersample > 1 ? downscalePng(buf, ir.size.width, ir.size.height) : buf;
   const outPath = out ? resolve(out) : resolve(`${loaded.ir.id}.png`);
   await writeFile(outPath, finalBuf);

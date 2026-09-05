@@ -28,6 +28,28 @@ joint `name`s** for any character/device that survives the redesign — overlay
 edits (a retimed wave, a nudged limb angle) reference those exact ids. Renaming a
 joint orphans the edit, exactly like renaming a hand-authored node id.
 
+## Live generators (title / numberRoll) — CONTENT addresses
+
+The headline copy and the hero number are what a human (or a regen, or a `batch`
+row) most wants to change — but a phrase or a number expands into a forest of
+per-glyph / per-digit nodes with no single place to point an edit at. Author them
+as **live generators** so the content gets a stable address that survives regen:
+
+| author with | content address | a patch does |
+|---|---|---|
+| `title({ text, id })` | `nodes.<id>.text` | re-splits the phrase — advances **reflow** and the per-glyph stagger regenerates to the new glyph count |
+| `numberRoll({ value, id })` | `nodes.<id>.value` | rebuilds the digit reels for the new number |
+| count-up `text` (`content: <number>`, `prefix`/`suffix`/`contentThousands`) | `nodes.<id>.content` | sets the number directly (no reel) |
+
+`composeScene` re-runs the generator on a content patch (it's stamped on the
+container group as `gen`), so the edit applies correctly instead of breaking
+kerning or orphaning. **Never hand-build a headline from per-glyph `text` nodes
+or a number from stacked digit nodes** — that bakes the content into the node
+forest with no address, and it dies on the next regen (the exact failure the
+generator form exists to prevent). `manifest` lists each as a `generator` content
+address; across a regen, keep the generator's instance `id` stable like any other.
+See `examples/scenes/editable-content.ts` + `examples/overlays/content-edit.json`.
+
 ## Structural edits (add / remove / reorder / insert)
 
 Beyond patching props and timing, an overlay can change the **structure** of the

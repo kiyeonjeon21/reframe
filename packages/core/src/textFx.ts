@@ -11,8 +11,8 @@
  *   // behaviors: textLoop("wave", T, { from: 1.6, until: 3.6 })
  */
 
-import { beat, par, seq, stagger, text, tween, wait, oscillate, type BehaviorWindow } from "./dsl.js";
-import type { AudioCueIR, BehaviorIR, NodeIR, TimelineIR } from "./ir.js";
+import { beat, group, par, seq, stagger, text, tween, wait, oscillate, type BehaviorWindow } from "./dsl.js";
+import type { AudioCueIR, BehaviorIR, Ease, GenSpec, NodeIR, TimelineIR } from "./ir.js";
 import { INTER_ADVANCE, INTER_FALLBACK } from "./textMetrics.js";
 
 export type FontWeight = 400 | 700 | 800;
@@ -131,6 +131,137 @@ export function splitText(textStr: string, opts: SplitOpts): TextBlock {
   }
 
   return { nodes, glyphs, ids: glyphs.map((g) => g.id), width: total, x, y, fontSize };
+}
+
+// ---------------------------------------------------------------- numberRoll
+/**
+ * An odometer / slot-machine count-up: each digit is a clipped window over a
+ * vertical column of `0–9` text that slides up to land on the target digit, so
+ * the digits physically ROLL (not just the displayed value changing). A LIVE
+ * generator — the container group is `gen`-stamped with the source `value`, so an
+ * overlay patch `nodes.<id>.value` re-runs this and the reels reflow to the new
+ * number (instead of the value being baked unaddressably into the node forest).
+ *
+ * Returns one container `group` (id = `opts.id`, `gen`-stamped) and one `beat`
+ * named `opts.id` (the roll). Spread the node, compose the timeline:
+ *
+ *   const bal = numberRoll({ id: "bal", value: 128450, x: 540, y: 360, fontSize: 120, prefix: "$" });
+ *   // nodes: [bal.node]   timeline: seq(..., bal.timeline)
+ */
+export interface NumberRollOpts {
+  id: string;
+  value: number;
+  x: number;
+  y: number;
+  fontSize: number;
+  fontWeight?: FontWeight;
+  fill?: string;
+  /** Static prefix (e.g. "$") — does not roll. */
+  prefix?: string;
+  /** Static suffix (e.g. "%") — does not roll. */
+  suffix?: string;
+  /** Group with thousands separators (default true). */
+  thousands?: boolean;
+  /** Decimal places (default 0). */
+  decimals?: number;
+  /** Horizontal alignment about `x` (default "center"). */
+  align?: "left" | "center";
+  /** Total roll duration in seconds (default 1.6). */
+  dur?: number;
+  /** Full 0–9 cycles each digit spins before landing (default 1). */
+  spins?: number;
+  /** Roll ease (default "easeOutCubic"). */
+  ease?: Ease;
+}
+
+export interface NumberRollResult {
+  /** The `gen`-stamped container group (id = `opts.id`). */
+  node: NodeIR;
+  /** A single `beat` named `opts.id` — the digit roll. */
+  timeline: TimelineIR;
+}
+
+function formatRollNumber(value: number, decimals: number, thousands: boolean): string {
+  const fixed = Math.abs(value).toFixed(decimals);
+  const dot = fixed.indexOf(".");
+  let intPart = dot < 0 ? fixed : fixed.slice(0, dot);
+  const frac = dot < 0 ? "" : fixed.slice(dot + 1);
+  if (thousands) intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return (value < 0 ? "-" : "") + intPart + (frac ? "." + frac : "");
+}
+
+function rollParams(o: NumberRollOpts): GenSpec["params"] {
+  return {
+    id: o.id, value: o.value, x: o.x, y: o.y, fontSize: o.fontSize,
+    ...(o.fontWeight !== undefined && { fontWeight: o.fontWeight }),
+    ...(o.fill !== undefined && { fill: o.fill }),
+    ...(o.prefix !== undefined && { prefix: o.prefix }),
+    ...(o.suffix !== undefined && { suffix: o.suffix }),
+    ...(o.thousands !== undefined && { thousands: o.thousands }),
+    ...(o.decimals !== undefined && { decimals: o.decimals }),
+    ...(o.align !== undefined && { align: o.align }),
+    ...(o.dur !== undefined && { dur: o.dur }),
+    ...(o.spins !== undefined && { spins: o.spins }),
+    ...(o.ease !== undefined && { ease: o.ease }),
+  };
+}
+
+export function numberRoll(opts: NumberRollOpts): NumberRollResult {
+  const { id, x, y, fontSize } = opts;
+  const weight = opts.fontWeight ?? 800;
+  const fill = opts.fill ?? "#FFFFFF";
+  const align = opts.align ?? "center";
+  const decimals = Math.max(0, Math.round(opts.decimals ?? 0));
+  const thousands = opts.thousands ?? true;
+  const rollDurTotal = Math.max(0.2, opts.dur ?? 1.6);
+  const spins = Math.max(0, Math.round(opts.spins ?? 1));
+  const ease: Ease = opts.ease ?? "easeOutCubic";
+  const cellH = fontSize * 1.18;
+
+  const body = (opts.prefix ?? "") + formatRollNumber(opts.value, decimals, thousands) + (opts.suffix ?? "");
+  const chars = [...body];
+  const isDigit = (ch: string) => ch >= "0" && ch <= "9";
+  const cellW = advance("0", weight, fontSize); // uniform tabular slot so digits don't jitter
+  const widthOf = (ch: string) => (isDigit(ch) ? cellW : advance(ch, weight, fontSize));
+
+  const total = chars.reduce((s, ch) => s + widthOf(ch), 0);
+  let cursor = align === "center" ? x - total / 2 : x;
+
+  // place index from the right (0 = rightmost digit) → rightmost rolls longest
+  const place: number[] = [];
+  let nDigits = 0;
+  for (let i = chars.length - 1; i >= 0; i--) if (isDigit(chars[i]!)) place[i] = nDigits++;
+
+  const children: NodeIR[] = [];
+  const rolls: TimelineIR[] = [];
+
+  chars.forEach((ch, i) => {
+    const w = widthOf(ch);
+    const cx = cursor + w / 2;
+    cursor += w;
+    if (!isDigit(ch)) {
+      children.push(text({ id: `${id}-c${i}`, x: cx, y, content: ch, fontFamily: "Inter", fontSize, fontWeight: weight, fill, anchor: "center" }));
+      return;
+    }
+    const d = ch.charCodeAt(0) - 48;
+    const steps = spins * 10 + d; // digit advances rolled to land on d (starting from 0)
+    const col: NodeIR[] = [];
+    for (let n = 0; n <= steps; n++) {
+      col.push(text({ id: `${id}-r${i}-${n}`, x: 0, y: n * cellH, content: String(n % 10), fontFamily: "Inter", fontSize, fontWeight: weight, fill, anchor: "center" }));
+    }
+    const colId = `${id}-r${i}`;
+    children.push(
+      group(
+        { id: `${id}-w${i}`, x: cx, y, clip: { kind: "rect", x: -cellW / 2 - 2, y: -cellH / 2, width: cellW + 4, height: cellH } },
+        [group({ id: colId, x: 0, y: 0 }, col)],
+      ),
+    );
+    const delay = (nDigits - 1 - place[i]!) * (rollDurTotal * 0.06);
+    rolls.push(seq(wait(delay), tween(colId, { y: -steps * cellH }, { duration: Math.max(0.2, rollDurTotal - delay), ease })));
+  });
+
+  const node = group({ id, x: 0, y: 0 }, children, { kind: "numberRoll", params: rollParams(opts) });
+  return { node, timeline: beat(id, {}, [rolls.length ? par(...rolls) : wait(rollDurTotal)]) };
 }
 
 // --------------------------------------------------------------- effect ctx

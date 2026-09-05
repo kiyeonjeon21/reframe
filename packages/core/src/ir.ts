@@ -250,6 +250,28 @@ export interface GroupProps extends BaseProps {
 /** Track-matte mode: mask the content by the matte's `alpha` or `luma`. */
 export type MatteMode = "alpha" | "luma";
 
+/**
+ * Live-generator stamp on a container group. A generator (`title` / `numberRoll`
+ * / `splitText`) expands at author-time into leaf nodes (per-glyph text, digit
+ * reels) whose source content — the headline phrase, the hero number — is then
+ * baked into the node forest with no address to point an edit at. This stamp
+ * records the generator `kind` + the `params` it expanded from, so `composeScene`
+ * can RE-RUN the generator when an overlay patches its content
+ * (`nodes.<id>.text` / `nodes.<id>.value`): the re-expansion reflows advances /
+ * digit reels / per-glyph stagger instead of orphaning or breaking kerning.
+ *
+ * The generator owns a single container `group` with id `<genId>` AND a single
+ * `beat` named `<genId>` in the timeline; compose replaces both on a content
+ * patch. Inert otherwise — `evaluate` never reads it, and a scene with no patched
+ * generator renders byte-identically (the pre-expanded nodes ARE the truth).
+ */
+export interface GenSpec {
+  kind: "title" | "numberRoll" | "splitText";
+  /** The generator's source opts (JSON-serializable by construction); the editable
+   *  content key is per-kind (`text` for title/splitText, `value` for numberRoll). */
+  params: Record<string, unknown>;
+}
+
 export interface PathProps extends BaseProps {
   /** SVG path data (the `d` attribute). Drawn as a true vector — crisp at any zoom. */
   d: string;
@@ -330,7 +352,7 @@ export type NodeIR =
   | { type: "image"; id: string; props: ImageProps }
   | { type: "video"; id: string; props: VideoProps }
   | { type: "path"; id: string; props: PathProps }
-  | { type: "group"; id: string; props: GroupProps; children: NodeIR[] };
+  | { type: "group"; id: string; props: GroupProps; children: NodeIR[]; gen?: GenSpec };
 
 export type PropValue = number | string;
 

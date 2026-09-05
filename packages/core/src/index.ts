@@ -63,8 +63,8 @@ export { rig, rigPose, poseTo, ikReach, humanoid, ovalPath, type Bone, type RigO
 export { characterPreset, CHARACTER_PRESET_NAMES, type CharacterPresetName, type CharacterPresetOpts } from "./characterPreset.js";
 export { figure, type FigureStyle, type FigureOpts, type FigurePalette } from "./figure.js";
 export {
-  splitText, textIn, textLoop, textOut, textTypeCues,
-  type SplitOpts, type Glyph, type TextBlock, type FontWeight,
+  splitText, textIn, textLoop, textOut, textTypeCues, numberRoll,
+  type SplitOpts, type Glyph, type TextBlock, type FontWeight, type NumberRollOpts, type NumberRollResult,
   type TextInName, type TextLoopName, type TextOutName, type TextLoopOpts, type TextOutOpts, type TypeCueOpts,
 } from "./textFx.js";
 export { motionOp, motionOpLabel, MOTION_OPS, type MotionOpName, type MotionOpOpts, type MotionOpResult } from "./motionOps.js";

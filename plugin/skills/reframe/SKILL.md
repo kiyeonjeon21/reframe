@@ -30,6 +30,17 @@ runtime needs ffmpeg on PATH and a one-time `npx playwright install chromium`
    to be RE-SKINNABLE (multiple brands, or a brand kit applied later), color it
    with `token("color.accent")` etc. on `fill`/`stroke` instead of literals, then
    re-skin with `--theme brand.json` or a `batch` `design.<token.path>` column.
+   **Author editable CONTENT through generators, never baked nodes.** The headline
+   copy and the hero number are what a human (or a regen, or a `batch` row) most
+   wants to change — and they only survive if they have a stable *content* address.
+   Use `title({ text, id })` for a kinetic headline (patch `nodes.<id>.text` → the
+   phrase re-splits and reflows) and `numberRoll({ value, id })` for a rolling
+   slot-machine count-up (patch `nodes.<id>.value` → the digit reels rebuild). A
+   plain count-up `text` node (`content: <number>`, `prefix`/`suffix`/`contentThousands`)
+   is also content-addressable. NEVER hand-build a headline from per-glyph `text`
+   nodes or a number from stacked digit nodes: the phrase/number bakes into the node
+   forest with no address, so the edit breaks kerning or orphans on regen. `manifest`
+   surfaces these live generators as `generator` content addresses.
 3. Iterate on the cheap commands; full-render once at the end:
    - `npx -y reframe-video compile <name>.ts` — validate eDSL → IR in ~1s, no
      browser, no ffmpeg. Fix the classified error it prints, repeat. Catch every

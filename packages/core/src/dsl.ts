@@ -11,6 +11,7 @@ import type {
   CompositionSceneEntry,
   Ease,
   EllipseProps,
+  GenSpec,
   GroupProps,
   ImageProps,
   LineProps,
@@ -105,9 +106,9 @@ export function path(props: { id: string } & PathProps): NodeIR {
   return { type: "path", id, props: rest };
 }
 
-export function group(props: { id: string } & GroupProps, children: NodeIR[]): NodeIR {
+export function group(props: { id: string } & GroupProps, children: NodeIR[], gen?: GenSpec): NodeIR {
   const { id, ...rest } = props;
-  return { type: "group", id, props: rest, children };
+  return { type: "group", id, props: rest, children, ...(gen && { gen }) };
 }
 
 export function seq(...children: TimelineIR[]): TimelineIR {

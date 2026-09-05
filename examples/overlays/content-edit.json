@@ -1,0 +1,12 @@
+{
+  "reframeOverlay": 1,
+  "name": "content-edit",
+  "target": "editable-content",
+  "nodes": {
+    "headline": { "text": "Banking, evolved" },
+    "balance": { "value": 250000 }
+  },
+  "design": {
+    "color.accent": "#E8B341"
+  }
+}

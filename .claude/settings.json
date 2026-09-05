@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
     "allow": [
       "Bash(pnpm test)",
@@ -18,7 +22,8 @@
   },
   "enabledPlugins": {
     "playwright@claude-plugins-official": true,
-    "reframe@kiyeonjeon21": true
+    "reframe@kiyeonjeon21": true,
+    "mintlify@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "kiyeonjeon21": {

@@ -27,6 +27,10 @@ interface Args {
   theme?: string;
   /** Render at N× and downscale (SSAA) for crisp anti-aliasing; 1 = off (default). */
   supersample?: number;
+  /** Accumulation motion blur: N sub-frames averaged per frame; 1 = off (default). */
+  motionBlur?: number;
+  /** Shutter angle as a fraction of the frame interval (0.5 = 180°); only used with motionBlur. */
+  shutter?: number;
   noAudio: boolean;
   /** Composition: render only this scene id, standalone. */
   scene?: string;
@@ -59,6 +63,8 @@ function parseArgs(argv: string[]): Args {
     else if (a === "--overlay") args.overlays.push(resolve(rest[++i]!));
     else if (a === "--theme") args.theme = resolve(rest[++i]!);
     else if (a === "--supersample" || a === "--ss") args.supersample = Math.max(1, Math.min(4, Math.floor(Number(rest[++i])) || 1));
+    else if (a === "--motion-blur" || a === "--mb") args.motionBlur = Math.max(1, Math.min(32, Math.floor(Number(rest[++i])) || 1));
+    else if (a === "--shutter") args.shutter = Math.max(0.01, Math.min(2, Number(rest[++i]) || 0.5));
     else if (a === "--no-audio") args.noAudio = true;
     else if (a === "--scene") args.scene = rest[++i]!;
     else {
@@ -121,6 +127,8 @@ async function main() {
       ...(args.fps !== undefined && { fps: args.fps }),
       ...(args.duration !== undefined && { duration: args.duration }),
       ...(args.supersample !== undefined && { supersample: args.supersample }),
+      ...(args.motionBlur !== undefined && { motionBlur: args.motionBlur }),
+      ...(args.shutter !== undefined && { shutter: args.shutter }),
     });
   } else {
     if (args.duration === undefined || Number.isNaN(args.duration)) {

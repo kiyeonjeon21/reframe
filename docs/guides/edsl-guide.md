@@ -479,15 +479,46 @@ seeded effect generators animate the glyphs (the text analog of `motionPreset`).
   direction + spin + fade), `fly` (directional), `dissolve`, `fall`, `collapse`.
 - `textTypeCues(block, { at, interval?, gain? }) → AudioCueIR[]` — per-glyph CC0
   keypress for a typewriter entrance; spread into `audio.cues`.
+- `numberRoll({ id, value, x, y, fontSize, fontWeight?, fill?, prefix?, suffix?,
+  thousands?, decimals?, align?, dur?, spins?, ease? }) → { node, timeline }` — an
+  odometer / slot-machine count-up: each digit is a `clip` window over a vertical
+  `0–9` column that slides to the target, so the digits physically **roll** (not
+  just the displayed value changing). `prefix`/`suffix` stay static; `thousands`
+  (default true) inserts commas. Spread `node` into `nodes`, compose `timeline`.
+  A LIVE generator — see below.
 
 ```ts
 const T = splitText("MOTION IS DATA", { id: "t", x: 960, y: 470, fontSize: 130 });
 // nodes:     [...T.nodes]
 // timeline:  seq(textIn("cascade", T), wait(2), textOut("shatter", T, { seed: 3 }))
 // behaviors: textLoop("wave", T, { from: 1.6, until: 3.6 })
+
+const bal = numberRoll({ id: "bal", value: 128450, x: 960, y: 540, fontSize: 160, prefix: "$" });
+// nodes: [bal.node]   timeline: seq(bal.timeline)
 ```
 Every effect is seeded (same `seed` → identical) and pure keyframes. To time a
 `textLoop` window, add up the `textIn` beat length (≈ `(n-1)·stagger + glyphDur`).
+
+### Editable-by-default: author content as live generators
+
+The headline copy and the hero number are what a human (or a regen, or a `batch`
+row) most wants to change — and they only survive an AI regeneration if they have
+a stable **content address**. `title({ text, id })` and `numberRoll({ value, id })`
+are *live generators*: they stamp their container group with the source content, so
+an overlay patch re-runs the generator and the expansion REFLOWS.
+
+| author with | patch | result |
+|---|---|---|
+| `title({ text, id })` | `nodes.<id>.text` | phrase re-splits, advances reflow, stagger regenerates |
+| `numberRoll({ value, id })` | `nodes.<id>.value` | digit reels rebuild for the new number |
+| count-up `text` (`content: <n>`) | `nodes.<id>.content` | sets the number directly (no reel) |
+| `token("color.accent")` fill | `design.color.accent` | re-skin the brand color |
+
+**Never hand-build a headline from per-glyph `text` nodes, or a number from stacked
+digit nodes** — the content bakes into the node forest with no address, so the edit
+breaks kerning or orphans on regen. `manifest` surfaces these as `generator`
+content addresses. Worked demo: `examples/scenes/editable-content.ts`
+(+ `examples/overlays/content-edit.json`).
 
 ## Photo / video montage (`photoMontage` / `videoMontage`)
 
@@ -537,8 +568,13 @@ address them; pure + deterministic.
   entrance?, exit?, speed?, seed?, hold? })` → `{ nodes, timeline, block }`. A kinetic
   headline built on `splitText` + `textIn` (entrance presets: `cascade` `rise`
   `bounce` `typewriter` `assemble` `decode`). Set `exit` (a `textOut` preset) and it
-  plays in, holds `hold`s, then exits. Glyph ids `${id}-${i}`; labels `${id}-in` /
-  `${id}-out`. `block` is returned so you can add `textLoop` behaviors or extra tweens.
+  plays in, holds `hold`s, then exits. A **live generator**: `nodes` is ONE
+  `gen`-stamped container group (id `${id}`) wrapping the glyphs, and `timeline` is one
+  `beat` named `${id}` — so an overlay can patch `nodes.${id}.text` to re-headline and
+  the phrase re-splits/reflows (instead of orphaning). Glyph ids `${id}-${i}`; inner
+  labels `${id}-in` / `${id}-out`. `block` is returned so you can add `textLoop`
+  behaviors or extra tweens. Prefer `title()` over a raw `splitText` for any headline
+  whose copy might change.
 - `lowerThird({ name, role?, id?, x?, y?, accent?, fill?, subFill?, fontSize?, hold? })`
   → `{ nodes, timeline }`. A name/role strap: an accent bar grows in, the text slides +
   fades. Ids `${id}` (group) / `${id}-bar` / `${id}-name` / `${id}-role`; labels

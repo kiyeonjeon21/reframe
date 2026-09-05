@@ -10,9 +10,49 @@
  */
 
 import { compileScene } from "./compile.js";
-import type { BehaviorIR, Ease, NodeIR, PropValue, SceneIR, TimelineIR } from "./ir.js";
+import type { BehaviorIR, Ease, GenSpec, NodeIR, PropValue, SceneIR, TimelineIR } from "./ir.js";
 import { PROPS_BY_TYPE, validateScene } from "./validate.js";
 import { brand, getDeepPath, setDeepPath } from "./theme.js";
+import { numberRoll, type NumberRollOpts } from "./textFx.js";
+import { title, type TitleOpts } from "./titles.js";
+
+/**
+ * Live-generator re-expansion registry. When an overlay patches a `gen`-stamped
+ * group's CONTENT key, compose re-runs the generator (pure) so the expansion
+ * reflows — the headline re-splits, the digit reels rebuild — and swaps in the
+ * fresh nodes + timeline. Each returns the container group + its `beat`.
+ */
+type GenExpand = (params: Record<string, unknown>) => { node: NodeIR; timeline: TimelineIR };
+const GEN_EXPAND: Partial<Record<GenSpec["kind"], GenExpand>> = {
+  title: (p) => {
+    const r = title(p as unknown as TitleOpts);
+    return { node: r.nodes[0]!, timeline: r.timeline };
+  },
+  numberRoll: (p) => {
+    const r = numberRoll(p as unknown as NumberRollOpts);
+    return { node: r.node, timeline: r.timeline };
+  },
+};
+/** The single editable content key per generator (`nodes.<id>.<key>`). */
+const GEN_CONTENT_KEY: Record<GenSpec["kind"], string> = {
+  title: "text",
+  numberRoll: "value",
+  splitText: "text",
+};
+
+/** Swap the children of the `beat` named `name` (the generator's timeline region),
+ *  preserving its placement (`at`/`gap`/`scale`/`order`). Returns true if found. */
+function replaceBeatChildren(tl: TimelineIR | undefined, name: string, repl: TimelineIR): boolean {
+  if (!tl) return false;
+  if (tl.kind === "beat" && tl.name === name) {
+    if (repl.kind === "beat") (tl as { children: TimelineIR[] }).children = repl.children;
+    return true;
+  }
+  if ("children" in tl) {
+    for (const c of tl.children) if (replaceBeatChildren(c, name, repl)) return true;
+  }
+  return false;
+}
 
 export interface OverlayDoc {
   reframeOverlay: 1;
@@ -225,6 +265,47 @@ function applyOverlay(
     }
   };
 
+  // Re-expand a live generator on a content patch: re-run it with the new content,
+  // swap the container group's children + the `beat`'s timeline, re-infer duration.
+  const applyGenPatch = (
+    id: string,
+    node: Extract<NodeIR, { type: "group" }>,
+    gen: GenSpec,
+    key: string,
+    value: PropValue | null,
+  ) => {
+    const address = `nodes.${id}.${key}`;
+    const expand = GEN_EXPAND[gen.kind];
+    if (!expand) {
+      orphan(address, `live generator "${gen.kind}" cannot be re-expanded`);
+      return;
+    }
+    if (value === null) {
+      orphan(address, `cannot unset generator content "${key}"`);
+      return;
+    }
+    const params = { ...gen.params, [key]: value };
+    let result: { node: NodeIR; timeline: TimelineIR };
+    try {
+      result = expand(params);
+    } catch (e) {
+      orphan(address, `re-expanding ${gen.kind} failed: ${(e as Error).message}`);
+      return;
+    }
+    node.children = result.node.type === "group" ? result.node.children : [];
+    node.gen =
+      result.node.type === "group" && result.node.gen
+        ? result.node.gen
+        : { kind: gen.kind, params: params as GenSpec["params"] };
+    replaceBeatChildren(ir.timeline, id, result.timeline);
+    applied(address, "set");
+    // re-expansion changes glyph/digit count + the beat's timing → re-infer duration
+    if (overlay.scene?.duration === undefined) {
+      delete ir.duration;
+      ir.duration = compileScene(ir).duration;
+    }
+  };
+
   // --- scene-level (whitelisted keys only) ---
   if (overlay.scene) {
     for (const key of SCENE_PATCHABLE) {
@@ -258,7 +339,19 @@ function applyOverlay(
       );
       continue;
     }
-    patchProps(`nodes.${id}`, node, node.props as unknown as Record<string, unknown>, patch);
+    // live generator: a CONTENT patch (`.text`/`.value`) re-runs the generator so
+    // the expansion reflows (advances, digit reels, per-glyph stagger) — baked leaf
+    // props can't reflow. Any non-content keys fall through to a normal prop patch.
+    let rest: Record<string, PropValue | null> = patch;
+    if (node.type === "group" && node.gen) {
+      const key = GEN_CONTENT_KEY[node.gen.kind];
+      if (key in patch) {
+        applyGenPatch(id, node, node.gen, key, patch[key]!);
+        rest = Object.fromEntries(Object.entries(patch).filter(([k]) => k !== key));
+        if (Object.keys(rest).length === 0) continue;
+      }
+    }
+    patchProps(`nodes.${id}`, node, node.props as unknown as Record<string, unknown>, rest);
   }
 
   // --- state overrides (stateName -> nodeId -> prop) ---

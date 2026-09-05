@@ -59,6 +59,36 @@ describe("deterministic capture", () => {
     expect(new Set(hashesA).size).toBeGreaterThan(1);
   }, 60_000);
 
+  // a fast horizontal move — the thing motion blur smears
+  const moving = scene({
+    id: "mb",
+    size: { width: 256, height: 144 },
+    fps: 10,
+    background: "#000",
+    nodes: [rect({ id: "b", x: 20, y: 52, width: 40, height: 40, fill: "#fff" })],
+    timeline: tween("b", { x: 200 }, { duration: 1, ease: "linear" }),
+  });
+
+  it("motion blur: off (and N=1) take the single-render path → byte-identical", async () => {
+    const opts = { fps: 10, duration: 1 };
+    const off = await captureIr(moving, { ...opts, framesDir: await tempDir() });
+    const one = await captureIr(moving, { ...opts, motionBlur: 1, framesDir: await tempDir() });
+    expect(await frameHashes(off.framesDir)).toEqual(await frameHashes(one.framesDir));
+  }, 60_000);
+
+  it("motion blur: N>1 changes a moving scene and is itself reproducible", async () => {
+    const opts = { fps: 10, duration: 1, motionBlur: 6 };
+    const off = await captureIr(moving, { fps: 10, duration: 1, framesDir: await tempDir() });
+    const a = await captureIr(moving, { ...opts, framesDir: await tempDir() });
+    const b = await captureIr(moving, { ...opts, framesDir: await tempDir() });
+    const offH = await frameHashes(off.framesDir);
+    const aH = await frameHashes(a.framesDir);
+    // reproducible (same machine, same input)
+    expect(aH).toEqual(await frameHashes(b.framesDir));
+    // and it actually altered the moving frames vs the sharp render
+    expect(aH).not.toEqual(offH);
+  }, 90_000);
+
   it("composition: a 2-scene cut composition renders byte-identically twice", async () => {
     const mk = (id: string, fill: string) =>
       scene({

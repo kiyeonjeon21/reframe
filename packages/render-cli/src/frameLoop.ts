@@ -86,7 +86,7 @@ async function browserBundle(): Promise<string> {
 /** Render a reframe IR scene: evaluate(t) per frame inside the page, pull PNGs out. */
 export async function captureIr(
   ir: SceneIR,
-  opts: { fps?: number; duration?: number; framesDir: string; sceneDir?: string; supersample?: number },
+  opts: { fps?: number; duration?: number; framesDir: string; sceneDir?: string; supersample?: number; motionBlur?: number; shutter?: number },
 ): Promise<CaptureResult> {
   await mkdir(opts.framesDir, { recursive: true });
   const sceneDir = opts.sceneDir ?? process.cwd();
@@ -110,8 +110,14 @@ export async function captureIr(
     );
 
     const frameCount = Math.max(1, Math.round(duration * fps));
+    // motion blur: opt-in. n<=1 takes the existing single-render path so goldens stay byte-identical.
+    const mb = opts.motionBlur && opts.motionBlur > 1 ? opts.motionBlur : 1;
+    const windowSec = ((opts.shutter ?? 0.5) / fps);
     for (let f = 0; f < frameCount; f++) {
-      const dataUrl = await page.evaluate((t) => window.__reframe.renderFrame(t), f / fps);
+      const t = f / fps;
+      const dataUrl = mb > 1
+        ? await page.evaluate(([tt, n, w]) => window.__reframe.renderFrameBlur(tt!, n!, w!), [t, mb, windowSec])
+        : await page.evaluate((tt) => window.__reframe.renderFrame(tt), t);
       await writeFile(framePath(opts.framesDir, f), Buffer.from(dataUrl.slice(22), "base64"));
     }
     return { framesDir: opts.framesDir, frameCount, fps };
@@ -119,12 +125,14 @@ export async function captureIr(
 }
 
 /** Render ONE frame of an IR scene at scene-time `t` → PNG buffer (for the `diff` tool). */
-export async function renderFrameAt(ir: SceneIR, t: number, opts: { sceneDir?: string; supersample?: number } = {}): Promise<Buffer> {
+export async function renderFrameAt(ir: SceneIR, t: number, opts: { sceneDir?: string; supersample?: number; motionBlur?: number; shutter?: number } = {}): Promise<Buffer> {
   const sceneDir = opts.sceneDir ?? process.cwd();
   const assets = await buildImageAssets(ir, sceneDir);
   const { fps, duration } = resolveTiming(ir, {});
   const videoAssets = await buildVideoFrameAssets(ir, sceneDir, fps, duration);
   const bundle = await browserBundle();
+  const mb = opts.motionBlur && opts.motionBlur > 1 ? opts.motionBlur : 1;
+  const windowSec = ((opts.shutter ?? 0.5) / fps);
   return withPage(ir.size, async (page) => {
     await page.setContent(`<!DOCTYPE html><html><body style="margin:0;background:#000"></body></html>`);
     await injectFonts(page);
@@ -134,7 +142,9 @@ export async function renderFrameAt(ir: SceneIR, t: number, opts: { sceneDir?: s
         window.__reframe.init(sceneIr as never, imageAssets as never, vAssets as never),
       [ir, assets, videoAssets] as unknown[],
     );
-    const dataUrl = await page.evaluate((tt) => window.__reframe.renderFrame(tt), t);
+    const dataUrl = mb > 1
+      ? await page.evaluate(([tt, n, w]) => window.__reframe.renderFrameBlur(tt!, n!, w!), [t, mb, windowSec])
+      : await page.evaluate((tt) => window.__reframe.renderFrame(tt), t);
     return Buffer.from(dataUrl.slice(22), "base64");
   }, opts.supersample !== undefined ? { deviceScaleFactor: opts.supersample } : {});
 }

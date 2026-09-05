@@ -11,7 +11,8 @@ deterministic mp4 render. Human edits survive AI regeneration of the base.
 
 ## Commands
 
-- `pnpm reframe render <scene.ts|.html> [--overlay f] [--theme brand.json] [--supersample N] [-o out]` — mp4 into `out/`; `--theme` re-skins `token()` colors (a brand kit is a nested partial theme; also on `frame`/`player`); `--supersample 2` (alias `--ss`, clamp 1-4, default 1=off) renders N× via `deviceScaleFactor` and Lanczos-downscales to the scene size at encode — SSAA that smooths moving-text anti-alias shimmer (the affine 2.5D perspective re-skews text each frame). Opt-in → goldens byte-identical. Also on `frame`. `render-cli/frameLoop.ts` (`withPage` deviceScaleFactor + `downscalePng`), `encode.ts` (`-vf scale`)
+- `pnpm reframe render <scene.ts|.html> [--overlay f] [--theme brand.json] [--supersample N] [--motion-blur N] [-o out]` — mp4 into `out/`; `--theme` re-skins `token()` colors (a brand kit is a nested partial theme; also on `frame`/`player`); `--supersample 2` (alias `--ss`, clamp 1-4, default 1=off) renders N× via `deviceScaleFactor` and Lanczos-downscales to the scene size at encode — SSAA that smooths moving-text anti-alias shimmer (the affine 2.5D perspective re-skews text each frame). Opt-in → goldens byte-identical. Also on `frame`. `render-cli/frameLoop.ts` (`withPage` deviceScaleFactor + `downscalePng`), `encode.ts` (`-vf scale`)
+- `--motion-blur N` (alias `--mb`, clamp 1-32, default 1=off; `--shutter F` clamp 0.01-2, default 0.5=180°) — accumulation motion blur, the **temporal** analog of `--supersample`: per output frame render N sub-frames at `evaluate(t±)` across a shutter window `windowSec = shutter/fps` centered on `t`, averaged in-browser (Float32 accumulate over `getImageData`, sRGB space). Anything moving smears proportional to velocity; anything static renders identical so stays crisp. Opt-in → N≤1 takes the existing single-render path so goldens stay byte-identical (and core/`evaluate`/DisplayList are untouched, so core goldens + `player` are unaffected). Composes with `--supersample` (sub-frames render at deviceScaleFactor, averaged big, then downscaled — heavier: 2× SS ≈ 130MB accumulator). v1 is whole-frame (not per-object velocity blur — DisplayOps carry `id`+`transform` for a later selective pass). Also on `frame` (preview the smear at one `t`). `render-cli/browserEntry.ts` (`renderFrameBlur`), `frameLoop.ts` (`captureIr`/`renderFrameAt` branch)
 - `pnpm reframe batch <scene.ts> <data.json|csv>` — one mp4 per row (row keys are overlay addresses like `nodes.<id>.<prop>` or `design.<token.path>` for a per-brand re-skin)
 - `pnpm reframe logo <logo.svg | brand-slug> [--motion <preset>] [--energy n] [--seed n]` — animate a logo into a sting (published CLI command; `packages/render-cli/src/logoSting.ts`)
 - `pnpm reframe labels <scene.ts>` — print the compiled event clock (every timeline label → exact seconds; the timing source for `audio.cues` and beat debugging)
@@ -141,9 +142,29 @@ no `Math.random()`/`Date` (use `wiggle` with a seed, or pass a `seed` knob).
   seeded `textIn` (typewriter/cascade/rise/bounce/assemble/decode), `textLoop`
   (wave/shimmer/wobble/float → behaviors), `textOut` (shatter/fly/dissolve/fall/
   collapse), `textTypeCues` (per-glyph keypress audio). The text analog of motionPreset.
+  `numberRoll(opts)` — an odometer/slot-machine count-up: per digit a `clip` window over a
+  vertical `0–9` column that slides to the target (digits physically ROLL, not just the value
+  changing); `prefix`/`suffix` static, `thousands`/`decimals`/`spins`/`dur`/`ease`. Returns
+  `{ node, timeline }` (a gen-stamped container group id `<id>` + a `beat` named `<id>`).
+- **Live generators / content addressability** (`GenSpec` in `ir.ts`, re-expansion in
+  `compose.ts`) — `title`/`numberRoll` (and `splitText` in block-mode, later) expand at
+  author-time into leaf nodes, then stamp the container **group** with `gen:{kind,params}` — the
+  source phrase/number. `composeScene`, on an overlay patch to the generator's CONTENT address
+  (`nodes.<id>.text` for title, `nodes.<id>.value` for numberRoll), RE-RUNS the generator (pure):
+  the headline re-splits (advances reflow, per-glyph stagger regenerates to the new glyph count),
+  the digit reels rebuild — instead of orphaning or breaking kerning. The generator owns ONE group
+  id `<id>` + ONE `beat` named `<id>`; compose swaps both, preserving the beat's placement. `gen`
+  is **inert** (evaluate never reads it; identity container group emits no DisplayOp) → a scene
+  with no patched generator renders **byte-identical** (goldens unaffected). `sceneManifest` surfaces
+  each as a `generator` content address. This is why the editable-by-default rule (below) matters:
+  author the headline as `title()` and the hero number as `numberRoll()`/count-up text, NEVER as
+  hand-built per-glyph/per-digit nodes — only the generator form gives the content a stable address
+  that survives regen. See `examples/scenes/editable-content.ts` + `examples/overlays/content-edit.json`.
 - Titles / lower-thirds (`packages/core/src/titles.ts`) — `title(opts)` (kinetic headline:
-  `splitText` + `textIn` entrance + optional `textOut` exit; returns `{ nodes, timeline, block }`,
-  labels `${id}-in`/`${id}-out`) and `lowerThird(opts)` (name/role strap with an accent bar,
+  `splitText` + `textIn` entrance + optional `textOut` exit; a LIVE generator — returns
+  `{ nodes: [genGroup], timeline, block }` where `nodes` is ONE `gen`-stamped container group
+  wrapping the glyphs and `timeline` is one `beat` named `<id>`; inner labels `${id}-in`/`${id}-out`;
+  patch `nodes.<id>.text` to re-headline) and `lowerThird(opts)` (name/role strap with an accent bar,
   `{ nodes, timeline }`, ids `${id}-bar`/`-name`/`-role`). The motion-graphic overlay vocabulary
   for a media piece; what `reframe assemble` wires over a montage. Pure/seeded/golden-safe.
 - Label-anchored beats (`packages/core/src/compile.ts`) — a `beat`'s `at` accepts a

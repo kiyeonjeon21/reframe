@@ -75,4 +75,31 @@ window.__reframe = {
     renderFrame(ctx, compiled, t, images, videos);
     return canvas.toDataURL("image/png");
   },
+  // Accumulation motion blur: average `samples` sub-frames over a shutter window
+  // of `windowSec` centered on `t`. The temporal analog of supersampling — anything
+  // moving smears across the window, anything static renders identical so stays crisp.
+  // Averaging is in sRGB (like the ffmpeg lanczos downscale); linear-light is a
+  // possible future refinement. samples <= 1 falls back to a single render(t).
+  renderFrameBlur(t: number, samples: number, windowSec: number): string {
+    if (!compiled || !ctx || !canvas) throw new Error("init() not called");
+    const n = Math.max(1, Math.floor(samples));
+    if (n === 1) {
+      renderFrame(ctx, compiled, t, images, videos);
+      return canvas.toDataURL("image/png");
+    }
+    const w = canvas.width, h = canvas.height;
+    const acc = new Float32Array(w * h * 4);
+    for (let s = 0; s < n; s++) {
+      // midpoint samples across the window, symmetric about t (n=1 ⇒ exactly t)
+      const tSub = t + ((s + 0.5) / n - 0.5) * windowSec;
+      renderFrame(ctx, compiled, tSub, images, videos);
+      const d = ctx.getImageData(0, 0, w, h).data;
+      for (let i = 0; i < acc.length; i++) acc[i]! += d[i]!;
+    }
+    const out = ctx.getImageData(0, 0, w, h);
+    const od = out.data;
+    for (let i = 0; i < od.length; i++) od[i] = Math.round(acc[i]! / n);
+    ctx.putImageData(out, 0, 0);
+    return canvas.toDataURL("image/png");
+  },
 };
